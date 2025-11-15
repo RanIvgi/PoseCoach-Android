@@ -18,6 +18,13 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        
+        // Explicitly include native libraries for all architectures
+        // This ensures MediaPipe works on both real devices and emulators
+        // across all platforms (Windows, Mac, Linux)
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
     }
 
     buildTypes {
