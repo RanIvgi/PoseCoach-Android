@@ -1,9 +1,11 @@
 package com.example.posecoach.logic
 
+import android.util.Log
 import com.example.posecoach.data.FeedbackMessage
 import com.example.posecoach.data.FeedbackSeverity
 import com.example.posecoach.data.PoseLandmarkIndex
 import com.example.posecoach.data.PoseResult
+import java.util.concurrent.TimeUnit
 
 /**
  * Default implementation of PoseEvaluator for Student 3.
@@ -28,11 +30,17 @@ import com.example.posecoach.data.PoseResult
  */
 class DefaultPoseEvaluator : PoseEvaluator {
     
-    // Internal state for rep counting (Student 3: implement this)
+    // Internal state for squat evaluation
+    private var squatState: SquatState = SquatState.UP
+    private var minSquatAngleAchieved: Float = 180f // Track deepest point of the squat
     private var repCount: Int = 0
-    private var lastPosition: String = "unknown" // Track "up" vs "down" for rep counting
+    private var insufficientDepthReps: Int = 0
+    private var sessionStartTime: Long = 0L
     
     override fun evaluate(poseResult: PoseResult, exerciseType: String): FeedbackMessage? {
+        // Log PoseResult for every frame (as requested)
+        Log.d("PoseEvaluator", "PoseResult: ${poseResult.landmarks.size} landmarks, timestamp: ${poseResult.timestamp}")
+
         // No pose detected
         if (!poseResult.hasPose()) {
             return FeedbackMessage(
@@ -51,47 +59,100 @@ class DefaultPoseEvaluator : PoseEvaluator {
     }
     
     override fun evaluateSquat(poseResult: PoseResult): FeedbackMessage? {
-        // TODO (Student 3): Implement real squat evaluation logic
-        
-        // Example: Calculate knee angle for left leg
         val leftKneeAngle = poseResult.calculateAngle(
             PoseLandmarkIndex.LEFT_HIP,
             PoseLandmarkIndex.LEFT_KNEE,
             PoseLandmarkIndex.LEFT_ANKLE
         )
+        val rightKneeAngle = poseResult.calculateAngle(
+            PoseLandmarkIndex.RIGHT_HIP,
+            PoseLandmarkIndex.RIGHT_KNEE,
+            PoseLandmarkIndex.RIGHT_ANKLE
+        )
         
-        // Example: Calculate hip angle
         val leftHipAngle = poseResult.calculateAngle(
             PoseLandmarkIndex.LEFT_SHOULDER,
             PoseLandmarkIndex.LEFT_HIP,
             PoseLandmarkIndex.LEFT_KNEE
         )
+        val rightHipAngle = poseResult.calculateAngle(
+            PoseLandmarkIndex.RIGHT_SHOULDER,
+            PoseLandmarkIndex.RIGHT_HIP,
+            PoseLandmarkIndex.RIGHT_KNEE
+        )
         
-        // TODO: Add more sophisticated checks:
-        // - Check if knees go past toes (using x-coordinates)
-        // - Check back straightness (shoulder-hip-ankle alignment)
-        // - Track squat depth over time
-        // - Count reps (detect up/down movement)
-        // - Compare left vs right leg angles for symmetry
-        
-        // Placeholder feedback based on knee angle
-        return when {
-            leftKneeAngle == null -> FeedbackMessage(
-                text = "Turn slightly - can't see your legs clearly",
+        val leftAnkleX = poseResult.getLandmark(PoseLandmarkIndex.LEFT_ANKLE)?.x
+        val leftKneeX = poseResult.getLandmark(PoseLandmarkIndex.LEFT_KNEE)?.x
+        val leftHipX = poseResult.getLandmark(PoseLandmarkIndex.LEFT_HIP)?.x
+        val rightAnkleX = poseResult.getLandmark(PoseLandmarkIndex.RIGHT_ANKLE)?.x
+        val rightKneeX = poseResult.getLandmark(PoseLandmarkIndex.RIGHT_KNEE)?.x
+        val rightHipX = poseResult.getLandmark(PoseLandmarkIndex.RIGHT_HIP)?.x
+
+        // Handle missing landmarks
+        if (leftKneeAngle == null || rightKneeAngle == null || leftHipAngle == null || rightHipAngle == null) {
+            return FeedbackMessage(
+                text = "Adjust camera to see your hips, knees, and ankles clearly.",
                 severity = FeedbackSeverity.WARNING
             )
-            leftKneeAngle < AngleThresholds.SQUAT_KNEE_MIN -> FeedbackMessage(
-                text = "Good depth! You're reaching proper squat position.",
-                severity = FeedbackSeverity.INFO
-            )
-            leftKneeAngle in AngleThresholds.SQUAT_KNEE_MIN..140f -> FeedbackMessage(
-                text = "Go deeper - bend knees more for full squat",
-                severity = FeedbackSeverity.WARNING
-            )
-            else -> FeedbackMessage(
-                text = "Stand up and prepare for next rep",
-                severity = FeedbackSeverity.INFO
-            )
+        }
+
+        val avgKneeAngle = (leftKneeAngle + rightKneeAngle) / 2
+        val avgHipAngle = (leftHipAngle + rightHipAngle) / 2
+
+        var currentFeedback: FeedbackMessage? = null
+
+        // Rep Counting Logic
+        when (squatState) {
+            SquatState.UP -> {
+                if (avgKneeAngle < AngleThresholds.SQUAT_KNEE_TRANSITION_DOWN) {
+                    squatState = SquatState.DOWN
+                    minSquatAngleAchieved = avgKneeAngle // Start tracking deepest angle for this rep
+                    currentFeedback = FeedbackMessage("Keep going down!", FeedbackSeverity.INFO)
+                }
+            }
+            SquatState.DOWN -> {
+                minSquatAngleAchieved = kotlin.math.min(minSquatAngleAchieved, avgKneeAngle)
+                if (avgKneeAngle > AngleThresholds.SQUAT_KNEE_TRANSITION_UP) {
+                    // Transitioning up, check if depth was sufficient
+                    if (minSquatAngleAchieved < AngleThresholds.SQUAT_KNEE_MIN_DEPTH) {
+                        repCount++
+                        currentFeedback = FeedbackMessage("Rep " + repCount + "!", FeedbackSeverity.INFO)
+                        Log.d("PoseEvaluator", "Rep Count: $repCount")
+                    } else {
+                        insufficientDepthReps++
+                        currentFeedback = FeedbackMessage("Go deeper on the next rep!", FeedbackSeverity.WARNING)
+                    }
+                    squatState = SquatState.UP
+                    minSquatAngleAchieved = 180f // Reset for next rep
+                } else if (avgKneeAngle < AngleThresholds.SQUAT_KNEE_MIN_DEPTH) {
+                    currentFeedback = FeedbackMessage("Good depth!", FeedbackSeverity.INFO)
+                }
+            }
+        }
+
+        // Form Correction Logic (prioritize critical issues)
+        if (currentFeedback == null || currentFeedback.severity != FeedbackSeverity.ERROR) {
+            // Knees past toes check (simplified: check if knee X is significantly forward of ankle X)
+            val leftKneeForward = leftAnkleX != null && leftKneeX != null && leftKneeX < leftAnkleX - RelativePositionThresholds.KNEE_TO_TOE_OFFSET
+            val rightKneeForward = rightAnkleX != null && rightKneeX != null && rightKneeX < rightAnkleX - RelativePositionThresholds.KNEE_TO_TOE_OFFSET
+
+            if (leftKneeForward || rightKneeForward) {
+                currentFeedback = FeedbackMessage("Knees over toes! Push hips back.", FeedbackSeverity.WARNING)
+            }
+
+            // Back straightness check (simplified: check if hip is too far back relative to shoulder/knee)
+            val leftHipTooFarBack = leftHipX != null && leftKneeX != null && leftHipX < leftKneeX - RelativePositionThresholds.HIP_TO_KNEE_OFFSET
+            val rightHipTooFarBack = rightHipX != null && rightKneeX != null && rightHipX < rightKneeX - RelativePositionThresholds.HIP_TO_KNEE_OFFSET
+
+            if (currentFeedback == null && (leftHipTooFarBack || rightHipTooFarBack)) {
+                 currentFeedback = FeedbackMessage("Keep your chest up and back straight.", FeedbackSeverity.WARNING)
+            }
+        }
+
+        // Default feedback if no specific issues are found
+        return currentFeedback ?: when (squatState) {
+            SquatState.UP -> FeedbackMessage("Ready to squat. Bend your knees.", FeedbackSeverity.INFO)
+            SquatState.DOWN -> FeedbackMessage("Hold the squat.", FeedbackSeverity.INFO)
         }
     }
     
@@ -175,22 +236,62 @@ class DefaultPoseEvaluator : PoseEvaluator {
     }
     
     override fun reset() {
-        // TODO (Student 3): Reset any tracking state
         repCount = 0
-        lastPosition = "unknown"
+        squatState = SquatState.UP
+        minSquatAngleAchieved = 180f
+        insufficientDepthReps = 0
+        sessionStartTime = 0L
     }
     
     override fun getRepCount(): Int {
-        // TODO (Student 3): Implement rep counting logic
         return repCount
     }
     
     override fun getMetrics(): Map<String, Any> {
         // TODO (Student 3): Return useful metrics
-        // Examples:
-        // - "max_depth": 85.3 (degrees)
-        // - "avg_speed": 1.5 (seconds per rep)
-        // - "symmetry_score": 0.92 (left vs right comparison)
         return emptyMap()
+    }
+
+    override fun startSession() {
+        sessionStartTime = System.currentTimeMillis()
+    }
+
+    override fun getEvaluationSummary(): String? {
+        if (sessionStartTime == 0L) {
+            return null // Session never started
+        }
+
+        val durationMillis = System.currentTimeMillis() - sessionStartTime
+        val durationSeconds = TimeUnit.MILLISECONDS.toSeconds(durationMillis)
+
+        val summary = StringBuilder()
+        summary.append("Session Summary:\n")
+        summary.append("Total Reps: $repCount\n")
+        summary.append("Duration: $durationSeconds seconds\n")
+
+        if (insufficientDepthReps > 0) {
+            summary.append("\nNotes:\n")
+            summary.append("- You had $insufficientDepthReps reps with insufficient depth. Try to go lower next time!\n")
+        } else if (repCount > 0) {
+            summary.append("\nGreat work! All your reps had good depth.\n")
+        } else {
+            summary.append("\nNo reps were completed in this session.\n")
+        }
+
+        return summary.toString()
+    }
+
+    private enum class SquatState { UP, DOWN }
+
+    private object AngleThresholds {
+        const val SQUAT_KNEE_TRANSITION_DOWN = 150f // Angle to detect start of squat (from UP to DOWN)
+        const val SQUAT_KNEE_TRANSITION_UP = 160f   // Angle to detect end of squat (from DOWN to UP)
+        const val SQUAT_KNEE_MIN_DEPTH = 90f      // Target angle for full squat depth
+        const val PUSHUP_ELBOW_MAX = 90f // Max elbow angle for a valid push-up at the bottom
+    }
+
+    private object RelativePositionThresholds {
+        const val KNEE_TO_TOE_OFFSET = 0.05f // How far knee X can be from ankle X before warning
+        const val HIP_TO_KNEE_OFFSET = 0.05f // How far hip X can be from knee X before warning for back straightness
     }
 }

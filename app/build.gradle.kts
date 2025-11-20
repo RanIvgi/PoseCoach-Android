@@ -49,6 +49,14 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    // Add packagingOptions to explicitly pick up .so files
+    packagingOptions {
+        resources {
+            // Removed 'excludes += "/lib/**"' as it might be too aggressive
+            pickFirsts += "/lib/**/*.so"
+        }
+    }
 }
 
 dependencies {
@@ -60,7 +68,7 @@ dependencies {
     implementation("androidx.camera:camera-extensions:1.1.0")
     
     // MediaPipe Tasks – Vision (Pose Landmarker)
-    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    implementation("com.google.mediapipe:tasks-vision:0.20230731")
     
     // Core AndroidX
     implementation(libs.androidx.core.ktx)

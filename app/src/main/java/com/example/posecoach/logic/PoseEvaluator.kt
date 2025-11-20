@@ -23,7 +23,7 @@ interface PoseEvaluator {
      * @param exerciseType The type of exercise being performed (e.g., "squat", "pushup")
      * @return Feedback message to display to the user, or null if no feedback needed
      */
-    fun evaluate(poseResult: PoseResult, exerciseType: String = "general"): FeedbackMessage?
+    fun evaluate(poseResult: PoseResult, exerciseType: String = "squat"): FeedbackMessage?
     
     /**
      * Evaluate squat form specifically.
@@ -79,7 +79,7 @@ interface PoseEvaluator {
      * 
      * @return Number of reps completed, or null if not tracking
      */
-    fun getRepCount(): Int? = null
+    fun getRepCount(): Int
     
     /**
      * Get exercise-specific metrics (e.g., max depth, average speed).
@@ -88,6 +88,18 @@ interface PoseEvaluator {
      * @return Map of metric names to values
      */
     fun getMetrics(): Map<String, Any> = emptyMap()
+
+    /**
+     * Signals the start of an exercise session to begin tracking metrics like time.
+     */
+    fun startSession()
+
+    /**
+     * Generates a summary of the completed exercise session.
+     *
+     * @return A formatted string with session metrics, or null if no session was active.
+     */
+    fun getEvaluationSummary(): String?
 }
 
 /**

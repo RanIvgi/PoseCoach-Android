@@ -7,20 +7,24 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cameraswitch
-import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
@@ -34,36 +38,15 @@ import com.example.posecoach.logic.DefaultPoseEvaluator
 import com.example.posecoach.logic.PoseEvaluator
 import com.example.posecoach.pose.PoseEngine
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
-import com.google.accompanist.permissions.isGranted
 
-/**
- * CameraScreen - Student 1's Main UI Screen
- * 
- * This composable combines:
- * - CameraX preview (live camera feed)
- * - PoseOverlay (skeleton drawing)
- * - Feedback display (from Student 3's evaluation)
- * - Camera switch button
- * - FPS counter
- * 
- * Student 1 TODO List:
- * 1. Add exercise selection UI (dropdown or buttons)
- * 2. Add start/stop session buttons
- * 3. Display rep count from evaluator
- * 4. Add settings screen navigation
- * 5. Add session summary screen
- * 6. Improve feedback display styling
- * 7. Add sound/haptic feedback for form issues
- * 8. Add onboarding/tutorial overlay
- * 9. Implement dark/light theme toggle
- * 10. Add recording/playback functionality
- */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraScreen(
@@ -72,7 +55,6 @@ fun CameraScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Request camera permission
     val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
     
     LaunchedEffect(Unit) {
@@ -81,16 +63,19 @@ fun CameraScreen(
         }
     }
     
-    // Collect UI state
     val poseResult by viewModel.poseResult.collectAsState()
     val feedback by viewModel.feedback.collectAsState()
     val fps by viewModel.fps.collectAsState()
     val cameraState by viewModel.cameraState.collectAsState()
     val useGpu by viewModel.useGpuDelegate.collectAsState()
+    val cameraError by viewModel.cameraError.collectAsState()
+    val repCount by viewModel.repCount.collectAsState()
+    val sessionState by viewModel.sessionState.collectAsState()
+    val countdownValue by viewModel.countdownValue.collectAsState()
+    val summaryText by viewModel.summaryText.collectAsState()
     
     Box(modifier = Modifier.fillMaxSize()) {
         if (cameraPermission.status.isGranted) {
-            // Camera preview
             CameraPreview(
                 cameraState = cameraState,
                 onCameraReady = { provider, previewView ->
@@ -99,23 +84,40 @@ fun CameraScreen(
                 modifier = Modifier.fillMaxSize()
             )
             
-            // Pose skeleton overlay
             PoseOverlay(
                 poseResult = poseResult,
                 modifier = Modifier.fillMaxSize()
             )
             
-            // UI Controls overlay
             CameraControls(
                 feedback = feedback,
                 fps = fps,
                 useGpu = useGpu,
+                repCount = repCount,
+                sessionState = sessionState,
                 onCameraSwitch = { viewModel.switchCamera(context, lifecycleOwner) },
                 onToggleDelegate = { viewModel.toggleDelegate(context, lifecycleOwner) },
+                onResetRepCount = { viewModel.resetRepCount() },
+                onStartSession = { viewModel.startSessionCountdown() },
+                onFinishSession = { viewModel.finishSession() },
                 modifier = Modifier.fillMaxSize()
             )
+
+            if (sessionState == SessionState.COUNTDOWN) {
+                CountdownOverlay(countdownValue = countdownValue)
+            }
+
+            if (sessionState == SessionState.FINISHED && summaryText != null) {
+                SummaryDialog(
+                    summaryText = summaryText!!,
+                    onDismiss = { viewModel.resetSession() }
+                )
+            }
+            
+            cameraError?.let { errorMessage ->
+                ErrorOverlay(errorMessage = errorMessage)
+            }
         } else {
-            // Permission not granted
             PermissionDeniedScreen(
                 onRequestPermission = { cameraPermission.launchPermissionRequest() }
             )
@@ -123,9 +125,6 @@ fun CameraScreen(
     }
 }
 
-/**
- * Camera preview using CameraX.
- */
 @Composable
 private fun CameraPreview(
     cameraState: CameraState,
@@ -140,114 +139,146 @@ private fun CameraPreview(
         onCameraReady(cameraProvider, previewView)
     }
     
-    AndroidView(
-        factory = { previewView },
-        modifier = modifier
-    )
+    AndroidView(factory = { previewView }, modifier = modifier)
 }
 
-/**
- * UI controls overlaying the camera.
- */
 @Composable
 private fun CameraControls(
     feedback: FeedbackMessage?,
     fps: Float,
     useGpu: Boolean,
+    repCount: Int,
+    sessionState: SessionState,
     onCameraSwitch: () -> Unit,
     onToggleDelegate: () -> Unit,
+    onResetRepCount: () -> Unit,
+    onStartSession: () -> Unit,
+    onFinishSession: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier) {
-        // FPS counter and GPU/CPU indicator (top-right)
+        if (sessionState == SessionState.ACTIVE) {
+            Text(
+                text = "Reps: $repCount",
+                color = Color.White,
+                style = MaterialTheme.typography.h5,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .padding(8.dp)
+            )
+        }
+
         Column(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp),
+            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
             horizontalAlignment = Alignment.End
         ) {
             Text(
                 text = "FPS: %.1f".format(fps),
                 color = Color.White,
                 style = MaterialTheme.typography.caption,
-                modifier = Modifier
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .padding(8.dp)
+                modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)).padding(8.dp)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = if (useGpu) "GPU" else "CPU",
                 color = if (useGpu) Color.Green else Color.Cyan,
                 style = MaterialTheme.typography.caption,
-                modifier = Modifier
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .padding(8.dp)
+                modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)).padding(8.dp)
             )
         }
         
-        // Feedback display (bottom center)
-        feedback?.let {
-            FeedbackDisplay(
-                feedback = it,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 100.dp)
-            )
-        }
-        
-        // Bottom buttons row
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // GPU/CPU toggle button
-            FloatingActionButton(
-                onClick = onToggleDelegate,
-                backgroundColor = MaterialTheme.colors.secondary
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Memory,
-                    contentDescription = if (useGpu) "Switch to CPU" else "Switch to GPU",
-                    tint = Color.White
+        if (sessionState == SessionState.ACTIVE) {
+            feedback?.let {
+                FeedbackDisplay(
+                    feedback = it,
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
                 )
             }
+        }
+        
+        Row(
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (sessionState == SessionState.IDLE) {
+                FloatingActionButton(onClick = onStartSession, backgroundColor = Color(0xFF4CAF50)) {
+                    Icon(imageVector = Icons.Filled.PlayArrow, contentDescription = "Start Session", tint = Color.White)
+                }
+            }
+
+            if (sessionState == SessionState.ACTIVE) {
+                FloatingActionButton(onClick = onFinishSession, backgroundColor = Color(0xFFF44336)) {
+                    Icon(imageVector = Icons.Filled.Stop, contentDescription = "Finish Session", tint = Color.White)
+                }
+            }
+
+            if (sessionState == SessionState.ACTIVE) {
+                FloatingActionButton(onClick = onResetRepCount, backgroundColor = Color.Gray) {
+                    Icon(imageVector = Icons.Filled.Refresh, contentDescription = "Reset Rep Count", tint = Color.White)
+                }
+            }
             
-            // Camera switch button
-            FloatingActionButton(
-                onClick = onCameraSwitch,
-                backgroundColor = MaterialTheme.colors.primary
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Cameraswitch,
-                    contentDescription = "Switch Camera",
-                    tint = Color.White
-                )
+            FloatingActionButton(onClick = onToggleDelegate, backgroundColor = MaterialTheme.colors.secondary) {
+                Icon(imageVector = Icons.Filled.Memory, contentDescription = if (useGpu) "Switch to CPU" else "Switch to GPU", tint = Color.White)
+            }
+            
+            FloatingActionButton(onClick = onCameraSwitch, backgroundColor = MaterialTheme.colors.primary) {
+                Icon(imageVector = Icons.Filled.Cameraswitch, contentDescription = "Switch Camera", tint = Color.White)
             }
         }
     }
 }
 
-/**
- * Feedback message display.
- * TODO (Student 1): Enhance styling and animations
- */
+@Composable
+private fun CountdownOverlay(countdownValue: Int) {
+    val animatedScale by animateFloatAsState(
+        targetValue = 1.2f,
+        animationSpec = tween(durationMillis = 500)
+    )
+    
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = countdownValue.toString(),
+            fontSize = 120.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.scale(if (countdownValue > 0) animatedScale else 1f)
+        )
+    }
+}
+
+@Composable
+private fun SummaryDialog(summaryText: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Session Summary") },
+        text = { Text(summaryText) },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
+}
+
 @Composable
 private fun FeedbackDisplay(
     feedback: FeedbackMessage,
     modifier: Modifier = Modifier
 ) {
     val backgroundColor = when (feedback.severity) {
-        FeedbackSeverity.INFO -> Color(0xFF4CAF50) // Green
-        FeedbackSeverity.WARNING -> Color(0xFFFF9800) // Orange
-        FeedbackSeverity.ERROR -> Color(0xFFF44336) // Red
+        FeedbackSeverity.INFO -> Color(0xFF4CAF50)
+        FeedbackSeverity.WARNING -> Color(0xFFFF9800)
+        FeedbackSeverity.ERROR -> Color(0xFFF44336)
     }
     
     Card(
-        modifier = modifier
-            .widthIn(max = 350.dp)
-            .padding(horizontal = 16.dp),
+        modifier = modifier.widthIn(max = 350.dp).padding(horizontal = 16.dp),
         backgroundColor = backgroundColor.copy(alpha = 0.9f),
         elevation = 4.dp
     ) {
@@ -261,9 +292,6 @@ private fun FeedbackDisplay(
     }
 }
 
-/**
- * Screen shown when camera permission is denied.
- */
 @Composable
 private fun PermissionDeniedScreen(
     onRequestPermission: () -> Unit
@@ -288,10 +316,31 @@ private fun PermissionDeniedScreen(
     }
 }
 
-/**
- * ViewModel for CameraScreen.
- * Manages camera state, pose detection, and feedback evaluation.
- */
+@Composable
+private fun ErrorOverlay(errorMessage: String) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            backgroundColor = MaterialTheme.colors.error,
+            elevation = 8.dp,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(24.dp)
+            ) {
+                Text(text = "Error:", style = MaterialTheme.typography.h6, color = Color.White)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = errorMessage, style = MaterialTheme.typography.body1, color = Color.White, textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+enum class SessionState { IDLE, COUNTDOWN, ACTIVE, FINISHED }
+
 class CameraViewModel : ViewModel() {
     
     private lateinit var poseEngine: PoseEngine
@@ -312,63 +361,57 @@ class CameraViewModel : ViewModel() {
     
     private val _useGpuDelegate = MutableStateFlow(false)
     val useGpuDelegate: StateFlow<Boolean> = _useGpuDelegate.asStateFlow()
+
+    private val _cameraError = MutableStateFlow<String?>(null)
+    val cameraError: StateFlow<String?> = _cameraError.asStateFlow()
     
-    private var currentExercise = "general" // TODO: Make this configurable by Student 1
+    private val _repCount = MutableStateFlow(0)
+    val repCount: StateFlow<Int> = _repCount.asStateFlow()
     
-    /**
-     * Bind camera to lifecycle and start pose detection.
-     */
+    private val _sessionState = MutableStateFlow(SessionState.IDLE)
+    val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
+
+    private val _countdownValue = MutableStateFlow(5)
+    val countdownValue: StateFlow<Int> = _countdownValue.asStateFlow()
+
+    private val _summaryText = MutableStateFlow<String?>(null)
+    val summaryText: StateFlow<String?> = _summaryText.asStateFlow()
+    
+    private var currentExercise = "squat"
+    
     fun bindCamera(
         context: android.content.Context,
         lifecycleOwner: androidx.lifecycle.LifecycleOwner,
         cameraProvider: ProcessCameraProvider,
         previewView: PreviewView
     ) {
-        // Initialize PoseEngine if not done
         if (!::poseEngine.isInitialized) {
             poseEngine = PoseEngine(context)
             poseEngine.initialize()
             
-            // Collect pose results
             viewModelScope.launch {
                 poseEngine.poseResults.collect { result ->
-                    Log.d("CameraViewModel", "New PoseResult received: hasPose=${result?.hasPose()}, landmarks=${result?.landmarks?.size ?: 0}")
-                    _poseResult.value = result
-                    
-                    // Evaluate pose and generate feedback
-                    result?.let {
-                        val feedbackMsg = poseEvaluator.evaluate(it, currentExercise)
-                        _feedback.value = feedbackMsg
+                    if (_sessionState.value == SessionState.ACTIVE) {
+                        _poseResult.value = result
+                        result?.let {
+                            val feedbackMsg = poseEvaluator.evaluate(it, currentExercise)
+                            _feedback.value = feedbackMsg
+                            _repCount.value = poseEvaluator.getRepCount()
+                        }
+                    } else {
+                        _poseResult.value = null // Clear pose when not active
                     }
                 }
             }
             
-            // Collect FPS
-            viewModelScope.launch {
-                poseEngine.fps.collect { fpsValue ->
-                    _fps.value = fpsValue
-                }
-            }
-            
-            // Collect GPU delegate state
-            viewModelScope.launch {
-                poseEngine.useGpuDelegate.collect { useGpu ->
-                    _useGpuDelegate.value = useGpu
-                }
-            }
+            viewModelScope.launch { poseEngine.fps.collect { _fps.value = it } }
+            viewModelScope.launch { poseEngine.useGpuDelegate.collect { _useGpuDelegate.value = it } }
         }
         
-        // Unbind previous use cases
         cameraProvider.unbindAll()
         
-        // Preview use case
-        val preview = Preview.Builder()
-            .build()
-            .also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
+        val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
         
-        // Image analysis use case for pose detection
         val imageAnalysis = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
@@ -379,85 +422,74 @@ class CameraViewModel : ViewModel() {
                 }
             }
         
-        // Bind use cases to lifecycle
-        try {
-            cameraProvider.bindToLifecycle(
-                lifecycleOwner,
-                _cameraState.value.toCameraSelector(),
-                preview,
-                imageAnalysis
-            )
-        } catch (e: Exception) {
-            android.util.Log.e("CameraViewModel", "Camera binding failed", e)
+        var selectedCameraSelector: CameraSelector? = null
+        val preferredCamera = _cameraState.value.toCameraSelector()
+        if (cameraProvider.hasCamera(preferredCamera)) {
+            selectedCameraSelector = preferredCamera
+        } else if (cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
+            selectedCameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+        } else if (cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
+            selectedCameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
         }
-    }
-    
-    /**
-     * Switch between front and rear camera.
-     */
-    fun switchCamera(
-        context: android.content.Context,
-        lifecycleOwner: androidx.lifecycle.LifecycleOwner
-    ) {
-        _cameraState.value = _cameraState.value.toggle()
+
+        if (selectedCameraSelector == null) {
+            _cameraError.value = "No suitable camera found on this device."
+            return
+        }
+        _cameraError.value = null
         
-        // Rebind camera with new state
-        viewModelScope.launch {
-            val cameraProvider = ProcessCameraProvider.getInstance(context).get()
-            // Note: previewView needs to be passed here
-            // TODO (Student 1): Refactor to handle this better
+        try {
+            cameraProvider.bindToLifecycle(lifecycleOwner, selectedCameraSelector, preview, imageAnalysis)
+        } catch (e: Exception) {
+            _cameraError.value = "Camera binding failed: ${e.message}"
         }
     }
     
-    /**
-     * Toggle between GPU and CPU delegate.
-     * Reinitializes PoseEngine with new delegate.
-     */
-    fun toggleDelegate(
-        context: android.content.Context,
-        lifecycleOwner: androidx.lifecycle.LifecycleOwner
-    ) {
+    fun switchCamera(context: android.content.Context, lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
+        _cameraState.value = _cameraState.value.toggle()
+    }
+    
+    fun toggleDelegate(context: android.content.Context, lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         viewModelScope.launch {
-            // Close existing engine
-            if (::poseEngine.isInitialized) {
-                poseEngine.close()
-            }
-            
-            // Create new engine with toggled delegate
+            if (::poseEngine.isInitialized) poseEngine.close()
             poseEngine = PoseEngine(context)
             poseEngine.toggleDelegate()
             poseEngine.initialize()
-            
-            // Restart result collection
-            launch {
-                poseEngine.poseResults.collect { result ->
-                    Log.d("CameraViewModel", "New PoseResult received: hasPose=${result?.hasPose()}, landmarks=${result?.landmarks?.size ?: 0}")
-                    _poseResult.value = result
-                    
-                    result?.let {
-                        val feedbackMsg = poseEvaluator.evaluate(it, currentExercise)
-                        _feedback.value = feedbackMsg
-                    }
-                }
-            }
-            
-            launch {
-                poseEngine.fps.collect { fpsValue ->
-                    _fps.value = fpsValue
-                }
-            }
-            
-            launch {
-                poseEngine.useGpuDelegate.collect { useGpu ->
-                    _useGpuDelegate.value = useGpu
-                }
-            }
-            
-            // Rebind camera to restart analysis with new engine
-            val cameraProvider = ProcessCameraProvider.getInstance(context).get()
-            // Note: This is a simplified approach
-            // TODO (Student 1): Pass previewView properly for complete rebinding
         }
+    }
+
+    fun startSessionCountdown() {
+        if (_sessionState.value == SessionState.IDLE) {
+            viewModelScope.launch {
+                _sessionState.value = SessionState.COUNTDOWN
+                for (i in 5 downTo 1) {
+                    _countdownValue.value = i
+                    delay(1000)
+                }
+                poseEvaluator.startSession()
+                _sessionState.value = SessionState.ACTIVE
+            }
+        }
+    }
+
+    fun finishSession() {
+        if (_sessionState.value == SessionState.ACTIVE) {
+            _summaryText.value = poseEvaluator.getEvaluationSummary()
+            _sessionState.value = SessionState.FINISHED
+        }
+    }
+    
+    fun resetSession() {
+        poseEvaluator.reset()
+        _repCount.value = 0
+        _sessionState.value = SessionState.IDLE
+        _summaryText.value = null
+        _feedback.value = null
+    }
+
+    fun resetRepCount() {
+        poseEvaluator.reset()
+        _repCount.value = 0
     }
     
     override fun onCleared() {
@@ -466,3 +498,4 @@ class CameraViewModel : ViewModel() {
         cameraExecutor.shutdown()
     }
 }
+private fun Modifier.scale(scale: Float) = this.then(Modifier.graphicsLayer(scaleX = scale, scaleY = scale))
