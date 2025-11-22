@@ -7,26 +7,60 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Material Typography for PoseCoach
- * 
- * Student 1 TODO:
- * - Import custom fonts if desired
- * - Adjust text styles to match design
+ * Typography settings for the PoseCoach app.
+ *
+ * The goal here is to keep the text clean and easy to read on top of
+ * the camera preview and blue theme. We use the default sans-serif
+ * system font, with a simple hierarchy for titles, body text and
+ * small labels.
  */
 val Typography = Typography(
-    body1 = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp
+    // Main screen titles / section headers
+    h4 = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 30.sp
     ),
+
+    // Smaller titles (e.g. dialogs, cards)
+    h5 = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 24.sp
+    ),
+
+    // Toolbar titles / small headers
     h6 = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Medium,
         fontSize = 20.sp
     ),
+
+    // Primary body text (used most in the app)
+    body1 = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp
+    ),
+
+    // Secondary body text (less important info, hints)
+    body2 = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp
+    ),
+
+    // For small labels like FPS, chip text, etc.
     caption = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp
+    ),
+
+    // Buttons: slightly bolder so they stand out
+    button = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp
     )
 )
