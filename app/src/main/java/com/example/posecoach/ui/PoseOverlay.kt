@@ -196,7 +196,7 @@ private fun DrawScope.drawPoseConnections(
                 color = color,
                 start = start,
                 end = end,
-                strokeWidth = 4f,
+                strokeWidth = 6f,
                 cap = StrokeCap.Round,
                 alpha = visibility.coerceIn(0.15f, 0.9f)
             )
@@ -209,14 +209,25 @@ private fun DrawScope.drawPoseConnections(
  */
 private fun getLandmarkColor(index: Int): Color {
     return when (index) {
-        in 0..10 -> Color(0xFFFFEB3B)   // face
-        in 11..16 -> Color(0xFF4CAF50)  // left arm
-        in 17..22 -> Color(0xFF2196F3)  // right arm
-        in 23..28 -> Color(0xFF00BCD4)  // left leg
-        in 29..32 -> Color(0xFFE91E63)  // right leg
+        // face
+        in 0..10 -> Color(0xFFFFEB3B)
+
+        // LEFT ARM (shoulder, elbow, wrist, fingers)
+        11, 13, 15, 17, 19, 21 -> Color(0xFF4CAF50)
+
+        // RIGHT ARM
+        12, 14, 16, 18, 20, 22 -> Color(0xFF2196F3)
+
+        // LEFT LEG (hip, knee, ankle, heel, foot)
+        23, 25, 27, 29, 31 -> Color(0xFFFFC1E3)
+
+        // RIGHT LEG
+        24, 26, 28, 30, 32 -> Color(0xFFE91E63)
+
         else -> Color.White
     }
 }
+
 
 private fun getConnectionColor(start: Int, end: Int): Color {
     return getLandmarkColor(start).copy(alpha = 0.8f)
