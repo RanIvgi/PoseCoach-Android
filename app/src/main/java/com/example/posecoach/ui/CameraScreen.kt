@@ -271,14 +271,17 @@ private fun FeedbackDisplay(
     feedback: FeedbackMessage,
     modifier: Modifier = Modifier
 ) {
+    // Semantic colors: green = info/success, yellow = warning, red = error
     val backgroundColor = when (feedback.severity) {
-        FeedbackSeverity.INFO -> Color(0xFF4CAF50)
-        FeedbackSeverity.WARNING -> Color(0xFFFF9800)
-        FeedbackSeverity.ERROR -> Color(0xFFF44336)
+        FeedbackSeverity.INFO -> Color(0xFF4ED58A)     // green
+        FeedbackSeverity.WARNING -> Color(0xFFFFC93C) // yellow / amber
+        FeedbackSeverity.ERROR -> Color(0xFFE53935)   // strong red
     }
-    
+
     Card(
-        modifier = modifier.widthIn(max = 350.dp).padding(horizontal = 16.dp),
+        modifier = modifier
+            .widthIn(max = 350.dp)
+            .padding(horizontal = 16.dp),
         backgroundColor = backgroundColor.copy(alpha = 0.9f),
         elevation = 4.dp
     ) {
