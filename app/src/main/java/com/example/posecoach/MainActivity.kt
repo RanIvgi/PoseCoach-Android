@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.ui.Modifier
-import com.example.posecoach.ui.CameraScreen
+import com.example.posecoach.ui.PoseCoachApp
 import com.example.posecoach.ui.theme.PoseCoachTheme
 
 /**
@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    CameraScreen()
+                    PoseCoachApp()
                 }
             }
         }
