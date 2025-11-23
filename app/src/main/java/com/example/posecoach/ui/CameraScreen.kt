@@ -55,6 +55,7 @@ fun CameraScreen(
     val sessionState by viewModel.sessionState.collectAsState()
     val countdownValue by viewModel.countdownValue.collectAsState()
     val summaryText by viewModel.summaryText.collectAsState()
+    val navigateHomeAfterSummary by viewModel.navigateHomeAfterSummary.collectAsState()
 
     var infoExerciseId by remember { mutableStateOf<String?>(null) }
 
@@ -91,7 +92,13 @@ fun CameraScreen(
                     infoExerciseId = id
                 },
                 onTargetRepsChange = { value -> viewModel.setTargetReps(value) },
-                onBackToHome = navBackToStart,
+                onBackToHome = {
+                    if (sessionState == SessionState.ACTIVE) {
+                        viewModel.finishSessionAndGoHome()
+                    } else {
+                        navBackToStart()
+                    }
+                },
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -102,7 +109,13 @@ fun CameraScreen(
             if (sessionState == SessionState.FINISHED && summaryText != null) {
                 SummaryDialog(
                     summaryText = summaryText!!,
-                    onDismiss = { viewModel.resetSession() }
+                    onDismiss = {
+                        val shouldGoHome = navigateHomeAfterSummary
+                        viewModel.resetSession()
+                        if (shouldGoHome) {
+                            navBackToStart()
+                        }
+                    }
                 )
             }
 

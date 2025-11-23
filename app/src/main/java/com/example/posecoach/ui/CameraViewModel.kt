@@ -22,6 +22,14 @@ import java.util.concurrent.Executors
 
 enum class SessionState { IDLE, COUNTDOWN, ACTIVE, FINISHED }
 
+// Per-exercise session summary
+data class ExerciseSessionSummary(
+    val exerciseId: String,
+    val exerciseName: String,
+    val reps: Int,
+    val durationMillis: Long
+)
+
 class CameraViewModel : ViewModel() {
 
     private lateinit var poseEngine: PoseEngine
@@ -66,6 +74,12 @@ class CameraViewModel : ViewModel() {
 
     private var sessionStartTimeMillis: Long? = null
 
+    private val _workoutSessions = MutableStateFlow<List<ExerciseSessionSummary>>(emptyList())
+    val workoutSessions: StateFlow<List<ExerciseSessionSummary>> = _workoutSessions.asStateFlow()
+
+    private val _navigateHomeAfterSummary = MutableStateFlow(false)
+    val navigateHomeAfterSummary: StateFlow<Boolean> = _navigateHomeAfterSummary.asStateFlow()
+
     fun setTargetReps(target: Int) {
         _targetReps.value = target
     }
@@ -74,6 +88,11 @@ class CameraViewModel : ViewModel() {
         _currentExercise.value = exercise
         poseEvaluator.reset()
         _repCount.value = 0
+    }
+
+    fun finishSessionAndGoHome() {
+        _navigateHomeAfterSummary.value = true
+        finishSession()
     }
 
     fun bindCamera(
@@ -183,9 +202,10 @@ class CameraViewModel : ViewModel() {
 
     fun finishSession() {
         if (_sessionState.value == SessionState.ACTIVE) {
+
             val now = System.currentTimeMillis()
 
-            // If for some reason start time is null, use 0 duration
+            // how long the session lasted in ms (if start time is null, use 0)
             val durationMillis = sessionStartTimeMillis?.let { start ->
                 now - start
             } ?: 0L
@@ -193,17 +213,40 @@ class CameraViewModel : ViewModel() {
             val durationText = formatDuration(durationMillis)
             val formSummary = poseEvaluator.getEvaluationSummary()
 
+            // Save this exercise into the "workout" list
+            val current = ExerciseSessionSummary(
+                exerciseId = _currentExercise.value,
+                exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
+                reps = _repCount.value,
+                durationMillis = durationMillis
+            )
+            _workoutSessions.value = _workoutSessions.value + current
+
+            // Compute workout totals
+            val totalReps = _workoutSessions.value.sumOf { it.reps }
+            val totalDurationMillis = _workoutSessions.value.sumOf { it.durationMillis }
+            val totalDurationText = formatDuration(totalDurationMillis)
+            val totalExercises = _workoutSessions.value.size
+
+            // Build the full text for the dialog
             val fullSummary = buildString {
-                appendLine("Exercise: ${_currentExercise.value}")
-                appendLine("Target reps: ${_targetReps.value}")
-                appendLine("Completed reps: ${_repCount.value}")
-                appendLine("Session duration: $durationText")
+                appendLine("Current session:")
+                appendLine("• Exercise: ${_currentExercise.value}")
+                appendLine("• Target reps: ${_targetReps.value}")
+                appendLine("• Completed reps: ${_repCount.value}")
+                appendLine("• Session duration: $durationText")
 
                 if (!formSummary.isNullOrBlank()) {
                     appendLine()
                     appendLine("Form feedback:")
                     appendLine(formSummary)
                 }
+
+                appendLine()
+                appendLine("Workout so far:")
+                appendLine("• Exercises completed: $totalExercises")
+                appendLine("• Total reps: $totalReps")
+                appendLine("• Total time: $totalDurationText")
             }
 
             _summaryText.value = fullSummary
@@ -219,6 +262,7 @@ class CameraViewModel : ViewModel() {
         _summaryText.value = null
         _feedback.value = null
         sessionStartTimeMillis = null
+        _navigateHomeAfterSummary.value = false     // add this line
     }
 
     fun resetRepCount() {
@@ -239,5 +283,10 @@ class CameraViewModel : ViewModel() {
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60
         return String.format("%02d:%02d", minutes, seconds)
+    }
+
+    fun resetWorkout() {
+        _workoutSessions.value = emptyList()
+        resetSession()
     }
 }
