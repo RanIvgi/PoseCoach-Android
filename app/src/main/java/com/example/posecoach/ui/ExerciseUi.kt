@@ -13,12 +13,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.posecoach.R
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 
 data class ExerciseUi(
     val id: String,
     val title: String,
     val description: String,
-    val instructions: List<String>
+    val instructions: List<String>,
+    val logoRes: Int
 )
 
 val exercises = listOf(
@@ -32,7 +36,8 @@ val exercises = listOf(
             "Keep your chest up and back straight.",
             "Bend your knees until thighs are parallel to the ground.",
             "Push through heels to stand back up."
-        )
+        ),
+        logoRes = R.drawable.squat_logo
     ),
     ExerciseUi(
         id = "pushup",
@@ -44,7 +49,8 @@ val exercises = listOf(
             "Lower yourself until your chest nearly touches the floor.",
             "Keep elbows tucked at about 45 degrees.",
             "Push back up while keeping core engaged."
-        )
+        ),
+        logoRes = R.drawable.pushup_logo
     ),
     ExerciseUi(
         id = "plank",
@@ -56,7 +62,8 @@ val exercises = listOf(
             "Engage your core and squeeze glutes.",
             "Look down to keep neck neutral.",
             "Hold as long as you can with proper form."
-        )
+        ),
+        logoRes = R.drawable.plank_logo
     )
 )
 
@@ -85,6 +92,15 @@ fun ExerciseInfoOverlay(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Image(
+                    painter = painterResource(exercise.logoRes),
+                    contentDescription = exercise.title,
+                    modifier = Modifier
+                        .size(90.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 8.dp)
+                )
+
                 Text(
                     text = exercise.title,
                     color = Color.White,

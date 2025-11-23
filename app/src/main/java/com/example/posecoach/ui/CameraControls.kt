@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.posecoach.data.FeedbackMessage
 import com.example.posecoach.data.FeedbackSeverity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
 
 @Composable
 fun CameraControls(
@@ -259,18 +261,34 @@ fun ExerciseSelector(
                     .padding(vertical = 4.dp)
                     .clickable { onExerciseSelected(exercise.id) }
             ) {
-                Column(modifier = Modifier.padding(10.dp)) {
-                    Text(
-                        text = exercise.title,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    // Exercise Logo
+                    Image(
+                        painter = painterResource(exercise.logoRes),
+                        contentDescription = exercise.title,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .padding(end = 12.dp)
                     )
-                    if (selected) {
+
+                    Column {
                         Text(
-                            text = "Tap to view instructions",
-                            color = Color.White.copy(alpha = 0.85f),
-                            style = MaterialTheme.typography.caption
+                            text = exercise.title,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
                         )
+
+                        if (selected) {
+                            Text(
+                                text = "Tap to view instructions",
+                                color = Color.White.copy(alpha = 0.85f),
+                                style = MaterialTheme.typography.caption
+                            )
+                        }
                     }
                 }
             }
