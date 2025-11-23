@@ -83,24 +83,29 @@ fun CameraControls(
                 .padding(16.dp),
             horizontalAlignment = Alignment.End
         ) {
-            if (sessionState == SessionState.ACTIVE) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = onBackToHome,
-                        modifier = Modifier.height(32.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF1565C0)
-                        )
-                    ) {
-                        Text(
-                            text = "Home",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
 
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Home is always shown (IDLE and ACTIVE)
+                Button(
+                    onClick = onBackToHome,
+                    modifier = Modifier.height(32.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFF1565C0)
+                    )
+                ) {
+                    Text(
+                        text = "Home",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // End is shown only when a session is ACTIVE
+                if (sessionState == SessionState.ACTIVE) {
                     Button(
                         onClick = onFinishSession,
                         modifier = Modifier.height(32.dp),
@@ -117,9 +122,9 @@ fun CameraControls(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "FPS: %.1f".format(fps),
