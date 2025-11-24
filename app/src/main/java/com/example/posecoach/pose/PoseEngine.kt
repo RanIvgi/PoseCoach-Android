@@ -224,6 +224,85 @@ class PoseEngine(private val context: Context) {
     }
     
     /**
+     * Process a single image/bitmap and detect pose landmarks synchronously.
+     * Use this for video frame analysis where you have pre-extracted frames.
+     * 
+     * @param bitmap The image to analyze
+     * @return PoseResult containing detected landmarks, or null if detection fails
+     */
+    suspend fun detectPoseFromBitmap(bitmap: Bitmap): PoseResult? {
+        return try {
+            // For image mode, we need a different landmarker instance
+            // Create a temporary one if needed
+            val imageLandmarker = createImageModeLandmarker() ?: return null
+            
+            // Convert Bitmap to MPImage
+            val mpImage = BitmapImageBuilder(bitmap).build()
+            
+            // Detect pose synchronously
+            val result = imageLandmarker.detect(mpImage)
+            
+            // Extract landmarks
+            val poseLandmarks = result.landmarks().firstOrNull()
+            
+            if (poseLandmarks != null && poseLandmarks.isNotEmpty()) {
+                val landmarks = poseLandmarks.map { landmark ->
+                    PoseLandmark(
+                        x = landmark.x(),
+                        y = landmark.y(),
+                        z = landmark.z(),
+                        visibility = landmark.visibility().orElse(1.0f),
+                        presence = landmark.presence().orElse(1.0f)
+                    )
+                }
+                
+                PoseResult(
+                    landmarks = landmarks,
+                    timestamp = System.currentTimeMillis(),
+                    imageWidth = bitmap.width,
+                    imageHeight = bitmap.height,
+                    isFrontCamera = false
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error detecting pose from bitmap", e)
+            null
+        }
+    }
+    
+    /**
+     * Create a PoseLandmarker instance configured for IMAGE mode.
+     * Used for analyzing pre-extracted video frames.
+     */
+    private fun createImageModeLandmarker(): PoseLandmarker? {
+        return try {
+            val delegate = if (_useGpuDelegate.value) Delegate.GPU else Delegate.CPU
+            
+            val baseOptions = BaseOptions.builder()
+                .setDelegate(delegate)
+                .setModelAssetPath("pose_landmarker_full.task")
+                .build()
+            
+            val options = PoseLandmarker.PoseLandmarkerOptions.builder()
+                .setBaseOptions(baseOptions)
+                .setRunningMode(RunningMode.IMAGE) // IMAGE mode for single frames
+                .setMinPoseDetectionConfidence(0.5f)
+                .setMinPosePresenceConfidence(0.5f)
+                .setMinTrackingConfidence(0.5f)
+                .setNumPoses(1)
+                .setOutputSegmentationMasks(false)
+                .build()
+            
+            PoseLandmarker.createFromOptions(context, options)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create image mode landmarker", e)
+            null
+        }
+    }
+    
+    /**
      * Handle pose detection result from MediaPipe.
      * This is called by MediaPipe's result listener on a background thread.
      */
