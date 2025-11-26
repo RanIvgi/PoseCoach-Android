@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.posecoach.data.CameraState
 import com.example.posecoach.data.FeedbackMessage
+import com.example.posecoach.data.LiveSessionResult
 import com.example.posecoach.data.PoseResult
 import com.example.posecoach.logic.DefaultPoseEvaluator
 import com.example.posecoach.logic.PoseEvaluator
@@ -80,6 +81,12 @@ class CameraViewModel : ViewModel() {
     private val _navigateHomeAfterSummary = MutableStateFlow(false)
     val navigateHomeAfterSummary: StateFlow<Boolean> = _navigateHomeAfterSummary.asStateFlow()
 
+    private val _sessionResult = MutableStateFlow<LiveSessionResult?>(null)
+    val sessionResult: StateFlow<LiveSessionResult?> = _sessionResult.asStateFlow()
+
+    // Track feedback history during active session
+    private val sessionFeedbackHistory = mutableListOf<FeedbackMessage>()
+
     fun setTargetReps(target: Int) {
         _targetReps.value = target
     }
@@ -112,6 +119,16 @@ class CameraViewModel : ViewModel() {
                         result?.let {
                             val feedbackMsg = poseEvaluator.evaluate(it, _currentExercise.value)
                             _feedback.value = feedbackMsg
+                            
+                            // Collect feedback for session summary
+                            feedbackMsg?.let { msg ->
+                                // Avoid duplicates of the same message
+                                if (sessionFeedbackHistory.isEmpty() || 
+                                    sessionFeedbackHistory.last().text != msg.text) {
+                                    sessionFeedbackHistory.add(msg)
+                                }
+                            }
+                            
                             _repCount.value = poseEvaluator.getRepCount()
                         }
                     } else {
@@ -195,6 +212,7 @@ class CameraViewModel : ViewModel() {
                 // Countdown done: start session & timer
                 poseEvaluator.startSession()
                 sessionStartTimeMillis = System.currentTimeMillis()
+                sessionFeedbackHistory.clear() // Clear previous feedback
                 _sessionState.value = SessionState.ACTIVE
             }
         }
@@ -210,8 +228,10 @@ class CameraViewModel : ViewModel() {
                 now - start
             } ?: 0L
 
-            val durationText = formatDuration(durationMillis)
             val formSummary = poseEvaluator.getEvaluationSummary()
+
+            // Calculate overall score from feedback history
+            val overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory)
 
             // Save this exercise into the "workout" list
             val current = ExerciseSessionSummary(
@@ -228,28 +248,22 @@ class CameraViewModel : ViewModel() {
             val totalDurationText = formatDuration(totalDurationMillis)
             val totalExercises = _workoutSessions.value.size
 
-            // Build the full text for the dialog
-            val fullSummary = buildString {
-                appendLine("Current session:")
-                appendLine("• Exercise: ${_currentExercise.value}")
-                appendLine("• Target reps: ${_targetReps.value}")
-                appendLine("• Completed reps: ${_repCount.value}")
-                appendLine("• Session duration: $durationText")
+            // Create comprehensive session result
+            val sessionResult = LiveSessionResult(
+                exerciseType = _currentExercise.value,
+                exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
+                targetReps = _targetReps.value,
+                completedReps = _repCount.value,
+                durationMillis = durationMillis,
+                feedbackMessages = sessionFeedbackHistory.toList(), // Copy the list
+                evaluationSummary = formSummary,
+                overallScore = overallScore,
+                totalExercises = totalExercises,
+                totalReps = totalReps,
+                totalDurationMillis = totalDurationMillis
+            )
 
-                if (!formSummary.isNullOrBlank()) {
-                    appendLine()
-                    appendLine("Form feedback:")
-                    appendLine(formSummary)
-                }
-
-                appendLine()
-                appendLine("Workout so far:")
-                appendLine("• Exercises completed: $totalExercises")
-                appendLine("• Total reps: $totalReps")
-                appendLine("• Total time: $totalDurationText")
-            }
-
-            _summaryText.value = fullSummary
+            _sessionResult.value = sessionResult
             _sessionState.value = SessionState.FINISHED
             sessionStartTimeMillis = null
         }
@@ -260,9 +274,11 @@ class CameraViewModel : ViewModel() {
         _repCount.value = 0
         _sessionState.value = SessionState.IDLE
         _summaryText.value = null
+        _sessionResult.value = null
         _feedback.value = null
         sessionStartTimeMillis = null
-        _navigateHomeAfterSummary.value = false     // add this line
+        sessionFeedbackHistory.clear()
+        _navigateHomeAfterSummary.value = false
     }
 
     fun resetRepCount() {

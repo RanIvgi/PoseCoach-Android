@@ -7,10 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,11 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.posecoach.data.FeedbackMessage
 import com.example.posecoach.data.FeedbackSeverity
+import com.example.posecoach.data.LiveSessionResult
 
 @Composable
-fun VideoResultsScreen(
-    analysisResult: com.example.posecoach.data.VideoAnalysisResult,
-    navBackToStart: () -> Unit
+fun LiveSessionResultsScreen(
+    sessionResult: LiveSessionResult,
+    navBackToStart: () -> Unit,
+    onStartNewExercise: () -> Unit
 ) {
     val gradient = Brush.verticalGradient(
         colors = listOf(
@@ -35,15 +34,6 @@ fun VideoResultsScreen(
             Color(0xFF42A5F5)
         )
     )
-    
-    val exerciseName = when (analysisResult.exerciseType) {
-        "pushup" -> "Push-ups"
-        "squat" -> "Squats"
-        "plank" -> "Plank"
-        else -> "Exercise"
-    }
-    
-    val overallScore = analysisResult.overallScore
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -71,7 +61,7 @@ fun VideoResultsScreen(
                         )
                     }
                     Text(
-                        text = "Analysis Results",
+                        text = "Session Complete!",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -83,7 +73,7 @@ fun VideoResultsScreen(
 
                 // Exercise title
                 Text(
-                    text = exerciseName,
+                    text = sessionResult.exerciseName,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -112,7 +102,7 @@ fun VideoResultsScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "$overallScore%",
+                            text = "${sessionResult.overallScore}%",
                             color = Color.White,
                             fontSize = 48.sp,
                             fontWeight = FontWeight.Bold
@@ -120,8 +110,8 @@ fun VideoResultsScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = when {
-                                overallScore >= 80 -> "Excellent Form!"
-                                overallScore >= 60 -> "Good Form - Minor improvements needed"
+                                sessionResult.overallScore >= 80 -> "Excellent Form!"
+                                sessionResult.overallScore >= 60 -> "Good Form - Minor improvements needed"
                                 else -> "Form needs improvement"
                             },
                             color = Color.White.copy(alpha = 0.9f),
@@ -133,7 +123,7 @@ fun VideoResultsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Analysis stats card
+                // Session stats card
                 Card(
                     backgroundColor = Color.White.copy(alpha = 0.15f),
                     shape = RoundedCornerShape(16.dp),
@@ -144,39 +134,76 @@ fun VideoResultsScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "Analysis Stats",
+                            text = "Session Stats",
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         
-                        StatRow("Reps Counted", "${analysisResult.repCount}")
-                        StatRow("Frames Analyzed", "${analysisResult.totalFramesAnalyzed}")
-                        StatRow("Pose Detected", "${analysisResult.framesWithPoseDetected} frames")
+                        StatRow("Completed Reps", "${sessionResult.completedReps}")
+                        StatRow("Target Reps", "${sessionResult.targetReps}")
+                        StatRow("Duration", formatDuration(sessionResult.durationMillis))
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Feedback section
-                Text(
-                    text = "Detailed Feedback:",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Feedback list
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(analysisResult.feedbackMessages) { feedback ->
-                        FeedbackCard(feedback)
+                // Workout totals card
+                if (sessionResult.totalExercises > 1) {
+                    Card(
+                        backgroundColor = Color.White.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = 0.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Workout Totals",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            StatRow("Exercises", "${sessionResult.totalExercises}")
+                            StatRow("Total Reps", "${sessionResult.totalReps}")
+                            StatRow("Total Time", formatDuration(sessionResult.totalDurationMillis))
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Feedback section
+                if (sessionResult.feedbackMessages.isNotEmpty()) {
+                    Text(
+                        text = "Form Feedback:",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Feedback list
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Show unique feedback messages (deduplicate)
+                        val uniqueFeedback = sessionResult.feedbackMessages
+                            .distinctBy { it.text }
+                            .take(10) // Limit to 10 most relevant messages
+                        
+                        items(uniqueFeedback) { feedback ->
+                            FeedbackCard(feedback)
+                        }
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -187,6 +214,30 @@ fun VideoResultsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
+                        onClick = onStartNewExercise,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color(0xFF4CAF50)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "New Exercise",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    
+                    Button(
                         onClick = navBackToStart,
                         modifier = Modifier
                             .weight(1f)
@@ -196,8 +247,14 @@ fun VideoResultsScreen(
                             backgroundColor = Color(0xFF0B3C91)
                         )
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Home,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Done",
+                            text = "Home",
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
@@ -278,4 +335,11 @@ private fun FeedbackCard(feedback: FeedbackMessage) {
             )
         }
     }
+}
+
+private fun formatDuration(millis: Long): String {
+    val totalSeconds = millis / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format("%02d:%02d", minutes, seconds)
 }

@@ -30,6 +30,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 @Composable
 fun CameraScreen(
     navBackToStart: () -> Unit,
+    navToSessionResults: () -> Unit,
     viewModel: CameraViewModel = viewModel()
 ) {
     val currentExercise by viewModel.currentExercise.collectAsState()
@@ -56,8 +57,16 @@ fun CameraScreen(
     val countdownValue by viewModel.countdownValue.collectAsState()
     val summaryText by viewModel.summaryText.collectAsState()
     val navigateHomeAfterSummary by viewModel.navigateHomeAfterSummary.collectAsState()
+    val sessionResult by viewModel.sessionResult.collectAsState()
 
     var infoExerciseId by remember { mutableStateOf<String?>(null) }
+
+    // Navigate to results screen when session finishes
+    LaunchedEffect(sessionResult) {
+        sessionResult?.let {
+            navToSessionResults()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (cameraPermission.status.isGranted) {
@@ -104,19 +113,6 @@ fun CameraScreen(
 
             if (sessionState == SessionState.COUNTDOWN) {
                 CountdownOverlay(countdownValue = countdownValue)
-            }
-
-            if (sessionState == SessionState.FINISHED && summaryText != null) {
-                SummaryDialog(
-                    summaryText = summaryText!!,
-                    onDismiss = {
-                        val shouldGoHome = navigateHomeAfterSummary
-                        viewModel.resetSession()
-                        if (shouldGoHome) {
-                            navBackToStart()
-                        }
-                    }
-                )
             }
 
             if (sessionState == SessionState.IDLE) {

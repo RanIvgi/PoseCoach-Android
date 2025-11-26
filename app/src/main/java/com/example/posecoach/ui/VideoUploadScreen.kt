@@ -27,9 +27,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun VideoUploadScreen(
+    viewModel: VideoAnalysisViewModel,
     navBackToStart: () -> Unit,
-    navToResults: (String, String) -> Unit,
-    viewModel: VideoAnalysisViewModel = viewModel()
+    navToResults: (String, String) -> Unit
 ) {
     val selectedVideoUri by viewModel.selectedVideoUri.collectAsState()
     val selectedExercise by viewModel.selectedExercise.collectAsState()
