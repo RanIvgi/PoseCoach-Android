@@ -152,7 +152,15 @@ class CameraViewModel : ViewModel() {
             .build()
             .also {
                 it.setAnalyzer(cameraExecutor) { imageProxy ->
-                    poseEngine.detectPose(imageProxy, _cameraState.value.isFront())
+                    // PERFORMANCE OPTIMIZATION: Only process frames during ACTIVE or COUNTDOWN sessions
+                    // This prevents wasted CPU cycles when user is idle on the camera screen.
+                    // Frame processing involves expensive operations (bitmap conversion, MediaPipe inference)
+                    // that should only run when actively needed.
+                    // During IDLE state, the camera preview still shows but pose detection is skipped.
+                    val currentState = _sessionState.value
+                    if (currentState == SessionState.ACTIVE || currentState == SessionState.COUNTDOWN) {
+                        poseEngine.detectPose(imageProxy, _cameraState.value.isFront())
+                    }
                     imageProxy.close()
                 }
             }
