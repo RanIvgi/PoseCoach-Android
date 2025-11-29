@@ -31,6 +31,8 @@ fun PoseOverlay(
     showLandmarks: Boolean = true,
     showConnections: Boolean = true
 ) {
+    LogCompositions("PoseOverlay")
+    
     // Collect the pose result locally - this prevents parent recomposition
     val poseResult by poseResultFlow.collectAsState()
     

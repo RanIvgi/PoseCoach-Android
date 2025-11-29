@@ -1,6 +1,7 @@
 package com.example.posecoach.ui
 
 import android.Manifest
+import android.util.Log
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,6 +27,23 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 
+/**
+ * Recomposition tracker for performance debugging.
+ * Logs every time a composable recomposes.
+ * 
+ * USAGE: Add `LogCompositions("ComponentName")` at the top of any @Composable function.
+ * Then filter logcat for "Recomposition-Track" to see which components recompose too often.
+ */
+@Composable
+fun LogCompositions(tag: String) {
+    class Ref(var value: Int)
+    val ref = remember { Ref(0) }
+    SideEffect {
+        ref.value++
+        Log.d("Recomposition-Track", "$tag: recomposed ${ref.value} times")
+    }
+}
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraScreen(
@@ -33,6 +51,8 @@ fun CameraScreen(
     navToSessionResults: () -> Unit,
     viewModel: CameraViewModel = viewModel()
 ) {
+    LogCompositions("CameraScreen")
+    
     val currentExercise by viewModel.currentExercise.collectAsState()
     val targetReps by viewModel.targetReps.collectAsState()
     val context = LocalContext.current
@@ -157,6 +177,8 @@ private fun CameraPreview(
     onCameraReady: (ProcessCameraProvider, PreviewView) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    LogCompositions("CameraPreview")
+    
     val context = LocalContext.current
     val previewView = remember { PreviewView(context) }
 
@@ -170,6 +192,8 @@ private fun CameraPreview(
 
 @Composable
 private fun CountdownOverlay(countdownValue: Int) {
+    LogCompositions("CountdownOverlay")
+    
     val animatedScale by animateFloatAsState(
         targetValue = 1.2f,
         animationSpec = tween(durationMillis = 500)
@@ -193,6 +217,8 @@ private fun CountdownOverlay(countdownValue: Int) {
 
 @Composable
 private fun SummaryDialog(summaryText: String, onDismiss: () -> Unit) {
+    LogCompositions("SummaryDialog")
+    
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Session Summary") },
@@ -209,6 +235,8 @@ private fun SummaryDialog(summaryText: String, onDismiss: () -> Unit) {
 private fun PermissionDeniedScreen(
     onRequestPermission: () -> Unit
 ) {
+    LogCompositions("PermissionDeniedScreen")
+    
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -231,6 +259,8 @@ private fun PermissionDeniedScreen(
 
 @Composable
 private fun ErrorOverlay(errorMessage: String) {
+    LogCompositions("ErrorOverlay")
+    
     Box(
         modifier = Modifier
             .fillMaxSize()

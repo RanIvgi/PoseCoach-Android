@@ -42,6 +42,8 @@ fun CameraControls(
     onBackToHome: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    LogCompositions("CameraControls")
+    
     Box(modifier = modifier) {
 
         if (sessionState == SessionState.IDLE) {
@@ -236,6 +238,8 @@ fun ExerciseSelector(
     onExerciseSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    LogCompositions("ExerciseSelector")
+    
     Column(
         modifier = modifier
             .background(Color.Black.copy(alpha = 0.5f))
@@ -302,6 +306,8 @@ fun TargetRepsSelector(
     onTargetRepsChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    LogCompositions("TargetRepsSelector")
+    
     val options = (1..30).toList()
 
     Column(
@@ -352,6 +358,8 @@ fun FeedbackDisplay(
     feedback: FeedbackMessage,
     modifier: Modifier = Modifier
 ) {
+    LogCompositions("FeedbackDisplay")
+    
     val backgroundColor = when (feedback.severity) {
         FeedbackSeverity.INFO -> Color(0xFF4ED58A)
         FeedbackSeverity.WARNING -> Color(0xFFFFC93C)

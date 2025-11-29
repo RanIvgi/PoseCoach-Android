@@ -73,6 +73,8 @@ fun ExerciseInfoOverlay(
     onCancel: () -> Unit,
     onConfirmStart: () -> Unit
 ) {
+    LogCompositions("ExerciseInfoOverlay")
+    
     var understood = remember { mutableStateOf(false) }
 
     Box(
