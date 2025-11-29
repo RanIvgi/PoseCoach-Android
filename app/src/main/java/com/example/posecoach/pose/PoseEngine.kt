@@ -72,7 +72,7 @@ class PoseEngine(private val context: Context) {
     val fps: StateFlow<Float> = _fps.asStateFlow()
     
     // Delegate selection (GPU or CPU)
-    private val _useGpuDelegate = MutableStateFlow(isRealDevice())
+    private val _useGpuDelegate = MutableStateFlow(Companion.isRealDevice())
     val useGpuDelegate: StateFlow<Boolean> = _useGpuDelegate.asStateFlow()
     
     private var lastFrameTime = 0L
@@ -189,34 +189,77 @@ class PoseEngine(private val context: Context) {
      * 
      * @param imageProxy Camera frame from CameraX
      * @param isFrontCamera Whether this is from front camera (for mirroring)
+     * 
+     * 🔍 PERFORMANCE INSTRUMENTED VERSION
+     * This version includes detailed timing measurements to identify bottlenecks.
+     * Check logcat with filter "PoseEngine-Timing" to see performance breakdown.
      */
     fun detectPose(imageProxy: ImageProxy, isFrontCamera: Boolean) {
-        val currentTime = System.currentTimeMillis()
+        val frameStartTime = System.currentTimeMillis()
+        val currentTime = frameStartTime
         
         try {
-            // Convert ImageProxy to Bitmap
-            val bitmap = imageProxyToBitmap(imageProxy)
+            // ============ STEP 1: BITMAP CONVERSION ============
+            val bitmapStartTime = if (ENABLE_TIMING_LOGS) System.nanoTime() else 0L
             
-            // Apply rotation to bitmap based on device orientation
-            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
-            val rotatedBitmap = if (rotationDegrees != 0) {
-                rotateBitmap(bitmap, rotationDegrees)
+            val bitmap = if (SKIP_BITMAP_CONVERSION) {
+                // Create a dummy 1x1 bitmap for testing
+                if (ENABLE_TIMING_LOGS) Log.w(TAG, "⚠️ SKIP_BITMAP_CONVERSION=true - Using dummy bitmap")
+                Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
             } else {
-                bitmap
+                imageProxyToBitmap(imageProxy)
             }
             
-            // Convert Bitmap to MPImage for MediaPipe
-            val mpImage = BitmapImageBuilder(rotatedBitmap).build()
+            val bitmapEndTime = if (ENABLE_TIMING_LOGS) System.nanoTime() else 0L
+            val bitmapTimeMs = if (ENABLE_TIMING_LOGS) (bitmapEndTime - bitmapStartTime) / 1_000_000.0 else 0.0
             
-            // PERFORMANCE OPTIMIZATION: Per-frame logging disabled
-            // This log runs 30+ times per second and causes massive slowdown on emulators.
-            // On emulators, each log statement can take 5-10ms, which at 30 FPS = 150-300ms overhead per second.
-            // Re-enable only for debugging specific frame processing issues.
-            // Log.d(TAG, "Sending frame to MediaPipe at time=$currentTime, rotation=$rotationDegrees")
+            // ============ STEP 2: BITMAP ROTATION ============
+            val rotationStartTime = if (ENABLE_TIMING_LOGS) System.nanoTime() else 0L
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
             
-            // Detect pose asynchronously
-            // The result will be delivered to the result listener callback
-            poseLandmarker?.detectAsync(mpImage, currentTime)
+            val rotatedBitmap = if (SKIP_BITMAP_ROTATION || rotationDegrees == 0) {
+                if (SKIP_BITMAP_ROTATION && rotationDegrees != 0 && ENABLE_TIMING_LOGS) {
+                    Log.w(TAG, "⚠️ SKIP_BITMAP_ROTATION=true - Skipping $rotationDegrees° rotation")
+                }
+                bitmap
+            } else {
+                rotateBitmap(bitmap, rotationDegrees)
+            }
+            
+            val rotationEndTime = if (ENABLE_TIMING_LOGS) System.nanoTime() else 0L
+            val rotationTimeMs = if (ENABLE_TIMING_LOGS) (rotationEndTime - rotationStartTime) / 1_000_000.0 else 0.0
+            
+            // ============ STEP 3: MEDIAPIPE INFERENCE ============
+            val inferenceStartTime = if (ENABLE_TIMING_LOGS) System.nanoTime() else 0L
+            
+            if (SKIP_MEDIAPIPE_INFERENCE) {
+                if (ENABLE_TIMING_LOGS) Log.w(TAG, "⚠️ SKIP_MEDIAPIPE_INFERENCE=true - Skipping ML inference")
+                
+                // Generate fake result immediately for testing
+                if (USE_FAKE_POSE_RESULTS) {
+                    generateFakePoseResult(rotatedBitmap.width, rotatedBitmap.height)
+                }
+            } else {
+                // Convert Bitmap to MPImage for MediaPipe
+                val mpImage = BitmapImageBuilder(rotatedBitmap).build()
+                
+                // Detect pose asynchronously
+                // The result will be delivered to the result listener callback
+                // Note: The actual inference time will be measured in handlePoseResult
+                poseLandmarker?.detectAsync(mpImage, currentTime)
+            }
+            
+            val inferenceEndTime = if (ENABLE_TIMING_LOGS) System.nanoTime() else 0L
+            val inferenceSetupTimeMs = if (ENABLE_TIMING_LOGS) (inferenceEndTime - inferenceStartTime) / 1_000_000.0 else 0.0
+            
+            // ============ TIMING SUMMARY ============
+            if (ENABLE_TIMING_LOGS) {
+                val totalTimeMs = (inferenceEndTime - bitmapStartTime) / 1_000_000.0
+                Log.d("$TAG-Timing", String.format(
+                    "⏱️ Frame processing: %.2fms TOTAL | Bitmap: %.2fms | Rotation: %.2fms | Inference Setup: %.2fms",
+                    totalTimeMs, bitmapTimeMs, rotationTimeMs, inferenceSetupTimeMs
+                ))
+            }
             
             // Calculate FPS
             updateFPS(currentTime)
@@ -224,6 +267,33 @@ class PoseEngine(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Error detecting pose", e)
         }
+    }
+    
+    /**
+     * Generate a fake pose result for testing without running actual ML inference.
+     * Useful to test if MediaPipe is the bottleneck.
+     */
+    private fun generateFakePoseResult(imageWidth: Int, imageHeight: Int) {
+        // Create dummy landmarks (33 pose landmarks in a standing pose)
+        val fakeLandmarks = List(33) { index ->
+            PoseLandmark(
+                x = 0.5f + (index % 3) * 0.1f,
+                y = 0.3f + (index / 11) * 0.2f,
+                z = 0.0f,
+                visibility = 0.9f,
+                presence = 0.95f
+            )
+        }
+        
+        val fakeResult = PoseResult(
+            landmarks = fakeLandmarks,
+            timestamp = System.currentTimeMillis(),
+            imageWidth = imageWidth,
+            imageHeight = imageHeight,
+            isFrontCamera = true
+        )
+        
+        _poseResults.value = fakeResult
     }
     
     /**
@@ -308,8 +378,12 @@ class PoseEngine(private val context: Context) {
     /**
      * Handle pose detection result from MediaPipe.
      * This is called by MediaPipe's result listener on a background thread.
+     * 
+     * 🔍 PERFORMANCE INSTRUMENTED VERSION
      */
     private fun handlePoseResult(result: PoseLandmarkerResult, image: MPImage) {
+        val resultStartTime = if (ENABLE_TIMING_LOGS) System.nanoTime() else 0L
+        
         // Extract landmarks from the first (and likely only) detected pose
         val poseLandmarks = result.landmarks().firstOrNull()
         
@@ -342,6 +416,16 @@ class PoseEngine(private val context: Context) {
             
             // Emit result via StateFlow
             _poseResults.value = poseResult
+            
+            // ============ TIMING MEASUREMENT ============
+            if (ENABLE_TIMING_LOGS) {
+                val resultEndTime = System.nanoTime()
+                val resultProcessingMs = (resultEndTime - resultStartTime) / 1_000_000.0
+                Log.d("$TAG-Timing", String.format(
+                    "📥 MediaPipe callback: %.2fms (landmark extraction + StateFlow emit)",
+                    resultProcessingMs
+                ))
+            }
             
         } else {
             // PERFORMANCE OPTIMIZATION: Per-frame logging disabled
@@ -473,6 +557,28 @@ class PoseEngine(private val context: Context) {
     
     companion object {
         private const val TAG = "PoseEngine"
+        
+        // ============================================================================
+        // 🔍 PERFORMANCE DEBUGGING FLAGS - Set these to true/false to skip sections
+        // ============================================================================
+        // These flags allow you to skip expensive operations to isolate bottlenecks.
+        // Change these values and rebuild to test which operation is causing slowdown.
+        
+        // Set to true to SKIP bitmap conversion (test if YUV->Bitmap is the bottleneck)
+        const val SKIP_BITMAP_CONVERSION = false
+        
+        // Set to true to SKIP bitmap rotation (test if Matrix transform is the bottleneck)
+        const val SKIP_BITMAP_ROTATION = false
+        
+        // Set to true to SKIP MediaPipe inference (test if ML model is the bottleneck)
+        const val SKIP_MEDIAPIPE_INFERENCE = false
+        
+        // Set to true to ENABLE detailed timing logs (shows ms for each operation)
+        const val ENABLE_TIMING_LOGS = true
+        
+        // Set to true to generate fake pose results instead of running real detection
+        const val USE_FAKE_POSE_RESULTS = false
+        // ============================================================================
         
         /**
          * Check if running on a real device (not an emulator).

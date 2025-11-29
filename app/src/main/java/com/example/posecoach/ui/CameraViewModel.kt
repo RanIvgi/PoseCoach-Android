@@ -33,6 +33,18 @@ data class ExerciseSessionSummary(
 
 class CameraViewModel : ViewModel() {
 
+    // ============================================================================
+    // 🔍 PERFORMANCE DEBUGGING FLAGS
+    // ============================================================================
+    companion object {
+        // Set to true to SKIP pose evaluation (test if angle calculations are the bottleneck)
+        const val SKIP_POSE_EVALUATION = false
+        
+        // Set to true to ENABLE detailed timing logs for pose evaluation
+        const val ENABLE_EVALUATION_TIMING = true
+    }
+    // ============================================================================
+
     private lateinit var poseEngine: PoseEngine
     private val poseEvaluator: PoseEvaluator = DefaultPoseEvaluator()
     private val cameraExecutor = Executors.newSingleThreadExecutor()
@@ -117,7 +129,30 @@ class CameraViewModel : ViewModel() {
                     if (_sessionState.value == SessionState.ACTIVE) {
                         _poseResult.value = result
                         result?.let {
-                            val feedbackMsg = poseEvaluator.evaluate(it, _currentExercise.value)
+                            // ============ STEP 4: POSE EVALUATION ============
+                            val evaluationStartTime = if (ENABLE_EVALUATION_TIMING) System.nanoTime() else 0L
+                            
+                            val feedbackMsg = if (SKIP_POSE_EVALUATION) {
+                                if (ENABLE_EVALUATION_TIMING) {
+                                    android.util.Log.w("CameraViewModel", "⚠️ SKIP_POSE_EVALUATION=true - Skipping angle calculations")
+                                }
+                                null // Skip evaluation entirely
+                            } else {
+                                poseEvaluator.evaluate(it, _currentExercise.value)
+                            }
+                            
+                            val evaluationEndTime = if (ENABLE_EVALUATION_TIMING) System.nanoTime() else 0L
+                            val evaluationTimeMs = if (ENABLE_EVALUATION_TIMING) {
+                                (evaluationEndTime - evaluationStartTime) / 1_000_000.0
+                            } else 0.0
+                            
+                            if (ENABLE_EVALUATION_TIMING) {
+                                android.util.Log.d("CameraViewModel-Timing", String.format(
+                                    "🧮 Pose evaluation: %.2fms (angle calculations + rep counting + feedback)",
+                                    evaluationTimeMs
+                                ))
+                            }
+                            
                             _feedback.value = feedbackMsg
                             
                             // Collect feedback for session summary

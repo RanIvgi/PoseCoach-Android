@@ -38,8 +38,12 @@ class DefaultPoseEvaluator : PoseEvaluator {
     private var sessionStartTime: Long = 0L
     
     override fun evaluate(poseResult: PoseResult, exerciseType: String): FeedbackMessage? {
-        // Log PoseResult for every frame (as requested)
-        Log.d("PoseEvaluator", "PoseResult: ${poseResult.landmarks.size} landmarks, timestamp: ${poseResult.timestamp}")
+        // PERFORMANCE OPTIMIZATION: Per-frame logging disabled
+        // This log executes on every pose evaluation (30+ FPS during active session).
+        // On emulators, this causes significant UI thread blocking and frame skips.
+        // Together with PoseOverlay logging, these were the main cause of 1-6 FPS performance.
+        // Re-enable only when debugging pose evaluation logic.
+        // Log.d("PoseEvaluator", "PoseResult: ${poseResult.landmarks.size} landmarks, timestamp: ${poseResult.timestamp}")
 
         // No pose detected
         if (!poseResult.hasPose()) {

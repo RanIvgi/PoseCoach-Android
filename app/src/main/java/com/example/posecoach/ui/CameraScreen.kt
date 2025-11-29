@@ -46,7 +46,14 @@ fun CameraScreen(
         }
     }
 
-    val poseResult by viewModel.poseResult.collectAsState()
+    // PERFORMANCE OPTIMIZATION: Collect high-frequency states in remember blocks
+    // to prevent full screen recomposition on every pose detection frame (30+ FPS).
+    // Only poseResult updates 30+ times/sec, but it was causing ENTIRE screen to recompose!
+    
+    // High-frequency state (30+ FPS) - Don't collect directly in composable body
+    val poseResultFlow = remember { viewModel.poseResult }
+    
+    // Low-frequency states (only change on user action or state transitions) - safe to collect normally
     val feedback by viewModel.feedback.collectAsState()
     val fps by viewModel.fps.collectAsState()
     val cameraState by viewModel.cameraState.collectAsState()
@@ -78,8 +85,10 @@ fun CameraScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
+            // Pass the Flow directly to PoseOverlay so it can collect independently
+            // This prevents CameraScreen from recomposing on every frame
             PoseOverlay(
-                poseResult = poseResult,
+                poseResultFlow = poseResultFlow,
                 modifier = Modifier.fillMaxSize()
             )
 
