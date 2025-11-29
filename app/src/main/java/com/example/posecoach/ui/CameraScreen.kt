@@ -61,18 +61,20 @@ fun CameraScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (cameraPermission.status.isGranted) {
-            CameraPreview(
-                cameraState = cameraState,
-                onCameraReady = { provider, previewView ->
-                    viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+            if (sessionState == SessionState.COUNTDOWN || sessionState == SessionState.ACTIVE) {
+                CameraPreview(
+                    cameraState = cameraState,
+                    onCameraReady = { provider, previewView ->
+                        viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
 
-            PoseOverlay(
-                poseResult = poseResult,
-                modifier = Modifier.fillMaxSize()
-            )
+                PoseOverlay(
+                    poseResult = poseResult,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
             CameraControls(
                 feedback = feedback,

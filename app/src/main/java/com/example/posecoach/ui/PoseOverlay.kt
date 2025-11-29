@@ -27,7 +27,7 @@ fun PoseOverlay(
     showLandmarks: Boolean = true,
     showConnections: Boolean = true
 ) {
-    val previousPositions = remember { mutableStateMapOf<Int, Offset>() }
+    val previousPositions = remember { mutableMapOf<Int, Offset>() }
 
     LaunchedEffect(poseResult?.hasPose()) {
         if (poseResult?.hasPose() != true) {
@@ -37,8 +37,6 @@ fun PoseOverlay(
 
     Canvas(modifier = modifier.fillMaxSize()) {
         if (poseResult?.hasPose() == true) {
-            Log.d("PoseOverlay", "Drawing overlay with ${poseResult.landmarks.size} landmarks")
-
             val mirror = false
 
             if (showConnections) {
@@ -124,14 +122,7 @@ private fun DrawScope.drawPoseLandmarks(
 
             drawCircle(
                 color = color,
-                radius = 8f,
-                center = pos,
-                alpha = alpha
-            )
-
-            drawCircle(
-                color = Color.White,
-                radius = 3f,
+                radius = 6f,
                 center = pos,
                 alpha = alpha
             )
@@ -196,7 +187,7 @@ private fun DrawScope.drawPoseConnections(
                 color = color,
                 start = start,
                 end = end,
-                strokeWidth = 6f,
+                strokeWidth = 3f,
                 cap = StrokeCap.Round,
                 alpha = visibility.coerceIn(0.15f, 0.9f)
             )
