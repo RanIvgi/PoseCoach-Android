@@ -33,134 +33,85 @@ class VideoProcessor(private val context: Context) {
      */
     suspend fun extractFrames(
         videoUri: Uri,
-        frameIntervalMs: Long = 500,
-        maxFrames: Int = 60,
-        progressCallback: (Float) -> Unit = {}
+        frameIntervalMs: Long = 1000,
+        maxFrames: Int = 120,
+        progressCallback: ((Float) -> Unit)? = null
     ): List<Bitmap> = withContext(Dispatchers.IO) {
         val frames = mutableListOf<Bitmap>()
-        val retriever = MediaMetadataRetriever()
+        var retriever: MediaMetadataRetriever? = null
         
         try {
+            Log.d(TAG, "Initializing MediaMetadataRetriever...")
+            retriever = MediaMetadataRetriever()
             retriever.setDataSource(context, videoUri)
             
-            // Get video duration
-            val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-            val durationMs = durationStr?.toLongOrNull() ?: 0L
+            // Extract metadata once at the beginning
+            val duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
             
-            if (durationMs == 0L) {
+            if (duration == 0L) {
+                Log.e(TAG, "Could not determine video duration")
                 return@withContext emptyList()
             }
             
-            // Calculate frame extraction parameters
-            val expectedFrames = maxFrames.coerceAtMost((durationMs / frameIntervalMs).toInt())
+            Log.d(TAG, "Video duration: ${duration}ms, extracting up to $maxFrames frames at ${frameIntervalMs}ms intervals")
+            
             var currentTimeMs = 0L
             var frameCount = 0
+            val estimatedTotalFrames = maxFrames.coerceAtMost((duration / frameIntervalMs).toInt())
             
-            while (currentTimeMs < durationMs && frameCount < expectedFrames) {
+            while (currentTimeMs < duration && frameCount < maxFrames) {
                 try {
-                    // Extract frame at current time
+                    // Use OPTION_CLOSEST instead of OPTION_CLOSEST_SYNC for faster extraction
                     val frame = retriever.getFrameAtTime(
                         currentTimeMs * 1000, // Convert to microseconds
                         MediaMetadataRetriever.OPTION_CLOSEST
                     )
                     
-                    frame?.let {
-                        // Convert to ARGB_8888 if needed (MediaPipe requirement)
-                        val convertedFrame = if (it.config != Bitmap.Config.ARGB_8888) {
-                            it.copy(Bitmap.Config.ARGB_8888, false).also { copied ->
-                                it.recycle() // Recycle original to free memory
-                            }
+                    if (frame != null) {
+                        // MediaPipe requires ARGB_8888 format, convert if necessary
+                        val convertedFrame = if (frame.config != Bitmap.Config.ARGB_8888) {
+                            Log.d(TAG, "Converting frame from ${frame.config} to ARGB_8888")
+                            val argbFrame = frame.copy(Bitmap.Config.ARGB_8888, false)
+                            frame.recycle() // Recycle the original frame
+                            argbFrame
                         } else {
-                            it
+                            frame
                         }
                         
                         frames.add(convertedFrame)
                         frameCount++
                         
-                        // Update progress
-                        val progress = frameCount.toFloat() / expectedFrames.toFloat()
-                        progressCallback(progress.coerceIn(0f, 1f))
+                        // Report progress
+                        val progress = frameCount.toFloat() / estimatedTotalFrames
+                        progressCallback?.invoke(progress)
+                        
+                        if (frameCount % 10 == 0) {
+                            Log.d(TAG, "Extracted $frameCount/$estimatedTotalFrames frames (${(progress * 100).toInt()}%)")
+                        }
+                    } else {
+                        Log.w(TAG, "Failed to extract frame at ${currentTimeMs}ms")
                     }
                     
-                    currentTimeMs += frameIntervalMs
                 } catch (e: Exception) {
-                    // Log frame extraction failure for debugging
-                    Log.w(TAG, "Failed to extract frame at ${currentTimeMs}ms", e)
-                    // Skip failed frame and continue
-                    currentTimeMs += frameIntervalMs
+                    Log.e(TAG, "Error extracting frame at ${currentTimeMs}ms: ${e.message}", e)
                 }
+                
+                currentTimeMs += frameIntervalMs
             }
             
-            progressCallback(1f)
+            Log.d(TAG, "✓ Extracted ${frames.size} frames from video")
             
         } catch (e: Exception) {
-            // Clean up any accumulated frames to prevent memory leak
-            frames.forEach { bitmap ->
-                try {
-                    bitmap.recycle()
-                } catch (recycleError: Exception) {
-                    // Ignore recycle errors
-                }
-            }
-            frames.clear()
-            throw VideoProcessingException("Failed to extract frames: ${e.message}", e)
+            Log.e(TAG, "Error extracting frames from video: ${e.message}", e)
         } finally {
             try {
-                retriever.release()
+                retriever?.release()
+                Log.d(TAG, "MediaMetadataRetriever released")
             } catch (e: Exception) {
-                // Ignore release errors
+                Log.e(TAG, "Error releasing MediaMetadataRetriever: ${e.message}", e)
             }
         }
         
-        return@withContext frames
-    }
-    
-    /**
-     * Get video metadata including duration and resolution.
-     * 
-     * @param videoUri The URI of the video file
-     * @return VideoMetadata containing video information
-     */
-    suspend fun getVideoMetadata(videoUri: Uri): VideoMetadata = withContext(Dispatchers.IO) {
-        val retriever = MediaMetadataRetriever()
-        
-        try {
-            retriever.setDataSource(context, videoUri)
-            
-            val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-            val widthStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
-            val heightStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
-            val rotationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
-            
-            VideoMetadata(
-                durationMs = durationStr?.toLongOrNull() ?: 0L,
-                width = widthStr?.toIntOrNull() ?: 0,
-                height = heightStr?.toIntOrNull() ?: 0,
-                rotation = rotationStr?.toIntOrNull() ?: 0
-            )
-        } catch (e: Exception) {
-            throw VideoProcessingException("Failed to get video metadata: ${e.message}", e)
-        } finally {
-            try {
-                retriever.release()
-            } catch (e: Exception) {
-                // Ignore release errors
-            }
-        }
+        frames
     }
 }
-
-/**
- * Video metadata information
- */
-data class VideoMetadata(
-    val durationMs: Long,
-    val width: Int,
-    val height: Int,
-    val rotation: Int
-)
-
-/**
- * Exception thrown when video processing fails
- */
-class VideoProcessingException(message: String, cause: Throwable? = null) : Exception(message, cause)

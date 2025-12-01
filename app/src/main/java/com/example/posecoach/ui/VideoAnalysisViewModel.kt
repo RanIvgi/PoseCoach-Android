@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 
 class VideoAnalysisViewModel(application: Application) : AndroidViewModel(application) {
     
@@ -73,8 +75,8 @@ class VideoAnalysisViewModel(application: Application) : AndroidViewModel(applic
                 val uri = Uri.parse(videoUri)
                 frames = videoProcessor.extractFrames(
                     videoUri = uri,
-                    frameIntervalMs = 500, // Extract 2 frames per second
-                    maxFrames = 120, // Max 1 minute of analysis
+                    frameIntervalMs = 1000, // Extract 1 frame per second (reduced from 500ms for performance)
+                    maxFrames = 30, // Max 30 seconds of analysis (reduced from 120 for testing)
                     progressCallback = { progress ->
                         _processingProgress.value = progress * 0.3f // Frame extraction is 30% of progress
                     }
@@ -86,52 +88,87 @@ class VideoAnalysisViewModel(application: Application) : AndroidViewModel(applic
                     return@launch
                 }
                 
-                Log.d(TAG, "Extracted ${frames.size} frames from video")
+                Log.d(TAG, "✓ Extracted ${frames.size} frames from video")
+                Log.d(TAG, "Step 2/4: Initializing pose detection engine...")
                 
-                // Step 2: Initialize pose detection and evaluation
+                // Step 2: Initialize pose detection engine for video analysis
                 val poseEngine = PoseEngine(getApplication())
-                val poseEvaluator = DefaultPoseEvaluator()
+                val imageLandmarker = withContext(Dispatchers.Default) {
+                    poseEngine.createImageModeLandmarker()
+                }
                 
-                if (!poseEngine.initialize()) {
+                if (imageLandmarker == null) {
+                    Log.e(TAG, "✗ Failed to create image mode landmarker")
                     _errorMessage.value = "Failed to initialize pose detection engine"
                     _isProcessing.value = false
+                    frames.forEach { it.recycle() }
                     return@launch
                 }
+                
+                Log.d(TAG, "✓ Pose detection engine initialized")
+                Log.d(TAG, "Step 3/4: Processing ${frames.size} frames...")
+                
+                val poseEvaluator = DefaultPoseEvaluator()
                 
                 poseEvaluator.reset()
                 poseEvaluator.startSession()
                 
-                // Step 3: Process each frame
+                // Step 3: Process each frame with timeout protection
                 val feedbackSet = mutableSetOf<FeedbackMessage>() // Use set to avoid duplicates
                 var framesWithPose = 0
+                var framesFailed = 0
                 
                 frames.forEachIndexed { index, frame ->
-                    withContext(Dispatchers.Default) {
-                        try {
-                            // Detect pose on frame
-                            val poseResult = poseEngine.detectPoseFromBitmap(frame)
-                            
-                            if (poseResult != null && poseResult.hasPose()) {
-                                framesWithPose++
-                                
-                                // Evaluate the pose
-                                val feedback = poseEvaluator.evaluate(poseResult, exerciseId)
-                                
-                                // Collect unique feedback messages
-                                if (feedback != null) {
-                                    feedbackSet.add(feedback)
+                    try {
+                        // Log progress every 5 frames
+                        if (index % 5 == 0 || index == frames.size - 1) {
+                            Log.d(TAG, "Processing frame ${index + 1}/${frames.size}...")
+                        }
+                        
+                        // Add timeout to prevent hanging on slow frames
+                        withTimeout(10000L) { // 10 second timeout per frame (increased for first-frame model warmup)
+                            withContext(Dispatchers.Default) {
+                                try {
+                                    // Detect pose on frame using reusable landmarker
+                                    val poseResult = poseEngine.detectPoseFromBitmap(frame, imageLandmarker)
+                                    
+                                    if (poseResult != null && poseResult.hasPose()) {
+                                        framesWithPose++
+                                        
+                                        // Evaluate the pose
+                                        val feedback = poseEvaluator.evaluate(poseResult, exerciseId)
+                                        
+                                        // Collect unique feedback messages
+                                        if (feedback != null) {
+                                            feedbackSet.add(feedback)
+                                        }
+                                    }
+                                    Unit // Explicitly return Unit to avoid if-expression issues
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error processing frame $index: ${e.message}", e)
+                                    framesFailed++
                                 }
                             }
-                            
-                            // Update progress (frame processing is 60% of total progress)
-                            val frameProgress = (index + 1).toFloat() / frames.size
-                            _processingProgress.value = 0.3f + (frameProgress * 0.6f)
-                            
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error processing frame $index", e)
                         }
+                        
+                        // Update progress (frame processing is 60% of total progress)
+                        val frameProgress = (index + 1).toFloat() / frames.size
+                        _processingProgress.value = 0.3f + (frameProgress * 0.6f)
+                        
+                    } catch (e: TimeoutCancellationException) {
+                        Log.w(TAG, "Frame $index timed out after 10 seconds, skipping")
+                        framesFailed++
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Unexpected error processing frame $index: ${e.message}", e)
+                        framesFailed++
                     }
                 }
+                
+                // Clean up the landmarker
+                imageLandmarker.close()
+                
+                Log.d(TAG, "✓ Frame processing complete: ${framesWithPose} with pose, $framesFailed failed")
+                Log.d(TAG, "Step 4/4: Generating analysis results...")
                 
                 // Step 4: Generate final results
                 val repCount = poseEvaluator.getRepCount()
@@ -149,10 +186,10 @@ class VideoAnalysisViewModel(application: Application) : AndroidViewModel(applic
                     overallScore = overallScore
                 )
                 
-                Log.d(TAG, "Analysis complete: $repCount reps, $framesWithPose/$frames.size frames with pose, score: $overallScore")
+                Log.d(TAG, "✓ Analysis complete: $repCount reps, $framesWithPose/${frames.size} frames with pose, score: $overallScore")
+                Log.d(TAG, "Cleaning up resources...")
                 
-                // Cleanup
-                poseEngine.close()
+                // Cleanup frames
                 frames.forEach { it.recycle() }
                 
                 _processingProgress.value = 1f
