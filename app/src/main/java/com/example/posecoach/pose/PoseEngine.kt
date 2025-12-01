@@ -574,7 +574,7 @@ class PoseEngine(private val context: Context) {
         const val SKIP_MEDIAPIPE_INFERENCE = false
         
         // Set to true to ENABLE detailed timing logs (shows ms for each operation)
-        const val ENABLE_TIMING_LOGS = true
+        const val ENABLE_TIMING_LOGS = false
         
         // Set to true to generate fake pose results instead of running real detection
         const val USE_FAKE_POSE_RESULTS = false

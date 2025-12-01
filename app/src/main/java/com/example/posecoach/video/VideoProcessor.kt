@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -16,6 +17,10 @@ import kotlinx.coroutines.withContext
  * - Converting frames to Bitmap format for pose detection
  */
 class VideoProcessor(private val context: Context) {
+    
+    companion object {
+        private const val TAG = "VideoProcessor"
+    }
     
     /**
      * Extract frames from a video at regular intervals.
@@ -78,6 +83,8 @@ class VideoProcessor(private val context: Context) {
                     
                     currentTimeMs += frameIntervalMs
                 } catch (e: Exception) {
+                    // Log frame extraction failure for debugging
+                    Log.w(TAG, "Failed to extract frame at ${currentTimeMs}ms", e)
                     // Skip failed frame and continue
                     currentTimeMs += frameIntervalMs
                 }
@@ -86,6 +93,15 @@ class VideoProcessor(private val context: Context) {
             progressCallback(1f)
             
         } catch (e: Exception) {
+            // Clean up any accumulated frames to prevent memory leak
+            frames.forEach { bitmap ->
+                try {
+                    bitmap.recycle()
+                } catch (recycleError: Exception) {
+                    // Ignore recycle errors
+                }
+            }
+            frames.clear()
             throw VideoProcessingException("Failed to extract frames: ${e.message}", e)
         } finally {
             try {
