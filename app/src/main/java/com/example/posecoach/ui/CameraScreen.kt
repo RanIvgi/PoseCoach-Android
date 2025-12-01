@@ -97,79 +97,77 @@ fun CameraScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (cameraPermission.status.isGranted) {
-            if (sessionState == SessionState.COUNTDOWN || sessionState == SessionState.ACTIVE) {
-                CameraPreview(
-                    cameraState = cameraState,
-                    onCameraReady = { provider, previewView ->
-                        viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+            CameraPreview(
+                cameraState = cameraState,
+                onCameraReady = { provider, previewView ->
+                    viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
+                },
+                modifier = Modifier.fillMaxSize()
+            )
 
-                // Pass the Flow directly to PoseOverlay so it can collect independently
-                // This prevents CameraScreen from recomposing on every frame
-                PoseOverlay(
-                    poseResultFlow = poseResultFlow,
-                    cameraState = cameraState,
-                    modifier = Modifier.fillMaxSize()
-                )
+            // Pass the Flow directly to PoseOverlay so it can collect independently
+            // This prevents CameraScreen from recomposing on every frame
+            PoseOverlay(
+                poseResultFlow = poseResultFlow,
+                cameraState = cameraState,
+                modifier = Modifier.fillMaxSize()
+            )
 
-                CameraControls(
-                    feedback = feedback,
-                    fps = fps,
-                    useGpu = useGpu,
-                    repCount = repCount,
-                    sessionState = sessionState,
-                    currentExercise = currentExercise,
-                    targetReps = targetReps,
-                    onCameraSwitch = { viewModel.switchCamera(context, lifecycleOwner) },
-                    onToggleDelegate = { viewModel.toggleDelegate(context, lifecycleOwner) },
-                    onResetRepCount = { viewModel.resetRepCount() },
-                    onStartSession = { viewModel.startSessionCountdown() },
-                    onFinishSession = { viewModel.finishSession() },
-                    onExerciseSelected = { id ->
-                        viewModel.setExercise(id)
-                        infoExerciseId = id
-                    },
-                    onTargetRepsChange = { value -> viewModel.setTargetReps(value) },
-                    onBackToHome = {
-                        if (sessionState == SessionState.ACTIVE) {
-                            viewModel.finishSessionAndGoHome()
-                        } else {
-                            navBackToStart()
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+            CameraControls(
+                feedback = feedback,
+                fps = fps,
+                useGpu = useGpu,
+                repCount = repCount,
+                sessionState = sessionState,
+                currentExercise = currentExercise,
+                targetReps = targetReps,
+                onCameraSwitch = { viewModel.switchCamera(context, lifecycleOwner) },
+                onToggleDelegate = { viewModel.toggleDelegate(context, lifecycleOwner) },
+                onResetRepCount = { viewModel.resetRepCount() },
+                onStartSession = { viewModel.startSessionCountdown() },
+                onFinishSession = { viewModel.finishSession() },
+                onExerciseSelected = { id ->
+                    viewModel.setExercise(id)
+                    infoExerciseId = id
+                },
+                onTargetRepsChange = { value -> viewModel.setTargetReps(value) },
+                onBackToHome = {
+                    if (sessionState == SessionState.ACTIVE) {
+                        viewModel.finishSessionAndGoHome()
+                    } else {
+                        navBackToStart()
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
 
-                if (sessionState == SessionState.COUNTDOWN) {
-                    CountdownOverlay(countdownValue = countdownValue)
-                }
+            if (sessionState == SessionState.COUNTDOWN) {
+                CountdownOverlay(countdownValue = countdownValue)
+            }
 
-                if (sessionState == SessionState.IDLE) {
-                    infoExerciseId?.let { id ->
-                        val exercise = exercises.find { it.id == id }
-                        if (exercise != null) {
-                            ExerciseInfoOverlay(
-                                exercise = exercise,
-                                onCancel = { infoExerciseId = null },
-                                onConfirmStart = {
-                                    infoExerciseId = null
-                                    viewModel.startSessionCountdown()
-                                }
-                            )
-                        }
+            if (sessionState == SessionState.IDLE) {
+                infoExerciseId?.let { id ->
+                    val exercise = exercises.find { it.id == id }
+                    if (exercise != null) {
+                        ExerciseInfoOverlay(
+                            exercise = exercise,
+                            onCancel = { infoExerciseId = null },
+                            onConfirmStart = {
+                                infoExerciseId = null
+                                viewModel.startSessionCountdown()
+                            }
+                        )
                     }
                 }
-
-                cameraError?.let { errorMessage ->
-                    ErrorOverlay(errorMessage = errorMessage)
-                }
-            } else {
-                PermissionDeniedScreen(
-                    onRequestPermission = { cameraPermission.launchPermissionRequest() }
-                )
             }
+
+            cameraError?.let { errorMessage ->
+                ErrorOverlay(errorMessage = errorMessage)
+            }
+        } else {
+            PermissionDeniedScreen(
+                onRequestPermission = { cameraPermission.launchPermissionRequest() }
+            )
         }
     }
 }
