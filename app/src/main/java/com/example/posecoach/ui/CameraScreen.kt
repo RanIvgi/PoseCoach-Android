@@ -1,6 +1,7 @@
 package com.example.posecoach.ui
 
 import android.Manifest
+import android.util.Log
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,12 +27,32 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 
+/**
+ * Recomposition tracker for performance debugging.
+ * Logs every time a composable recomposes.
+ * 
+ * USAGE: Add `LogCompositions("ComponentName")` at the top of any @Composable function.
+ * Then filter logcat for "Recomposition-Track" to see which components recompose too often.
+ */
+@Composable
+fun LogCompositions(tag: String) {
+    class Ref(var value: Int)
+    val ref = remember { Ref(0) }
+    SideEffect {
+        ref.value++
+        Log.d("Recomposition-Track", "$tag: recomposed ${ref.value} times")
+    }
+}
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraScreen(
     navBackToStart: () -> Unit,
+    navToSessionResults: () -> Unit,
     viewModel: CameraViewModel = viewModel()
 ) {
+    LogCompositions("CameraScreen")
+
     val currentExercise by viewModel.currentExercise.collectAsState()
     val targetReps by viewModel.targetReps.collectAsState()
     val context = LocalContext.current
@@ -45,7 +66,15 @@ fun CameraScreen(
         }
     }
 
-    val poseResult by viewModel.poseResult.collectAsState()
+    // PERFORMANCE OPTIMIZATION: Pass StateFlow directly to PoseOverlay instead of collecting here.
+    // PoseOverlay collects the high-frequency state (30+ FPS) independently (see line 38 in PoseOverlay.kt),
+    // which isolates recomposition to just that component and prevents CameraScreen from recomposing on every frame.
+    // The remember block simply prevents recreating the Flow reference on recomposition.
+
+    // High-frequency state (30+ FPS) - Pass Flow to PoseOverlay for independent collection
+    val poseResultFlow = remember { viewModel.poseResult }
+
+    // Low-frequency states (only change on user action or state transitions) - safe to collect normally
     val feedback by viewModel.feedback.collectAsState()
     val fps by viewModel.fps.collectAsState()
     val cameraState by viewModel.cameraState.collectAsState()
@@ -56,25 +85,34 @@ fun CameraScreen(
     val countdownValue by viewModel.countdownValue.collectAsState()
     val summaryText by viewModel.summaryText.collectAsState()
     val navigateHomeAfterSummary by viewModel.navigateHomeAfterSummary.collectAsState()
+    val sessionResult by viewModel.sessionResult.collectAsState()
 
     var infoExerciseId by remember { mutableStateOf<String?>(null) }
 
+    // Navigate to results screen when session finishes
+    LaunchedEffect(sessionResult) {
+        sessionResult?.let {
+            navToSessionResults()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (cameraPermission.status.isGranted) {
-            if (sessionState == SessionState.COUNTDOWN || sessionState == SessionState.ACTIVE) {
-                CameraPreview(
-                    cameraState = cameraState,
-                    onCameraReady = { provider, previewView ->
-                        viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
+            CameraPreview(
+                cameraState = cameraState,
+                onCameraReady = { provider, previewView ->
+                    viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
+                },
+                modifier = Modifier.fillMaxSize()
+            )
 
-                PoseOverlay(
-                    poseResult = poseResult,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            // Pass the Flow directly to PoseOverlay so it can collect independently
+            // This prevents CameraScreen from recomposing on every frame
+            PoseOverlay(
+                poseResultFlow = poseResultFlow,
+                cameraState = cameraState,
+                modifier = Modifier.fillMaxSize()
+            )
 
             CameraControls(
                 feedback = feedback,
@@ -108,19 +146,6 @@ fun CameraScreen(
                 CountdownOverlay(countdownValue = countdownValue)
             }
 
-            if (sessionState == SessionState.FINISHED && summaryText != null) {
-                SummaryDialog(
-                    summaryText = summaryText!!,
-                    onDismiss = {
-                        val shouldGoHome = navigateHomeAfterSummary
-                        viewModel.resetSession()
-                        if (shouldGoHome) {
-                            navBackToStart()
-                        }
-                    }
-                )
-            }
-
             if (sessionState == SessionState.IDLE) {
                 infoExerciseId?.let { id ->
                     val exercise = exercises.find { it.id == id }
@@ -148,117 +173,137 @@ fun CameraScreen(
     }
 }
 
-@Composable
-private fun CameraPreview(
-    cameraState: CameraState,
-    onCameraReady: (ProcessCameraProvider, PreviewView) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val previewView = remember { PreviewView(context) }
-
-    LaunchedEffect(cameraState) {
-        val cameraProvider = ProcessCameraProvider.getInstance(context).get()
-        onCameraReady(cameraProvider, previewView)
-    }
-
-    AndroidView(factory = { previewView }, modifier = modifier)
-}
-
-@Composable
-private fun CountdownOverlay(countdownValue: Int) {
-    val animatedScale by animateFloatAsState(
-        targetValue = 1.2f,
-        animationSpec = tween(durationMillis = 500)
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)),
-        contentAlignment = Alignment.Center
+    @Composable
+    fun CameraPreview(
+        cameraState: CameraState,
+        onCameraReady: (ProcessCameraProvider, PreviewView) -> Unit,
+        modifier: Modifier = Modifier
     ) {
-        Text(
-            text = countdownValue.toString(),
-            fontSize = 120.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.scale(if (countdownValue > 0) animatedScale else 1f)
-        )
-    }
-}
+        LogCompositions("CameraPreview")
 
-@Composable
-private fun SummaryDialog(summaryText: String, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Session Summary") },
-        text = { Text(summaryText) },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("OK")
+        val context = LocalContext.current
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val previewView = remember { PreviewView(context) }
+
+        // PERFORMANCE FIX: Proper camera lifecycle management
+        // This prevents BufferQueue abandonment errors when navigating away
+        DisposableEffect(cameraState) {
+            val cameraProvider = ProcessCameraProvider.getInstance(context).get()
+            onCameraReady(cameraProvider, previewView)
+
+            onDispose {
+                // Critical: Unbind all use cases when leaving screen
+                // This prevents "BufferQueue has been abandoned" errors
+                Log.d("CameraPreview", "Unbinding camera on dispose")
+                cameraProvider.unbindAll()
             }
         }
-    )
-}
 
-@Composable
-private fun PermissionDeniedScreen(
-    onRequestPermission: () -> Unit
-) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        AndroidView(factory = { previewView }, modifier = modifier)
+    }
+
+    @Composable
+    fun CountdownOverlay(countdownValue: Int) {
+        LogCompositions("CountdownOverlay")
+
+        val animatedScale by animateFloatAsState(
+            targetValue = 1.2f,
+            animationSpec = tween(durationMillis = 500)
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Camera permission is required",
-                style = MaterialTheme.typography.h6,
-                textAlign = TextAlign.Center
+                text = countdownValue.toString(),
+                fontSize = 120.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.scale(if (countdownValue > 0) animatedScale else 1f)
             )
-            Button(onClick = onRequestPermission) {
-                Text("Grant Permission")
-            }
         }
     }
-}
 
-@Composable
-private fun ErrorOverlay(errorMessage: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
-        contentAlignment = Alignment.Center
+    @Composable
+     fun SummaryDialog(summaryText: String, onDismiss: () -> Unit) {
+        LogCompositions("SummaryDialog")
+
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Session Summary") },
+            text = { Text(summaryText) },
+            confirmButton = {
+                Button(onClick = onDismiss) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    @Composable
+    fun PermissionDeniedScreen(
+        onRequestPermission: () -> Unit
     ) {
-        Card(
-            backgroundColor = MaterialTheme.colors.error,
-            elevation = 8.dp,
-            modifier = Modifier.padding(16.dp)
+        LogCompositions("PermissionDeniedScreen")
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(24.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Error:",
+                    text = "Camera permission is required",
                     style = MaterialTheme.typography.h6,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = errorMessage,
-                    style = MaterialTheme.typography.body1,
-                    color = Color.White,
                     textAlign = TextAlign.Center
                 )
+                Button(onClick = onRequestPermission) {
+                    Text("Grant Permission")
+                }
             }
         }
     }
-}
 
-private fun Modifier.scale(scale: Float) =
-    this.then(Modifier.graphicsLayer(scaleX = scale, scaleY = scale))
+    @Composable
+    fun ErrorOverlay(errorMessage: String) {
+        LogCompositions("ErrorOverlay")
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.7f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                backgroundColor = MaterialTheme.colors.error,
+                elevation = 8.dp,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(24.dp)
+                ) {
+                    Text(
+                        text = "Error:",
+                        style = MaterialTheme.typography.h6,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.body1,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+
+    fun Modifier.scale(scale: Float) =
+        this.then(Modifier.graphicsLayer(scaleX = scale, scaleY = scale))

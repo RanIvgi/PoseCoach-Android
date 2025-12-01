@@ -25,7 +25,10 @@ import androidx.compose.ui.unit.sp
 import com.example.posecoach.R
 
 @Composable
-fun StartScreen(onLetsBeginClicked: () -> Unit) {
+fun StartScreen(
+    onLetsBeginClicked: () -> Unit,
+    onAnalyzeVideoClicked: () -> Unit
+) {
     // Blue vertical gradient background
     val gradient = Brush.verticalGradient(
         colors = listOf(
@@ -128,6 +131,27 @@ fun StartScreen(onLetsBeginClicked: () -> Unit) {
                     ) {
                         Text(
                             text = "Let's Begin",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Analyze Video button
+                    Button(
+                        onClick = onAnalyzeVideoClicked,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color(0xFF1565C0)
+                        )
+                    ) {
+                        Text(
+                            text = "Analyze Video",
                             color = Color.White,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.SemiBold
