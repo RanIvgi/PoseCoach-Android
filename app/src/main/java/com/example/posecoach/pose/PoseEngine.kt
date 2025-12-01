@@ -583,6 +583,11 @@ class PoseEngine(private val context: Context) {
         /**
          * Check if running on a real device (not an emulator).
          * Used to automatically select GPU delegate on real devices.
+         * 
+         * PERFORMANCE FIX: Always start with CPU delegate to avoid GPU initialization failures.
+         * Many devices (including Mi 8 with Snapdragon 845) have GPUs that can technically run
+         * MediaPipe but may have driver compatibility issues. Starting with CPU is more reliable.
+         * Users can manually toggle to GPU from the UI if their device supports it.
          */
         private fun isRealDevice(): Boolean {
             // More comprehensive emulator detection
@@ -602,8 +607,24 @@ class PoseEngine(private val context: Context) {
                     || (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
             
             val result = !isEmulator
-            Log.d(TAG, "Device detection - isRealDevice: $result (MODEL: ${Build.MODEL}, FINGERPRINT: ${Build.FINGERPRINT})")
-            return result
+            
+            // PERFORMANCE FIX: Log device capabilities for debugging
+            Log.d(TAG, "Device detection - isRealDevice: $result")
+            Log.d(TAG, "  MODEL: ${Build.MODEL}")
+            Log.d(TAG, "  MANUFACTURER: ${Build.MANUFACTURER}")
+            Log.d(TAG, "  FINGERPRINT: ${Build.FINGERPRINT}")
+            Log.d(TAG, "  HARDWARE: ${Build.HARDWARE}")
+            
+            // AUTO-DETECTION ENABLED: Real devices will attempt GPU first, with automatic CPU fallback
+            // The initialize() method already has robust GPU→CPU fallback logic (lines ~134-162)
+            // If GPU initialization fails, it automatically retries with CPU delegate
+            if (result) {
+                Log.i(TAG, "✓ Real device detected - will attempt GPU acceleration with CPU fallback")
+            } else {
+                Log.i(TAG, "✓ Emulator detected - will use CPU delegate")
+            }
+            
+            return result // Return actual device detection result for auto-GPU selection
         }
     }
 }

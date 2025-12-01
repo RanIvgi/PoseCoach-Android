@@ -109,6 +109,7 @@ fun CameraScreen(
             // This prevents CameraScreen from recomposing on every frame
             PoseOverlay(
                 poseResultFlow = poseResultFlow,
+                cameraState = cameraState,
                 modifier = Modifier.fillMaxSize()
             )
 
@@ -180,11 +181,21 @@ private fun CameraPreview(
     LogCompositions("CameraPreview")
     
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
 
-    LaunchedEffect(cameraState) {
+    // PERFORMANCE FIX: Proper camera lifecycle management
+    // This prevents BufferQueue abandonment errors when navigating away
+    DisposableEffect(cameraState) {
         val cameraProvider = ProcessCameraProvider.getInstance(context).get()
         onCameraReady(cameraProvider, previewView)
+        
+        onDispose {
+            // Critical: Unbind all use cases when leaving screen
+            // This prevents "BufferQueue has been abandoned" errors
+            Log.d("CameraPreview", "Unbinding camera on dispose")
+            cameraProvider.unbindAll()
+        }
     }
 
     AndroidView(factory = { previewView }, modifier = modifier)

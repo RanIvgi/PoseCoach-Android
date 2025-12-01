@@ -59,7 +59,16 @@ class VideoProcessor(private val context: Context) {
                     )
                     
                     frame?.let {
-                        frames.add(it)
+                        // Convert to ARGB_8888 if needed (MediaPipe requirement)
+                        val convertedFrame = if (it.config != Bitmap.Config.ARGB_8888) {
+                            it.copy(Bitmap.Config.ARGB_8888, false).also { copied ->
+                                it.recycle() // Recycle original to free memory
+                            }
+                        } else {
+                            it
+                        }
+                        
+                        frames.add(convertedFrame)
                         frameCount++
                         
                         // Update progress

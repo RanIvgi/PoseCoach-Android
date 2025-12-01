@@ -130,41 +130,53 @@ class CameraViewModel : ViewModel() {
                         _poseResult.value = result
                         result?.let {
                             // ============ STEP 4: POSE EVALUATION ============
-                            val evaluationStartTime = if (ENABLE_EVALUATION_TIMING) System.nanoTime() else 0L
-                            
-                            val feedbackMsg = if (SKIP_POSE_EVALUATION) {
+                            // PERFORMANCE FIX: Move heavy computation to background thread
+                            // Angle calculations are CPU-intensive and should not block main thread
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                                val evaluationStartTime = if (ENABLE_EVALUATION_TIMING) System.nanoTime() else 0L
+                                
+                                val feedbackMsg = if (SKIP_POSE_EVALUATION) {
+                                    if (ENABLE_EVALUATION_TIMING) {
+                                        android.util.Log.w("CameraViewModel", "⚠️ SKIP_POSE_EVALUATION=true - Skipping angle calculations")
+                                    }
+                                    null // Skip evaluation entirely
+                                } else {
+                                    poseEvaluator.evaluate(it, _currentExercise.value)
+                                }
+                                
+                                val evaluationEndTime = if (ENABLE_EVALUATION_TIMING) System.nanoTime() else 0L
+                                val evaluationTimeMs = if (ENABLE_EVALUATION_TIMING) {
+                                    (evaluationEndTime - evaluationStartTime) / 1_000_000.0
+                                } else 0.0
+                                
                                 if (ENABLE_EVALUATION_TIMING) {
-                                    android.util.Log.w("CameraViewModel", "⚠️ SKIP_POSE_EVALUATION=true - Skipping angle calculations")
+                                    android.util.Log.d("CameraViewModel-Timing", String.format(
+                                        "🧮 Pose evaluation: %.2fms (angle calculations + rep counting + feedback) [Background Thread]",
+                                        evaluationTimeMs
+                                    ))
                                 }
-                                null // Skip evaluation entirely
-                            } else {
-                                poseEvaluator.evaluate(it, _currentExercise.value)
-                            }
-                            
-                            val evaluationEndTime = if (ENABLE_EVALUATION_TIMING) System.nanoTime() else 0L
-                            val evaluationTimeMs = if (ENABLE_EVALUATION_TIMING) {
-                                (evaluationEndTime - evaluationStartTime) / 1_000_000.0
-                            } else 0.0
-                            
-                            if (ENABLE_EVALUATION_TIMING) {
-                                android.util.Log.d("CameraViewModel-Timing", String.format(
-                                    "🧮 Pose evaluation: %.2fms (angle calculations + rep counting + feedback)",
-                                    evaluationTimeMs
-                                ))
-                            }
-                            
-                            _feedback.value = feedbackMsg
-                            
-                            // Collect feedback for session summary
-                            feedbackMsg?.let { msg ->
-                                // Avoid duplicates of the same message
-                                if (sessionFeedbackHistory.isEmpty() || 
-                                    sessionFeedbackHistory.last().text != msg.text) {
-                                    sessionFeedbackHistory.add(msg)
+                                
+                                // PERFORMANCE FIX: Only emit feedback if it changed
+                                // This prevents unnecessary recompositions in UI
+                                if (feedbackMsg != _feedback.value) {
+                                    _feedback.value = feedbackMsg
+                                }
+                                
+                                // Collect feedback for session summary
+                                feedbackMsg?.let { msg ->
+                                    // Avoid duplicates of the same message
+                                    if (sessionFeedbackHistory.isEmpty() || 
+                                        sessionFeedbackHistory.last().text != msg.text) {
+                                        sessionFeedbackHistory.add(msg)
+                                    }
+                                }
+                                
+                                // PERFORMANCE FIX: Only emit rep count if it actually changed
+                                val newRepCount = poseEvaluator.getRepCount()
+                                if (newRepCount != _repCount.value) {
+                                    _repCount.value = newRepCount
                                 }
                             }
-                            
-                            _repCount.value = poseEvaluator.getRepCount()
                         }
                     } else {
                         _poseResult.value = null

@@ -27,6 +27,7 @@ import kotlin.math.min
 @Composable
 fun PoseOverlay(
     poseResultFlow: kotlinx.coroutines.flow.StateFlow<com.example.posecoach.data.PoseResult?>,
+    cameraState: com.example.posecoach.data.CameraState,
     modifier: Modifier = Modifier,
     showLandmarks: Boolean = true,
     showConnections: Boolean = true
@@ -56,7 +57,7 @@ fun PoseOverlay(
             // Re-enable only when debugging overlay rendering issues.
             // Log.d("PoseOverlay", "Drawing overlay with ${currentPose.landmarks.size} landmarks")
 
-            val mirror = false
+            val mirror = cameraState.isFront()
 
             if (showConnections) {
                 drawPoseConnections(currentPose, mirror, previousPositions)
