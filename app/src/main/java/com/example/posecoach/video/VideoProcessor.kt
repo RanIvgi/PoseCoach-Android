@@ -52,15 +52,16 @@ class VideoProcessor(private val context: Context) {
             }
             
             // Calculate frame extraction parameters
+            val expectedFrames = maxFrames.coerceAtMost((durationMs / frameIntervalMs).toInt())
             var currentTimeMs = 0L
             var frameCount = 0
             
-            while (currentTimeMs < durationMs && frameCount < maxFrames) {
+            while (currentTimeMs < durationMs && frameCount < expectedFrames) {
                 try {
                     // Extract frame at current time
                     val frame = retriever.getFrameAtTime(
                         currentTimeMs * 1000, // Convert to microseconds
-                        MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                        MediaMetadataRetriever.OPTION_CLOSEST
                     )
                     
                     frame?.let {
@@ -77,7 +78,7 @@ class VideoProcessor(private val context: Context) {
                         frameCount++
                         
                         // Update progress
-                        val progress = frameCount.toFloat() / maxFrames.coerceAtMost((durationMs / frameIntervalMs).toInt())
+                        val progress = frameCount.toFloat() / expectedFrames.toFloat()
                         progressCallback(progress.coerceIn(0f, 1f))
                     }
                     

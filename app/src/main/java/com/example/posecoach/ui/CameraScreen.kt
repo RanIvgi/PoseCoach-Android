@@ -66,11 +66,12 @@ fun CameraScreen(
         }
     }
 
-    // PERFORMANCE OPTIMIZATION: Collect high-frequency states in remember blocks
-    // to prevent full screen recomposition on every pose detection frame (30+ FPS).
-    // Only poseResult updates 30+ times/sec, but it was causing ENTIRE screen to recompose!
+    // PERFORMANCE OPTIMIZATION: Pass StateFlow directly to PoseOverlay instead of collecting here.
+    // PoseOverlay collects the high-frequency state (30+ FPS) independently (see line 38 in PoseOverlay.kt),
+    // which isolates recomposition to just that component and prevents CameraScreen from recomposing on every frame.
+    // The remember block simply prevents recreating the Flow reference on recomposition.
 
-    // High-frequency state (30+ FPS) - Don't collect directly in composable body
+    // High-frequency state (30+ FPS) - Pass Flow to PoseOverlay for independent collection
     val poseResultFlow = remember { viewModel.poseResult }
 
     // Low-frequency states (only change on user action or state transitions) - safe to collect normally
