@@ -61,6 +61,7 @@ class VideoAnalysisViewModel(application: Application) : AndroidViewModel(applic
      */
     fun startAnalysis(videoUri: String, exerciseId: String, onComplete: () -> Unit) {
         viewModelScope.launch {
+            var frames: List<android.graphics.Bitmap> = emptyList()
             try {
                 _isProcessing.value = true
                 _errorMessage.value = null
@@ -70,7 +71,7 @@ class VideoAnalysisViewModel(application: Application) : AndroidViewModel(applic
                 
                 // Step 1: Extract frames from video
                 val uri = Uri.parse(videoUri)
-                val frames = videoProcessor.extractFrames(
+                frames = videoProcessor.extractFrames(
                     videoUri = uri,
                     frameIntervalMs = 500, // Extract 2 frames per second
                     maxFrames = 120, // Max 1 minute of analysis
