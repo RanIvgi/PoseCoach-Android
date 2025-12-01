@@ -97,13 +97,14 @@ fun CameraScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (cameraPermission.status.isGranted) {
-            CameraPreview(
-                cameraState = cameraState,
-                onCameraReady = { provider, previewView ->
-                    viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+            if (sessionState == SessionState.COUNTDOWN || sessionState == SessionState.ACTIVE) {
+                CameraPreview(
+                    cameraState = cameraState,
+                    onCameraReady = { provider, previewView ->
+                        viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
 
             // Pass the Flow directly to PoseOverlay so it can collect independently
             // This prevents CameraScreen from recomposing on every frame

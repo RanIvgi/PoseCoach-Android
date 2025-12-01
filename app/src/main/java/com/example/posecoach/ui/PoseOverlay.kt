@@ -142,14 +142,7 @@ private fun DrawScope.drawPoseLandmarks(
 
             drawCircle(
                 color = color,
-                radius = 8f,
-                center = pos,
-                alpha = alpha
-            )
-
-            drawCircle(
-                color = Color.White,
-                radius = 3f,
+                radius = 6f,
                 center = pos,
                 alpha = alpha
             )
@@ -214,7 +207,7 @@ private fun DrawScope.drawPoseConnections(
                 color = color,
                 start = start,
                 end = end,
-                strokeWidth = 6f,
+                strokeWidth = 3f,
                 cap = StrokeCap.Round,
                 alpha = visibility.coerceIn(0.15f, 0.9f)
             )
