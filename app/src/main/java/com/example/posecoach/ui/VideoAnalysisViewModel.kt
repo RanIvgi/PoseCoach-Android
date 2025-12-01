@@ -160,6 +160,7 @@ class VideoAnalysisViewModel(application: Application) : AndroidViewModel(applic
                 
             } catch (e: Exception) {
                 Log.e(TAG, "Error during video analysis", e)
+                frames.forEach { it.recycle() }
                 _isProcessing.value = false
                 _errorMessage.value = "Error processing video: ${e.message}"
             }
