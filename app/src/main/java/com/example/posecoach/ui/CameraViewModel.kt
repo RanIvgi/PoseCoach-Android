@@ -7,6 +7,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.posecoach.ModelWarmer
 import com.example.posecoach.data.CameraState
 import com.example.posecoach.data.FeedbackMessage
 import com.example.posecoach.data.LiveSessionResult
@@ -121,8 +122,21 @@ class CameraViewModel : ViewModel() {
         previewView: PreviewView
     ) {
         if (!::poseEngine.isInitialized) {
-            poseEngine = PoseEngine(context)
-            poseEngine.initialize()
+            // PERFORMANCE FIX: Use pre-warmed PoseEngine instead of creating new one
+            // This eliminates the 2+ second freeze that would occur on first camera use
+            val warmedEngine = ModelWarmer.getInstance(context).getWarmedEngine()
+            
+            if (warmedEngine != null) {
+                // Use the pre-warmed engine (instant, no freeze!)
+                android.util.Log.i("CameraViewModel", "✓ Using pre-warmed PoseEngine (0ms delay)")
+                poseEngine = warmedEngine
+            } else {
+                // Fallback: Create new engine if warm-up somehow failed or wasn't started
+                // This shouldn't normally happen since MainActivity starts warm-up
+                android.util.Log.w("CameraViewModel", "⚠️ Warmed engine not available, creating new one (will cause delay)")
+                poseEngine = PoseEngine(context)
+                poseEngine.initialize()
+            }
 
             viewModelScope.launch {
                 poseEngine.poseResults.collect { result ->
