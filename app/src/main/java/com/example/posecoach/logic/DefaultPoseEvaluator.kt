@@ -33,9 +33,18 @@ class DefaultPoseEvaluator : PoseEvaluator {
     // Internal state for squat evaluation
     private var squatState: SquatState = SquatState.UP
     private var minSquatAngleAchieved: Float = 180f // Track deepest point of the squat
-    private var repCount: Int = 0
-    private var insufficientDepthReps: Int = 0
+    private var squatRepCount: Int = 0
+    private var insufficientDepthSquats: Int = 0
+    
+    // Internal state for push-up evaluation
+    private var pushupState: PushupState = PushupState.UP
+    private var minElbowAngleAchieved: Float = 180f // Track deepest point of the push-up
+    private var pushupRepCount: Int = 0
+    private var insufficientDepthPushups: Int = 0
+    
+    // Session tracking
     private var sessionStartTime: Long = 0L
+    private var currentExerciseType: String = "squat" // Track which exercise is active
     
     override fun evaluate(poseResult: PoseResult, exerciseType: String): FeedbackMessage? {
         // PERFORMANCE OPTIMIZATION: Per-frame logging disabled
@@ -45,6 +54,9 @@ class DefaultPoseEvaluator : PoseEvaluator {
         // Re-enable only when debugging pose evaluation logic.
         // Log.d("PoseEvaluator", "PoseResult: ${poseResult.landmarks.size} landmarks, timestamp: ${poseResult.timestamp}")
 
+        // Track current exercise type for rep count reporting
+        currentExerciseType = exerciseType
+        
         // No pose detected
         if (!poseResult.hasPose()) {
             return FeedbackMessage(
@@ -119,11 +131,11 @@ class DefaultPoseEvaluator : PoseEvaluator {
                 if (avgKneeAngle > AngleThresholds.SQUAT_KNEE_TRANSITION_UP) {
                     // Transitioning up, check if depth was sufficient
                     if (minSquatAngleAchieved < AngleThresholds.SQUAT_KNEE_MIN_DEPTH) {
-                        repCount++
-                        currentFeedback = FeedbackMessage("Rep " + repCount + "!", FeedbackSeverity.INFO)
-                        Log.d("PoseEvaluator", "Rep Count: $repCount")
+                        squatRepCount++
+                        currentFeedback = FeedbackMessage("Rep $squatRepCount!", FeedbackSeverity.INFO)
+                        Log.d("PoseEvaluator", "Squat Rep Count: $squatRepCount")
                     } else {
-                        insufficientDepthReps++
+                        insufficientDepthSquats++
                         currentFeedback = FeedbackMessage("Go deeper on the next rep!", FeedbackSeverity.WARNING)
                     }
                     squatState = SquatState.UP
@@ -161,36 +173,175 @@ class DefaultPoseEvaluator : PoseEvaluator {
     }
     
     override fun evaluatePushup(poseResult: PoseResult): FeedbackMessage? {
-        // TODO (Student 3): Implement real push-up evaluation logic
+        // TODO (Future Enhancement): Multi-angle camera support
+        // Current implementation is optimized for SIDE VIEW (90° to body)
+        // This provides best visibility of:
+        // - Body alignment (shoulder-hip-ankle line)
+        // - Elbow flexion angle
+        // - Hip sag/pike detection
+        //
+        // Future camera angles to support:
+        // - ANGLED VIEW (45°): Requires adjusted thresholds, can still work
+        // - FRONT VIEW (0°): Good for elbow symmetry, poor for body alignment
+        // - TOP-DOWN VIEW: Not recommended, can't measure critical angles
+        //
+        // Detection approach for future multi-angle:
+        // 1. Calculate shoulder width (distance between LEFT_SHOULDER and RIGHT_SHOULDER)
+        // 2. If width > threshold → front view, adjust evaluation logic
+        // 3. If width < threshold → side view, use current logic
+        // 4. Compare visibility scores to determine which side (left/right) to use
         
-        // Example: Calculate elbow angle
+        // ============================================================================
+        // STEP 1: LANDMARK RETRIEVAL
+        // ============================================================================
+        // Calculate elbow angles (both sides for redundancy, will average)
         val leftElbowAngle = poseResult.calculateAngle(
             PoseLandmarkIndex.LEFT_SHOULDER,
             PoseLandmarkIndex.LEFT_ELBOW,
             PoseLandmarkIndex.LEFT_WRIST
         )
+        val rightElbowAngle = poseResult.calculateAngle(
+            PoseLandmarkIndex.RIGHT_SHOULDER,
+            PoseLandmarkIndex.RIGHT_ELBOW,
+            PoseLandmarkIndex.RIGHT_WRIST
+        )
         
-        // TODO: Add more checks:
-        // - Check body alignment (plank position)
-        // - Verify elbows are at proper angle from body
-        // - Ensure hips don't sag or pike up
-        // - Track push-up depth
-        // - Count reps
+        // Get landmarks for body alignment check (shoulder-hip-ankle should form a straight line)
+        val leftShoulder = poseResult.getLandmark(PoseLandmarkIndex.LEFT_SHOULDER)
+        val leftHip = poseResult.getLandmark(PoseLandmarkIndex.LEFT_HIP)
+        val leftAnkle = poseResult.getLandmark(PoseLandmarkIndex.LEFT_ANKLE)
+        val rightShoulder = poseResult.getLandmark(PoseLandmarkIndex.RIGHT_SHOULDER)
+        val rightHip = poseResult.getLandmark(PoseLandmarkIndex.RIGHT_HIP)
+        val rightAnkle = poseResult.getLandmark(PoseLandmarkIndex.RIGHT_ANKLE)
         
-        // Placeholder feedback
-        return when {
-            leftElbowAngle == null -> FeedbackMessage(
-                text = "Adjust camera to see your full body",
+        // Calculate body alignment angle (should be ~180° for straight plank)
+        val leftBodyAlignmentAngle = poseResult.calculateAngle(
+            PoseLandmarkIndex.LEFT_SHOULDER,
+            PoseLandmarkIndex.LEFT_HIP,
+            PoseLandmarkIndex.LEFT_ANKLE
+        )
+        val rightBodyAlignmentAngle = poseResult.calculateAngle(
+            PoseLandmarkIndex.RIGHT_SHOULDER,
+            PoseLandmarkIndex.RIGHT_HIP,
+            PoseLandmarkIndex.RIGHT_ANKLE
+        )
+        
+        // ============================================================================
+        // STEP 2: LANDMARK VALIDATION
+        // ============================================================================
+        // Handle missing critical landmarks
+        if (leftElbowAngle == null && rightElbowAngle == null) {
+            return FeedbackMessage(
+                text = "Adjust camera to see your shoulders, elbows, and wrists.",
                 severity = FeedbackSeverity.WARNING
             )
-            leftElbowAngle < AngleThresholds.PUSHUP_ELBOW_MAX -> FeedbackMessage(
-                text = "Good form! Elbows bent properly.",
-                severity = FeedbackSeverity.INFO
-            )
-            else -> FeedbackMessage(
-                text = "Lower your body more - bend elbows to 90°",
+        }
+        
+        if (leftBodyAlignmentAngle == null && rightBodyAlignmentAngle == null) {
+            return FeedbackMessage(
+                text = "Position camera to see your full body from the side.",
                 severity = FeedbackSeverity.WARNING
             )
+        }
+        
+        // ============================================================================
+        // STEP 3: ANGLE CALCULATIONS
+        // ============================================================================
+        // Use the best available elbow angle (prefer left, fallback to right, or average both)
+        val avgElbowAngle = when {
+            leftElbowAngle != null && rightElbowAngle != null -> (leftElbowAngle + rightElbowAngle) / 2
+            leftElbowAngle != null -> leftElbowAngle
+            rightElbowAngle != null -> rightElbowAngle
+            else -> return FeedbackMessage("Cannot detect elbow position.", FeedbackSeverity.WARNING)
+        }
+        
+        // Use the best available body alignment angle
+        val avgBodyAlignmentAngle = when {
+            leftBodyAlignmentAngle != null && rightBodyAlignmentAngle != null -> 
+                (leftBodyAlignmentAngle + rightBodyAlignmentAngle) / 2
+            leftBodyAlignmentAngle != null -> leftBodyAlignmentAngle
+            rightBodyAlignmentAngle != null -> rightBodyAlignmentAngle
+            else -> 180f // Default to straight if we can't measure (won't trigger warnings)
+        }
+        
+        // ============================================================================
+        // STEP 4: REP COUNTING STATE MACHINE
+        // ============================================================================
+        var currentFeedback: FeedbackMessage? = null
+        
+        when (pushupState) {
+            PushupState.UP -> {
+                // Detect transition to DOWN state (elbows start bending)
+                if (avgElbowAngle < AngleThresholds.PUSHUP_ELBOW_TRANSITION_DOWN) {
+                    pushupState = PushupState.DOWN
+                    minElbowAngleAchieved = avgElbowAngle // Start tracking depth for this rep
+                    currentFeedback = FeedbackMessage("Keep going down!", FeedbackSeverity.INFO)
+                }
+            }
+            PushupState.DOWN -> {
+                // Continuously track the minimum elbow angle achieved during descent
+                minElbowAngleAchieved = kotlin.math.min(minElbowAngleAchieved, avgElbowAngle)
+                
+                // Detect transition to UP state (elbows start extending)
+                if (avgElbowAngle > AngleThresholds.PUSHUP_ELBOW_TRANSITION_UP) {
+                    // Rep completed - check if depth was sufficient
+                    if (minElbowAngleAchieved < AngleThresholds.PUSHUP_ELBOW_MIN_DEPTH) {
+                        pushupRepCount++
+                        currentFeedback = FeedbackMessage("Rep $pushupRepCount!", FeedbackSeverity.INFO)
+                        Log.d("PoseEvaluator", "Push-up Rep Count: $pushupRepCount")
+                    } else {
+                        insufficientDepthPushups++
+                        currentFeedback = FeedbackMessage("Lower your chest more on the next rep!", FeedbackSeverity.WARNING)
+                    }
+                    pushupState = PushupState.UP
+                    minElbowAngleAchieved = 180f // Reset for next rep
+                } else if (avgElbowAngle < AngleThresholds.PUSHUP_ELBOW_MIN_DEPTH) {
+                    // Good depth achieved during this rep
+                    currentFeedback = FeedbackMessage("Good depth!", FeedbackSeverity.INFO)
+                }
+            }
+        }
+        
+        // ============================================================================
+        // STEP 5: FORM VALIDATION (prioritize critical issues)
+        // ============================================================================
+        // Only override rep counting feedback if there's a form issue
+        if (currentFeedback == null || currentFeedback.severity != FeedbackSeverity.ERROR) {
+            
+            // Check body alignment - detect hip sag or pike
+            // A straight body should be ~180°. Deviation indicates sag (<165°) or pike (stays at 180° but hips rise)
+            val bodyAlignmentDeviation = 180f - avgBodyAlignmentAngle
+            
+            if (bodyAlignmentDeviation > AngleThresholds.PUSHUP_BODY_ALIGNMENT_MAX) {
+                // Hip sag detected (body angle is too small)
+                currentFeedback = FeedbackMessage(
+                    "Hips sagging! Engage your core and keep body straight.",
+                    FeedbackSeverity.ERROR
+                )
+            } else if (bodyAlignmentDeviation < -AngleThresholds.PUSHUP_BODY_ALIGNMENT_MAX) {
+                // Hip pike detected (hips too high, body angle is too large)
+                currentFeedback = FeedbackMessage(
+                    "Hips too high! Lower them to form a straight line.",
+                    FeedbackSeverity.WARNING
+                )
+            }
+            
+            // TODO (Future Enhancement): Add elbow flare detection
+            // Calculate angle between upper arm and torso (should be ~45°, not 90°)
+            // Requires: shoulder-elbow-hip angle measurement
+            // If angle > 75° → elbows flared out, warn user
+            
+            // TODO (Future Enhancement): Add head/neck alignment check
+            // Ensure neck is neutral (not looking up or down excessively)
+            // Requires: measuring angle between shoulder-ear-nose landmarks
+        }
+        
+        // ============================================================================
+        // STEP 6: DEFAULT FEEDBACK (if no specific issues detected)
+        // ============================================================================
+        return currentFeedback ?: when (pushupState) {
+            PushupState.UP -> FeedbackMessage("Ready for push-up. Lower your body.", FeedbackSeverity.INFO)
+            PushupState.DOWN -> FeedbackMessage("Hold the position.", FeedbackSeverity.INFO)
         }
     }
     
@@ -240,15 +391,30 @@ class DefaultPoseEvaluator : PoseEvaluator {
     }
     
     override fun reset() {
-        repCount = 0
+        // Reset squat state
+        squatRepCount = 0
         squatState = SquatState.UP
         minSquatAngleAchieved = 180f
-        insufficientDepthReps = 0
+        insufficientDepthSquats = 0
+        
+        // Reset push-up state
+        pushupRepCount = 0
+        pushupState = PushupState.UP
+        minElbowAngleAchieved = 180f
+        insufficientDepthPushups = 0
+        
+        // Reset session tracking
         sessionStartTime = 0L
+        currentExerciseType = "squat"
     }
     
     override fun getRepCount(): Int {
-        return repCount
+        // Return rep count based on current exercise type
+        return when (currentExerciseType.lowercase()) {
+            "pushup", "push-up", "push_up" -> pushupRepCount
+            "squat" -> squatRepCount
+            else -> 0
+        }
     }
     
     override fun getMetrics(): Map<String, Any> {
@@ -269,29 +435,61 @@ class DefaultPoseEvaluator : PoseEvaluator {
         val durationSeconds = TimeUnit.MILLISECONDS.toSeconds(durationMillis)
 
         val summary = StringBuilder()
-        summary.append("Session Summary:\n")
-        summary.append("Total Reps: $repCount\n")
-        summary.append("Duration: $durationSeconds seconds\n")
+        
+        // Determine which exercise metrics to show based on current exercise type
+        when (currentExerciseType.lowercase()) {
+            "pushup", "push-up", "push_up" -> {
+                summary.append("Push-up Session Summary:\n")
+                summary.append("Total Reps: $pushupRepCount\n")
+                summary.append("Duration: $durationSeconds seconds\n")
 
-        if (insufficientDepthReps > 0) {
-            summary.append("\nNotes:\n")
-            summary.append("- You had $insufficientDepthReps reps with insufficient depth. Try to go lower next time!\n")
-        } else if (repCount > 0) {
-            summary.append("\nGreat work! All your reps had good depth.\n")
-        } else {
-            summary.append("\nNo reps were completed in this session.\n")
+                if (insufficientDepthPushups > 0) {
+                    summary.append("\nNotes:\n")
+                    summary.append("- You had $insufficientDepthPushups push-ups with insufficient depth. Lower your chest closer to the ground!\n")
+                } else if (pushupRepCount > 0) {
+                    summary.append("\nGreat work! All your push-ups had good depth.\n")
+                } else {
+                    summary.append("\nNo push-ups were completed in this session.\n")
+                }
+            }
+            "squat" -> {
+                summary.append("Squat Session Summary:\n")
+                summary.append("Total Reps: $squatRepCount\n")
+                summary.append("Duration: $durationSeconds seconds\n")
+
+                if (insufficientDepthSquats > 0) {
+                    summary.append("\nNotes:\n")
+                    summary.append("- You had $insufficientDepthSquats squats with insufficient depth. Try to go lower next time!\n")
+                } else if (squatRepCount > 0) {
+                    summary.append("\nGreat work! All your squats had good depth.\n")
+                } else {
+                    summary.append("\nNo squats were completed in this session.\n")
+                }
+            }
+            else -> {
+                summary.append("Session Summary:\n")
+                summary.append("Duration: $durationSeconds seconds\n")
+                summary.append("\nNo reps were completed in this session.\n")
+            }
         }
 
         return summary.toString()
     }
 
     private enum class SquatState { UP, DOWN }
+    private enum class PushupState { UP, DOWN }
 
     private object AngleThresholds {
+        // Squat thresholds
         const val SQUAT_KNEE_TRANSITION_DOWN = 150f // Angle to detect start of squat (from UP to DOWN)
         const val SQUAT_KNEE_TRANSITION_UP = 160f   // Angle to detect end of squat (from DOWN to UP)
-        const val SQUAT_KNEE_MIN_DEPTH = 90f      // Target angle for full squat depth
-        const val PUSHUP_ELBOW_MAX = 90f // Max elbow angle for a valid push-up at the bottom
+        const val SQUAT_KNEE_MIN_DEPTH = 90f        // Target angle for full squat depth
+        
+        // Push-up thresholds
+        const val PUSHUP_ELBOW_TRANSITION_DOWN = 150f  // Angle to detect start of descent
+        const val PUSHUP_ELBOW_TRANSITION_UP = 160f    // Angle to detect start of ascent
+        const val PUSHUP_ELBOW_MIN_DEPTH = 90f         // Target elbow angle at bottom
+        const val PUSHUP_BODY_ALIGNMENT_MAX = 15f      // Max deviation from straight line (degrees)
     }
 
     private object RelativePositionThresholds {
