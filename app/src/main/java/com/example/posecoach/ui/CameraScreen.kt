@@ -1,359 +1,325 @@
 package com.example.posecoach.ui
 
-import android.Manifest
-import android.util.Log
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.posecoach.ModelWarmer
 import com.example.posecoach.data.CameraState
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
+import com.example.posecoach.data.FeedbackMessage
+import com.example.posecoach.data.FeedbackSeverity
+import com.example.posecoach.data.LiveSessionResult
+import com.example.posecoach.data.PoseResult
+import com.example.posecoach.logic.DefaultPoseEvaluator
+import com.example.posecoach.logic.PoseEvaluator
+import com.example.posecoach.pose.PoseEngine
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
-import androidx.core.content.ContextCompat
-import kotlin.math.min
 
-@Composable
-fun LogCompositions(tag: String) {
-    class Ref(var value: Int)
-    val ref = remember { Ref(0) }
-    SideEffect {
-        ref.value++
-        Log.d("Recomposition-Track", "$tag recomposed ${ref.value} times")
+enum class SessionState { IDLE, COUNTDOWN, ACTIVE, FINISHED }
+
+data class ExerciseSessionSummary(
+    val exerciseId: String,
+    val exerciseName: String,
+    val reps: Int,
+    val durationMillis: Long,
+    val feedbackMessages: List<FeedbackMessage> = emptyList()
+)
+
+class CameraViewModel : ViewModel() {
+
+    companion object {
+        const val SKIP_POSE_EVALUATION = false
     }
-}
 
-@OptIn(ExperimentalPermissionsApi::class)
-@Composable
-fun CameraScreen(
-    navBackToStart: () -> Unit,
-    navToSessionResults: () -> Unit,
-    viewModel: CameraViewModel = viewModel()
-) {
-    LogCompositions("CameraScreen")
+    private lateinit var poseEngine: PoseEngine
+    private val poseEvaluator: PoseEvaluator = DefaultPoseEvaluator()
+    private val cameraExecutor = Executors.newSingleThreadExecutor()
 
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    private val _poseResult = MutableStateFlow<PoseResult?>(null)
+    val poseResult: StateFlow<PoseResult?> = _poseResult.asStateFlow()
 
-    val cameraPermission = rememberPermissionState(Manifest.permission.CAMERA)
+    private val _feedback = MutableStateFlow<FeedbackMessage?>(null)
+    val feedback: StateFlow<FeedbackMessage?> = _feedback.asStateFlow()
 
-    LaunchedEffect(Unit) {
-        if (!cameraPermission.status.isGranted) {
-            cameraPermission.launchPermissionRequest()
+    private val _fps = MutableStateFlow(0f)
+    val fps: StateFlow<Float> = _fps.asStateFlow()
+
+    private val _cameraState = MutableStateFlow<CameraState>(CameraState.Front)
+    val cameraState: StateFlow<CameraState> = _cameraState.asStateFlow()
+
+    private val _useGpuDelegate = MutableStateFlow(false)
+    val useGpuDelegate: StateFlow<Boolean> = _useGpuDelegate.asStateFlow()
+
+    private val _cameraError = MutableStateFlow<String?>(null)
+    val cameraError: StateFlow<String?> = _cameraError.asStateFlow()
+
+    private val _repCount = MutableStateFlow(0)
+    val repCount: StateFlow<Int> = _repCount.asStateFlow()
+
+    private val _sessionState = MutableStateFlow(SessionState.IDLE)
+    val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
+
+    private val _countdownValue = MutableStateFlow(5)
+    val countdownValue: StateFlow<Int> = _countdownValue.asStateFlow()
+
+    private val _currentExercise = MutableStateFlow("squat")
+    val currentExercise: StateFlow<String> = _currentExercise.asStateFlow()
+
+    private val _targetReps = MutableStateFlow(10)
+    val targetReps: StateFlow<Int> = _targetReps.asStateFlow()
+
+    private val _workoutSessions = MutableStateFlow<List<ExerciseSessionSummary>>(emptyList())
+    val workoutSessions: StateFlow<List<ExerciseSessionSummary>> = _workoutSessions.asStateFlow()
+
+    private val _navigateHomeAfterSummary = MutableStateFlow(false)
+    val navigateHomeAfterSummary: StateFlow<Boolean> = _navigateHomeAfterSummary.asStateFlow()
+
+    private val _sessionResult = MutableStateFlow<LiveSessionResult?>(null)
+    val sessionResult: StateFlow<LiveSessionResult?> = _sessionResult.asStateFlow()
+
+    private val _exerciseRemainingSeconds = MutableStateFlow<Int?>(null)
+    val exerciseRemainingSeconds: StateFlow<Int?> = _exerciseRemainingSeconds.asStateFlow()
+
+    private val _exerciseElapsedSeconds = MutableStateFlow(0)
+    val exerciseElapsedSeconds: StateFlow<Int> = _exerciseElapsedSeconds.asStateFlow()
+
+    private var sessionStartTimeMillis: Long? = null
+    private val sessionFeedbackHistory = mutableListOf<FeedbackMessage>()
+
+    private fun severityPriority(severity: FeedbackSeverity): Int =
+        when (severity) {
+            FeedbackSeverity.INFO -> 0
+            FeedbackSeverity.WARNING -> 1
+            FeedbackSeverity.ERROR -> 2
         }
+
+    fun setTargetReps(target: Int) {
+        _targetReps.value = target
     }
 
-    val currentExercise by viewModel.currentExercise.collectAsState()
-    val targetReps by viewModel.targetReps.collectAsState()
-    val feedback by viewModel.feedback.collectAsState()
-    val fps by viewModel.fps.collectAsState()
-    val cameraState by viewModel.cameraState.collectAsState()
-    val useGpu by viewModel.useGpuDelegate.collectAsState()
-    val cameraError by viewModel.cameraError.collectAsState()
-    val repCount by viewModel.repCount.collectAsState()
-    val sessionState by viewModel.sessionState.collectAsState()
-    val countdownValue by viewModel.countdownValue.collectAsState()
-    val sessionResult by viewModel.sessionResult.collectAsState()
-    val exerciseRemainingSeconds by viewModel.exerciseRemainingSeconds.collectAsState()
-    val exerciseElapsedSeconds by viewModel.exerciseElapsedSeconds.collectAsState()
-
-    val isPlank = currentExercise == "plank"
-    var infoExerciseId by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(sessionResult) {
-        if (sessionResult != null) navToSessionResults()
+    fun setExercise(exercise: String) {
+        _currentExercise.value = exercise
+        poseEvaluator.reset()
+        _repCount.value = 0
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (cameraPermission.status.isGranted) {
+    fun resetRepCount() {
+        poseEvaluator.reset()
+        _repCount.value = 0
+    }
 
-            CameraPreview(
-                cameraState = cameraState,
-                onCameraReady = { provider, previewView ->
-                    viewModel.bindCamera(context, lifecycleOwner, provider, previewView)
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+    fun finishSessionAndGoHome() {
+        _navigateHomeAfterSummary.value = true
+        finishSession()
+    }
 
-            PoseOverlay(
-                poseResultFlow = viewModel.poseResult,
-                cameraState = cameraState,
-                modifier = Modifier.fillMaxSize()
-            )
+    fun bindCamera(
+        context: android.content.Context,
+        lifecycleOwner: LifecycleOwner,
+        cameraProvider: ProcessCameraProvider,
+        previewView: PreviewView
+    ) {
+        if (!::poseEngine.isInitialized) {
+            val warmedEngine = ModelWarmer.getInstance(context).getWarmedEngine()
+            poseEngine = warmedEngine ?: PoseEngine(context).also { it.initialize() }
 
-            CameraControls(
-                feedback = feedback,
-                fps = fps,
-                useGpu = useGpu,
-                repCount = if (isPlank) 0 else repCount,
-                sessionState = sessionState,
-                currentExercise = currentExercise,
-                targetReps = targetReps,
-                onCameraSwitch = { viewModel.switchCamera(context, lifecycleOwner) },
-                onToggleDelegate = { viewModel.toggleDelegate(context, lifecycleOwner) },
-                onResetRepCount = { viewModel.resetRepCount() },
-                onStartSession = { viewModel.startSessionCountdown(null) },
-                onFinishSession = { viewModel.finishSession() },
-                onExerciseSelected = {
-                    viewModel.setExercise(it)
-                    infoExerciseId = it
-                },
-                onTargetRepsChange = { viewModel.setTargetReps(it) },
-                onBackToHome = {
-                    if (sessionState == SessionState.ACTIVE) viewModel.finishSessionAndGoHome()
-                    else navBackToStart()
-                },
-                showReps = !isPlank,
-                modifier = Modifier.fillMaxSize()
-            )
+            viewModelScope.launch {
+                poseEngine.poseResults.collect { result ->
+                    if (_sessionState.value == SessionState.ACTIVE) {
+                        _poseResult.value = result
+                        result?.let { pose ->
+                            val feedbackMsg =
+                                if (SKIP_POSE_EVALUATION) null
+                                else poseEvaluator.evaluate(pose, _currentExercise.value)
 
-            if (sessionState == SessionState.ACTIVE) {
-                val shownSeconds = exerciseRemainingSeconds ?: exerciseElapsedSeconds
-                if (isPlank) {
-                    PlankTimerOverlay(
-                        timeText = formatMmSs(shownSeconds),
-                        caption = if (exerciseRemainingSeconds != null) "Time left" else "Time"
-                    )
-                } else {
-                    TimerOverlayTop(
-                        text = formatMmSs(shownSeconds),
-                        sizeMultiplier = 0.8f
-                    )
-                }
-            }
-
-            if (sessionState == SessionState.COUNTDOWN) {
-                CountdownOverlay(countdownValue)
-            }
-
-            if (sessionState == SessionState.IDLE) {
-                infoExerciseId?.let { id ->
-                    exercises.find { it.id == id }?.let { exercise ->
-                        ExerciseInfoOverlay(
-                            exercise = exercise,
-                            onCancel = { infoExerciseId = null },
-                            onConfirmStart = {
-                                infoExerciseId = null
-                                viewModel.startSessionCountdown(it)
+                            feedbackMsg?.let { msg ->
+                                if (sessionFeedbackHistory.isEmpty() ||
+                                    sessionFeedbackHistory.last().text != msg.text
+                                ) {
+                                    sessionFeedbackHistory.add(msg)
+                                }
+                                _feedback.value = msg
                             }
-                        )
+
+                            val newRepCount = poseEvaluator.getRepCount()
+                            if (newRepCount != _repCount.value) {
+                                _repCount.value = newRepCount
+                            }
+                        }
+                    } else {
+                        _poseResult.value = null
                     }
                 }
             }
 
-            cameraError?.let { ErrorOverlay(it) }
-
-        } else {
-            PermissionDeniedScreen { cameraPermission.launchPermissionRequest() }
-        }
-    }
-}
-
-@Composable
-fun TimerOverlayTop(
-    text: String,
-    sizeMultiplier: Float = 1f
-) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        val cfg = LocalConfiguration.current
-        val w = maxWidth.value
-
-        // Samsung-friendly: scale from WIDTH, and compensate for fontScale
-        val scale = (w / 360f).clamp(0.85f, 1.35f)
-        val fontScale = cfg.fontScale.clamp(0.85f, 1.25f)
-        val finalTextScale = (scale / fontScale).clamp(0.85f, 1.35f)
-
-        val topPad = (10f * scale).dp
-        val font = (24f * finalTextScale * sizeMultiplier)
-            .clamp(14f, 30f)
-            .sp
-        val corner = (14f * scale).clamp(12f, 22f).dp
-        val hPad = (14f * scale).clamp(10f, 22f).dp
-        val vPad = (7f * scale).clamp(6f, 14f).dp
-
-        Text(
-            text = text,
-            color = Color.White,
-            fontSize = font,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .padding(top = topPad)
-                .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(corner))
-                .padding(horizontal = hPad, vertical = vPad)
-        )
-    }
-}
-
-@Composable
-fun PlankTimerOverlay(
-    timeText: String,
-    caption: String,
-    sizeMultiplier: Float = 1f
-) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing),
-        contentAlignment = Alignment.TopStart
-    ) {
-        val cfg = LocalConfiguration.current
-        val w = maxWidth.value
-        val h = maxHeight.value
-        val base = min(w, h)
-
-        // Mix width + min dimension for better behavior on tablets/landscape
-        val scale = ((0.75f * (w / 360f)) + (0.25f * (base / 360f))).clamp(0.85f, 1.45f)
-
-        val fontScale = cfg.fontScale.clamp(0.85f, 1.25f)
-        val finalTextScale = (scale / fontScale).clamp(0.85f, 1.45f)
-
-        val topPad = (8f * scale).dp
-        val corner = (16f * scale).clamp(12f, 24f).dp
-        val hPad = (16f * scale).clamp(10f, 26f).dp
-        val vPad = (11f * scale).clamp(8f, 20f).dp
-
-        val captionSp = (11f * finalTextScale * sizeMultiplier)
-            .clamp(9f, 14f)
-            .sp
-
-        val timeSp = (14f * finalTextScale * sizeMultiplier)
-            .clamp(12f, 24f)
-            .sp
-
-        Column(
-            modifier = Modifier
-                .padding(top = topPad)
-                .background(Color.Black.copy(alpha = 0.50f), RoundedCornerShape(corner))
-                .padding(horizontal = hPad, vertical = vPad),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = caption,
-                color = Color.White.copy(alpha = 0.85f),
-                fontSize = captionSp
-            )
-            Text(
-                text = timeText,
-                color = Color.White,
-                fontSize = timeSp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Composable
-fun CountdownOverlay(countdownValue: Int) {
-    val scale by animateFloatAsState(
-        targetValue = if (countdownValue > 0) 1.2f else 0.8f,
-        animationSpec = tween(400)
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.5f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = countdownValue.toString(),
-            fontSize = 120.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.graphicsLayer(
-                scaleX = scale,
-                scaleY = scale
-            )
-        )
-    }
-}
-
-@Composable
-fun PermissionDeniedScreen(onRequestPermission: () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Camera permission is required", textAlign = TextAlign.Center)
-            Spacer(Modifier.height(12.dp))
-            Button(onClick = onRequestPermission) { Text("Grant permission") }
-        }
-    }
-}
-
-@Composable
-fun ErrorOverlay(message: String) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(message, color = Color.White)
-    }
-}
-
-@Composable
-fun CameraPreview(
-    cameraState: CameraState,
-    onCameraReady: (ProcessCameraProvider, PreviewView) -> Unit,
-    modifier: Modifier
-) {
-    val context = LocalContext.current
-    val previewView = remember { PreviewView(context) }
-    val mainExecutor = remember { ContextCompat.getMainExecutor(context) }
-
-    // Use a stable provider future (don’t block with .get() on composition thread)
-    val providerFuture = remember { ProcessCameraProvider.getInstance(context) }
-
-    DisposableEffect(Unit) {
-        val listener = Runnable {
-            // This Runnable runs on MAIN thread because we pass mainExecutor
-            val provider = providerFuture.get()
-            onCameraReady(provider, previewView)
+            viewModelScope.launch { poseEngine.fps.collect { _fps.value = it } }
+            viewModelScope.launch { poseEngine.useGpuDelegate.collect { _useGpuDelegate.value = it } }
         }
 
-        providerFuture.addListener(listener, mainExecutor)
+        cameraProvider.unbindAll()
 
-        onDispose {
-            // Ensure unbindAll happens on MAIN thread
-            mainExecutor.execute {
-                runCatching { providerFuture.get().unbindAll() }
+        val preview = Preview.Builder()
+            .build()
+            .also { it.setSurfaceProvider(previewView.surfaceProvider) }
+
+        val imageAnalysis = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+            .also {
+                it.setAnalyzer(cameraExecutor) { imageProxy ->
+                    val currentState = _sessionState.value
+                    if (currentState == SessionState.ACTIVE || currentState == SessionState.COUNTDOWN) {
+                        poseEngine.detectPose(imageProxy, _cameraState.value.isFront())
+                    }
+                    imageProxy.close()
+                }
+            }
+
+        val preferred = _cameraState.value.toCameraSelector()
+        val selected: CameraSelector? = when {
+            cameraProvider.hasCamera(preferred) -> preferred
+            cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) -> CameraSelector.DEFAULT_BACK_CAMERA
+            cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) -> CameraSelector.DEFAULT_FRONT_CAMERA
+            else -> null
+        }
+
+        if (selected == null) {
+            _cameraError.value = "No suitable camera found on this device."
+            return
+        }
+
+        _cameraError.value = null
+
+        try {
+            cameraProvider.bindToLifecycle(lifecycleOwner, selected, preview, imageAnalysis)
+        } catch (e: Exception) {
+            _cameraError.value = "Camera binding failed: ${e.message}"
+        }
+    }
+
+    fun switchCamera(context: android.content.Context, lifecycleOwner: LifecycleOwner) {
+        _cameraState.value = _cameraState.value.toggle()
+    }
+
+    fun toggleDelegate(context: android.content.Context, lifecycleOwner: LifecycleOwner) {
+        viewModelScope.launch {
+            if (::poseEngine.isInitialized) poseEngine.close()
+            poseEngine = PoseEngine(context).also { it.initialize() }
+            poseEngine.toggleDelegate()
+        }
+    }
+
+    fun startSessionCountdown(durationSeconds: Int?) {
+        if (_sessionState.value != SessionState.IDLE) return
+
+        viewModelScope.launch {
+            _sessionState.value = SessionState.COUNTDOWN
+
+            for (i in 5 downTo 1) {
+                _countdownValue.value = i
+                delay(1000)
+            }
+
+            poseEvaluator.startSession()
+            sessionStartTimeMillis = System.currentTimeMillis()
+            sessionFeedbackHistory.clear()
+            _feedback.value = null
+            _sessionState.value = SessionState.ACTIVE
+
+            _exerciseElapsedSeconds.value = 0
+            _exerciseRemainingSeconds.value = durationSeconds
+
+            while (_sessionState.value == SessionState.ACTIVE) {
+                delay(1000)
+                val remaining = _exerciseRemainingSeconds.value
+                if (remaining == null) {
+                    _exerciseElapsedSeconds.value += 1
+                } else {
+                    val next = remaining - 1
+                    _exerciseRemainingSeconds.value = next
+                    if (next <= 0) {
+                        finishSession()
+                        break
+                    }
+                }
             }
         }
     }
 
-    AndroidView(factory = { previewView }, modifier = modifier)
-}
+    fun finishSession() {
+        if (_sessionState.value != SessionState.ACTIVE) return
 
-private fun Float.clamp(minV: Float, maxV: Float): Float = when {
-    this < minV -> minV
-    this > maxV -> maxV
-    else -> this
-}
+        val now = System.currentTimeMillis()
+        val durationMillis = sessionStartTimeMillis?.let { start -> now - start } ?: 0L
 
-private fun formatMmSs(sec: Int): String =
-    String.format("%02d:%02d", sec / 60, sec % 60)
+        val sortedFeedback =
+            sessionFeedbackHistory
+                .distinctBy { it.text }
+                .sortedWith(compareBy { severityPriority(it.severity) })
+
+        val current = ExerciseSessionSummary(
+            exerciseId = _currentExercise.value,
+            exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
+            reps = _repCount.value,
+            durationMillis = durationMillis,
+            feedbackMessages = sortedFeedback
+        )
+
+        val updatedWorkoutSessions = _workoutSessions.value + current
+        _workoutSessions.value = updatedWorkoutSessions
+
+        val commonFeedback =
+            if (updatedWorkoutSessions.isNotEmpty()) {
+                val firstTexts = updatedWorkoutSessions.first().feedbackMessages.map { it.text }.toSet()
+                var intersection = firstTexts
+                for (session in updatedWorkoutSessions.drop(1)) {
+                    intersection = intersection.intersect(session.feedbackMessages.map { it.text }.toSet())
+                }
+                intersection
+                    .mapNotNull { text -> updatedWorkoutSessions.first().feedbackMessages.find { it.text == text } }
+                    .sortedWith(compareBy { severityPriority(it.severity) })
+            } else emptyList()
+
+        val allFeedback =
+            updatedWorkoutSessions
+                .flatMap { it.feedbackMessages }
+                .distinctBy { it.text }
+                .sortedWith(compareBy { severityPriority(it.severity) })
+
+        _sessionResult.value = LiveSessionResult(
+            exerciseType = _currentExercise.value,
+            exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
+            targetReps = _targetReps.value,
+            completedReps = _repCount.value,
+            durationMillis = durationMillis,
+            feedbackMessages = sortedFeedback,
+            evaluationSummary = poseEvaluator.getEvaluationSummary(_currentExercise.value),
+            overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory),
+            totalExercises = updatedWorkoutSessions.size,
+            totalReps = updatedWorkoutSessions.sumOf { it.reps },
+            totalDurationMillis = updatedWorkoutSessions.sumOf { it.durationMillis },
+            commonFeedbackMessages = commonFeedback,
+            allFeedbackMessages = allFeedback
+        )
+
+        _sessionState.value = SessionState.FINISHED
+        sessionStartTimeMillis = null
+        _exerciseRemainingSeconds.value = null
+        _exerciseElapsedSeconds.value = 0
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        if (::poseEngine.isInitialized) poseEngine.close()
+        cameraExecutor.shutdown()
+    }
+}

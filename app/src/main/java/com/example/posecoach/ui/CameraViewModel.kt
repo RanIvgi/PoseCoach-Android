@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.posecoach.ModelWarmer
 import com.example.posecoach.data.CameraState
 import com.example.posecoach.data.FeedbackMessage
+import com.example.posecoach.data.FeedbackSeverity
 import com.example.posecoach.data.LiveSessionResult
 import com.example.posecoach.data.PoseResult
 import com.example.posecoach.logic.DefaultPoseEvaluator
@@ -24,7 +25,6 @@ import java.util.concurrent.Executors
 
 enum class SessionState { IDLE, COUNTDOWN, ACTIVE, FINISHED }
 
-// Per-exercise session summary
 data class ExerciseSessionSummary(
     val exerciseId: String,
     val exerciseName: String,
@@ -35,17 +35,10 @@ data class ExerciseSessionSummary(
 
 class CameraViewModel : ViewModel() {
 
-    // ============================================================================
-    // 🔍 PERFORMANCE DEBUGGING FLAGS
-    // ============================================================================
     companion object {
-        // Set to true to SKIP pose evaluation (test if angle calculations are the bottleneck)
         const val SKIP_POSE_EVALUATION = false
-        
-        // Set to true to ENABLE detailed timing logs for pose evaluation
         const val ENABLE_EVALUATION_TIMING = true
     }
-    // ============================================================================
 
     private lateinit var poseEngine: PoseEngine
     private val poseEvaluator: PoseEvaluator = DefaultPoseEvaluator()
@@ -98,16 +91,20 @@ class CameraViewModel : ViewModel() {
     private val _sessionResult = MutableStateFlow<LiveSessionResult?>(null)
     val sessionResult: StateFlow<LiveSessionResult?> = _sessionResult.asStateFlow()
 
-    // Exercise timer:
-    // remainingSeconds == null => free mode (count up)
     private val _exerciseRemainingSeconds = MutableStateFlow<Int?>(null)
     val exerciseRemainingSeconds: StateFlow<Int?> = _exerciseRemainingSeconds.asStateFlow()
 
     private val _exerciseElapsedSeconds = MutableStateFlow(0)
     val exerciseElapsedSeconds: StateFlow<Int> = _exerciseElapsedSeconds.asStateFlow()
 
-    // Track feedback history during active session
     private val sessionFeedbackHistory = mutableListOf<FeedbackMessage>()
+
+    private fun severityPriority(severity: FeedbackSeverity): Int =
+        when (severity) {
+            FeedbackSeverity.INFO -> 0
+            FeedbackSeverity.WARNING -> 1
+            FeedbackSeverity.ERROR -> 2
+        }
 
     fun setTargetReps(target: Int) {
         _targetReps.value = target
@@ -119,9 +116,8 @@ class CameraViewModel : ViewModel() {
         _repCount.value = 0
     }
 
-    fun finishSessionAndGoHome() {
-        _navigateHomeAfterSummary.value = true
-        finishSession()
+    fun switchCamera() {
+        _cameraState.value = _cameraState.value.toggle()
     }
 
     fun bindCamera(
@@ -131,56 +127,28 @@ class CameraViewModel : ViewModel() {
         previewView: PreviewView
     ) {
         if (!::poseEngine.isInitialized) {
-            // PERFORMANCE FIX: Use pre-warmed PoseEngine instead of creating new one
-            // This eliminates the 2+ second freeze that would occur on first camera use
             val warmedEngine = ModelWarmer.getInstance(context).getWarmedEngine()
-            
-            if (warmedEngine != null) {
-                // Use the pre-warmed engine (instant, no freeze!)
-                android.util.Log.i("CameraViewModel", "✓ Using pre-warmed PoseEngine (0ms delay)")
-                poseEngine = warmedEngine
-            } else {
-                PoseEngine(context).also { it.initialize()
-                }
-            }
+            poseEngine = warmedEngine ?: PoseEngine(context).also { it.initialize() }
 
             viewModelScope.launch {
                 poseEngine.poseResults.collect { result ->
                     if (_sessionState.value == SessionState.ACTIVE) {
                         _poseResult.value = result
-                        result?.let {
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                                val feedbackMsg = if (SKIP_POSE_EVALUATION) {
-                                    null
-                                } else {
-                                    poseEvaluator.evaluate(it, _currentExercise.value)
+                        result?.let { pose ->
+                            val feedbackMsg = poseEvaluator.evaluate(pose, _currentExercise.value)
+                            feedbackMsg?.let { msg ->
+                                if (sessionFeedbackHistory.lastOrNull()?.text != msg.text) {
+                                    sessionFeedbackHistory.add(msg)
                                 }
-
-                                if (feedbackMsg != _feedback.value) {
-                                    _feedback.value = feedbackMsg
-                                }
-
-                                feedbackMsg?.let { msg ->
-                                    if (sessionFeedbackHistory.isEmpty() ||
-                                        sessionFeedbackHistory.last().text != msg.text) {
-                                        sessionFeedbackHistory.add(msg)
-                                    }
-                                }
-
-                                val newRepCount = poseEvaluator.getRepCount()
-                                if (newRepCount != _repCount.value) {
-                                    _repCount.value = newRepCount
-                                }
+                                _feedback.value = msg
                             }
+                            _repCount.value = poseEvaluator.getRepCount()
                         }
                     } else {
                         _poseResult.value = null
                     }
                 }
             }
-
-            viewModelScope.launch { poseEngine.fps.collect { _fps.value = it } }
-            viewModelScope.launch { poseEngine.useGpuDelegate.collect { _useGpuDelegate.value = it } }
         }
 
         cameraProvider.unbindAll()
@@ -194,195 +162,21 @@ class CameraViewModel : ViewModel() {
             .build()
             .also {
                 it.setAnalyzer(cameraExecutor) { imageProxy ->
-                    val currentState = _sessionState.value
-                    if (currentState == SessionState.ACTIVE || currentState == SessionState.COUNTDOWN) {
+                    val state = _sessionState.value
+                    if (state == SessionState.ACTIVE || state == SessionState.COUNTDOWN) {
                         poseEngine.detectPose(imageProxy, _cameraState.value.isFront())
                     }
                     imageProxy.close()
                 }
             }
 
-        var selectedCameraSelector: CameraSelector? = null
-        val preferredCamera = _cameraState.value.toCameraSelector()
-        selectedCameraSelector = when {
-            cameraProvider.hasCamera(preferredCamera) -> preferredCamera
-            cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) -> CameraSelector.DEFAULT_BACK_CAMERA
-            cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) -> CameraSelector.DEFAULT_FRONT_CAMERA
-            else -> null
-        }
-
-        if (selectedCameraSelector == null) {
-            _cameraError.value = "No suitable camera found on this device."
-            return
-        }
-        _cameraError.value = null
-
-        try {
-            cameraProvider.bindToLifecycle(
-                lifecycleOwner,
-                selectedCameraSelector,
-                preview,
-                imageAnalysis
-            )
-        } catch (e: Exception) {
-            _cameraError.value = "Camera binding failed: ${e.message}"
-        }
-    }
-
-    fun switchCamera(context: android.content.Context, lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
-        _cameraState.value = _cameraState.value.toggle()
-    }
-
-    fun toggleDelegate(context: android.content.Context, lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
-        viewModelScope.launch {
-            if (::poseEngine.isInitialized) poseEngine.close()
-            poseEngine = PoseEngine(context)
-            poseEngine.toggleDelegate()
-            poseEngine.initialize()
-        }
-    }
-
-    fun startSessionCountdown(durationSeconds: Int?) {
-        if (_sessionState.value != SessionState.IDLE) return
-
-        viewModelScope.launch {
-            _sessionState.value = SessionState.COUNTDOWN
-
-            for (i in 5 downTo 1) {
-                _countdownValue.value = i
-                delay(1000)
-            }
-
-            poseEvaluator.startSession()
-            sessionStartTimeMillis = System.currentTimeMillis()
-            sessionFeedbackHistory.clear()
-            _sessionState.value = SessionState.ACTIVE
-
-            _exerciseElapsedSeconds.value = 0
-            _exerciseRemainingSeconds.value = durationSeconds
-
-            while (_sessionState.value == SessionState.ACTIVE) {
-                delay(1000)
-
-                val remaining = _exerciseRemainingSeconds.value
-                if (remaining == null) {
-                    _exerciseElapsedSeconds.value += 1
-                } else {
-                    val next = remaining - 1
-                    _exerciseRemainingSeconds.value = next
-                    if (next <= 0) {
-                        finishSession()
-                        break
-                    }
-                }
-            }
-        }
-    }
-
-    fun finishSession() {
-        if (_sessionState.value != SessionState.ACTIVE) return
-
-        val now = System.currentTimeMillis()
-        val durationMillis = sessionStartTimeMillis?.let { start -> now - start } ?: 0L
-
-        // Use the exercise-aware summary version (the one you are already using later)
-        val formSummary = poseEvaluator.getEvaluationSummary(_currentExercise.value)
-
-        val overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory)
-
-        val current = ExerciseSessionSummary(
-            exerciseId = _currentExercise.value,
-            exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
-            reps = _repCount.value,
-            durationMillis = durationMillis,
-            feedbackMessages = sessionFeedbackHistory.toList()
-        )
-
-        val updatedWorkoutSessions = _workoutSessions.value + current
-        _workoutSessions.value = updatedWorkoutSessions
-
-        val totalReps = updatedWorkoutSessions.sumOf { it.reps }
-        val totalDurationMillis = updatedWorkoutSessions.sumOf { it.durationMillis }
-        val totalExercises = updatedWorkoutSessions.size
-
-        // Common feedback (intersection by text)
-        val commonFeedback = if (updatedWorkoutSessions.isNotEmpty()) {
-            val firstTexts = updatedWorkoutSessions.first().feedbackMessages.map { it.text }.toSet()
-            var intersection = firstTexts
-            for (session in updatedWorkoutSessions.drop(1)) {
-                intersection = intersection.intersect(session.feedbackMessages.map { it.text }.toSet())
-            }
-            intersection.mapNotNull { text ->
-                updatedWorkoutSessions.first().feedbackMessages.find { it.text == text }
-            }
-        } else {
-            emptyList()
-        }
-
-        // All feedback (concatenation)
-        val allFeedback = updatedWorkoutSessions.flatMap { it.feedbackMessages }
-
-        val sessionResult = LiveSessionResult(
-            exerciseType = _currentExercise.value,
-            exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
-            targetReps = _targetReps.value,
-            completedReps = _repCount.value,
-            durationMillis = durationMillis,
-            feedbackMessages = sessionFeedbackHistory.toList(),
-            evaluationSummary = formSummary,
-            overallScore = overallScore,
-            totalExercises = totalExercises,
-            totalReps = totalReps,
-            totalDurationMillis = totalDurationMillis,
-            commonFeedbackMessages = commonFeedback,
-            allFeedbackMessages = allFeedback
-        )
-
-        _sessionResult.value = sessionResult
-        _sessionState.value = SessionState.FINISHED
-        sessionStartTimeMillis = null
-
-        _exerciseRemainingSeconds.value = null
-        _exerciseElapsedSeconds.value = 0
-    }
-
-    fun resetSession() {
-        poseEvaluator.reset()
-        _repCount.value = 0
-        _sessionState.value = SessionState.IDLE
-        _summaryText.value = null
-        _sessionResult.value = null
-        _feedback.value = null
-        sessionStartTimeMillis = null
-        sessionFeedbackHistory.clear()
-        _navigateHomeAfterSummary.value = false
-
-        _exerciseRemainingSeconds.value = null
-        _exerciseElapsedSeconds.value = 0
-    }
-
-    fun resetRepCount() {
-        poseEvaluator.reset()
-        _repCount.value = 0
+        val selector = _cameraState.value.toCameraSelector()
+        cameraProvider.bindToLifecycle(lifecycleOwner, selector, preview, imageAnalysis)
     }
 
     override fun onCleared() {
         super.onCleared()
-        if (::poseEngine.isInitialized) {
-            poseEngine.close()
-        }
+        if (::poseEngine.isInitialized) poseEngine.close()
         cameraExecutor.shutdown()
-    }
-
-    private fun formatDuration(millis: Long): String {
-        val totalSeconds = millis / 1000
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        return String.format("%02d:%02d", minutes, seconds)
-    }
-
-    fun resetWorkout() {
-        _workoutSessions.value = emptyList()
-        resetSession()
     }
 }
