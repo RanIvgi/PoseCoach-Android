@@ -15,7 +15,9 @@ data class LiveSessionResult(
     val overallScore: Int, // 0-100 score based on feedback
     val totalExercises: Int,
     val totalReps: Int,
-    val totalDurationMillis: Long
+    val totalDurationMillis: Long,
+    val commonFeedbackMessages: List<FeedbackMessage> = emptyList(),
+    val allFeedbackMessages: List<FeedbackMessage> = emptyList()
 ) {
     companion object {
         /**

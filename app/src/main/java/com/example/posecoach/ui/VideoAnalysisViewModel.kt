@@ -172,8 +172,16 @@ class VideoAnalysisViewModel(application: Application) : AndroidViewModel(applic
                 
                 // Step 4: Generate final results
                 val repCount = poseEvaluator.getRepCount()
-                val evaluationSummary = poseEvaluator.getEvaluationSummary()
+                val evaluationSummary = poseEvaluator.getEvaluationSummary(exerciseId)
                 val feedbackList = feedbackSet.toList()
+
+                // LOGGING ADDED HERE
+                if (feedbackList.isNotEmpty()) {
+                    Log.d(TAG, "Analysis Feedback Generated: ${feedbackList.joinToString(", ") { it.text }}")
+                } else {
+                    Log.d(TAG, "Analysis Feedback: No specific feedback generated.")
+                }
+
                 val overallScore = VideoAnalysisResult.calculateScore(feedbackList)
                 
                 _analysisResult.value = VideoAnalysisResult(

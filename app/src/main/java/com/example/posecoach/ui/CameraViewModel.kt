@@ -29,15 +29,23 @@ data class ExerciseSessionSummary(
     val exerciseId: String,
     val exerciseName: String,
     val reps: Int,
-    val durationMillis: Long
+    val durationMillis: Long,
+    val feedbackMessages: List<FeedbackMessage> = emptyList()
 )
 
 class CameraViewModel : ViewModel() {
 
+    // ============================================================================
+    // 🔍 PERFORMANCE DEBUGGING FLAGS
+    // ============================================================================
     companion object {
+        // Set to true to SKIP pose evaluation (test if angle calculations are the bottleneck)
         const val SKIP_POSE_EVALUATION = false
+        
+        // Set to true to ENABLE detailed timing logs for pose evaluation
         const val ENABLE_EVALUATION_TIMING = true
     }
+    // ============================================================================
 
     private lateinit var poseEngine: PoseEngine
     private val poseEvaluator: PoseEvaluator = DefaultPoseEvaluator()
@@ -123,12 +131,17 @@ class CameraViewModel : ViewModel() {
         previewView: PreviewView
     ) {
         if (!::poseEngine.isInitialized) {
+            // PERFORMANCE FIX: Use pre-warmed PoseEngine instead of creating new one
+            // This eliminates the 2+ second freeze that would occur on first camera use
             val warmedEngine = ModelWarmer.getInstance(context).getWarmedEngine()
-
-            poseEngine = if (warmedEngine != null) {
-                warmedEngine
+            
+            if (warmedEngine != null) {
+                // Use the pre-warmed engine (instant, no freeze!)
+                android.util.Log.i("CameraViewModel", "✓ Using pre-warmed PoseEngine (0ms delay)")
+                poseEngine = warmedEngine
             } else {
-                PoseEngine(context).also { it.initialize() }
+                PoseEngine(context).also { it.initialize()
+                }
             }
 
             viewModelScope.launch {
@@ -267,45 +280,70 @@ class CameraViewModel : ViewModel() {
     }
 
     fun finishSession() {
-        if (_sessionState.value == SessionState.ACTIVE) {
-            val now = System.currentTimeMillis()
-            val durationMillis = sessionStartTimeMillis?.let { start -> now - start } ?: 0L
-            val formSummary = poseEvaluator.getEvaluationSummary()
-            val overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory)
+        if (_sessionState.value != SessionState.ACTIVE) return
 
-            val current = ExerciseSessionSummary(
-                exerciseId = _currentExercise.value,
-                exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
-                reps = _repCount.value,
-                durationMillis = durationMillis
-            )
-            _workoutSessions.value = _workoutSessions.value + current
+        val now = System.currentTimeMillis()
+        val durationMillis = sessionStartTimeMillis?.let { start -> now - start } ?: 0L
 
-            val totalReps = _workoutSessions.value.sumOf { it.reps }
-            val totalDurationMillis = _workoutSessions.value.sumOf { it.durationMillis }
-            val totalExercises = _workoutSessions.value.size
+        // Use the exercise-aware summary version (the one you are already using later)
+        val formSummary = poseEvaluator.getEvaluationSummary(_currentExercise.value)
 
-            val sessionResult = LiveSessionResult(
-                exerciseType = _currentExercise.value,
-                exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
-                targetReps = _targetReps.value,
-                completedReps = _repCount.value,
-                durationMillis = durationMillis,
-                feedbackMessages = sessionFeedbackHistory.toList(),
-                evaluationSummary = formSummary,
-                overallScore = overallScore,
-                totalExercises = totalExercises,
-                totalReps = totalReps,
-                totalDurationMillis = totalDurationMillis
-            )
+        val overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory)
 
-            _sessionResult.value = sessionResult
-            _sessionState.value = SessionState.FINISHED
-            sessionStartTimeMillis = null
+        val current = ExerciseSessionSummary(
+            exerciseId = _currentExercise.value,
+            exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
+            reps = _repCount.value,
+            durationMillis = durationMillis,
+            feedbackMessages = sessionFeedbackHistory.toList()
+        )
 
-            _exerciseRemainingSeconds.value = null
-            _exerciseElapsedSeconds.value = 0
+        val updatedWorkoutSessions = _workoutSessions.value + current
+        _workoutSessions.value = updatedWorkoutSessions
+
+        val totalReps = updatedWorkoutSessions.sumOf { it.reps }
+        val totalDurationMillis = updatedWorkoutSessions.sumOf { it.durationMillis }
+        val totalExercises = updatedWorkoutSessions.size
+
+        // Common feedback (intersection by text)
+        val commonFeedback = if (updatedWorkoutSessions.isNotEmpty()) {
+            val firstTexts = updatedWorkoutSessions.first().feedbackMessages.map { it.text }.toSet()
+            var intersection = firstTexts
+            for (session in updatedWorkoutSessions.drop(1)) {
+                intersection = intersection.intersect(session.feedbackMessages.map { it.text }.toSet())
+            }
+            intersection.mapNotNull { text ->
+                updatedWorkoutSessions.first().feedbackMessages.find { it.text == text }
+            }
+        } else {
+            emptyList()
         }
+
+        // All feedback (concatenation)
+        val allFeedback = updatedWorkoutSessions.flatMap { it.feedbackMessages }
+
+        val sessionResult = LiveSessionResult(
+            exerciseType = _currentExercise.value,
+            exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
+            targetReps = _targetReps.value,
+            completedReps = _repCount.value,
+            durationMillis = durationMillis,
+            feedbackMessages = sessionFeedbackHistory.toList(),
+            evaluationSummary = formSummary,
+            overallScore = overallScore,
+            totalExercises = totalExercises,
+            totalReps = totalReps,
+            totalDurationMillis = totalDurationMillis,
+            commonFeedbackMessages = commonFeedback,
+            allFeedbackMessages = allFeedback
+        )
+
+        _sessionResult.value = sessionResult
+        _sessionState.value = SessionState.FINISHED
+        sessionStartTimeMillis = null
+
+        _exerciseRemainingSeconds.value = null
+        _exerciseElapsedSeconds.value = 0
     }
 
     fun resetSession() {

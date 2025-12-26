@@ -426,7 +426,7 @@ class DefaultPoseEvaluator : PoseEvaluator {
         sessionStartTime = System.currentTimeMillis()
     }
 
-    override fun getEvaluationSummary(): String? {
+    override fun getEvaluationSummary(exerciseType: String): String? {
         if (sessionStartTime == 0L) {
             return null // Session never started
         }
@@ -436,8 +436,8 @@ class DefaultPoseEvaluator : PoseEvaluator {
 
         val summary = StringBuilder()
         
-        // Determine which exercise metrics to show based on current exercise type
-        when (currentExerciseType.lowercase()) {
+        // Determine which exercise metrics to show based on requested exercise type
+        when (exerciseType.lowercase()) {
             "pushup", "push-up", "push_up" -> {
                 summary.append("Push-up Session Summary:\n")
                 summary.append("Total Reps: $pushupRepCount\n")
@@ -474,6 +474,17 @@ class DefaultPoseEvaluator : PoseEvaluator {
         }
 
         return summary.toString()
+    }
+
+    override fun getOverallSessionSummary(): String? {
+        // Since this evaluator resets between exercises, it mainly tracks the current active session.
+        // For a multi-exercise summary, we'd need to persist state across resets or rely on the ViewModel.
+        // Returning a simple aggregation of current internal state for now.
+        val sb = StringBuilder()
+        if (squatRepCount > 0) sb.append("Squats: $squatRepCount\n")
+        if (pushupRepCount > 0) sb.append("Push-ups: $pushupRepCount\n")
+        
+        return if (sb.isNotEmpty()) sb.toString() else null
     }
 
     private enum class SquatState { UP, DOWN }
