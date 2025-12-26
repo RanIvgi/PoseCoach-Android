@@ -40,6 +40,7 @@ fun CameraControls(
     onExerciseSelected: (String) -> Unit,
     onTargetRepsChange: (Int) -> Unit,
     onBackToHome: () -> Unit,
+    showReps: Boolean,
     modifier: Modifier = Modifier
 ) {
     LogCompositions("CameraControls")
@@ -69,16 +70,18 @@ fun CameraControls(
         }
 
         if (sessionState == SessionState.ACTIVE) {
-            Text(
-                text = "Reps: $repCount",
-                color = Color.White,
-                style = MaterialTheme.typography.h5,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(16.dp)
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .padding(8.dp)
-            )
+            if (showReps) {
+                Text(
+                    text = "Reps: $repCount",
+                    color = Color.White,
+                    style = MaterialTheme.typography.h5,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.dp)
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .padding(8.dp)
+                )
+            }
         }
 
         Column(

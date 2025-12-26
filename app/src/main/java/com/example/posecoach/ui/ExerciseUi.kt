@@ -1,21 +1,25 @@
 package com.example.posecoach.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.example.posecoach.R
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
 
 data class ExerciseUi(
     val id: String,
@@ -71,18 +75,39 @@ val exercises = listOf(
 fun ExerciseInfoOverlay(
     exercise: ExerciseUi,
     onCancel: () -> Unit,
-    onConfirmStart: () -> Unit
+    onConfirmStart: (durationSeconds: Int?) -> Unit
 ) {
+    // You have this in your project; keep it if it exists
     LogCompositions("ExerciseInfoOverlay")
-    
-    var understood = remember { mutableStateOf(false) }
+
+    val understood = remember { mutableStateOf(false) }
+
+    val isPlank = exercise.id == "plank"
+    val plankTimed = remember { mutableStateOf(true) }          // timed vs free
+    val plankDurationSeconds = remember { mutableStateOf(60) }  // default 01:00
+    val showDurationPicker = remember { mutableStateOf(false) } // open/close list
+
+    fun formatMmSs(totalSeconds: Int): String {
+        val m = totalSeconds / 60
+        val s = totalSeconds % 60
+        return "%02d:%02d".format(m, s)
+    }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        // Background scrim: only this closes the overlay
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Color.Black.copy(alpha = 0.7f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { onCancel() }
+        )
+
         Card(
             shape = RoundedCornerShape(16.dp),
             backgroundColor = Color(0xFF0D47A1),
@@ -133,11 +158,80 @@ fun ExerciseInfoOverlay(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                // ---- Plank options ----
+                if (isPlank) {
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                    Text(
+                        text = "Plank settings:",
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { plankTimed.value = true },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = if (plankTimed.value) Color(0xFF0B3C91) else Color(0xFF5476A8)
+                            )
+                        ) { Text("Timed", color = Color.White) }
+
+                        Button(
+                            onClick = { plankTimed.value = false; showDurationPicker.value = false },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = if (!plankTimed.value) Color(0xFF0B3C91) else Color(0xFF5476A8)
+                            )
+                        ) { Text("Free", color = Color.White) }
+                    }
+
+                    if (plankTimed.value) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(text = "Duration", color = Color.White)
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        OutlinedButton(
+                            onClick = { showDurationPicker.value = !showDurationPicker.value },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                backgroundColor = Color.White,
+                                contentColor = Color.Black
+                            )
+                        ) {
+                            Text(
+                                text = "Selected: ${formatMmSs(plankDurationSeconds.value)}",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (showDurationPicker.value) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            DurationScrollTapPicker(
+                                valueSeconds = plankDurationSeconds.value,
+                                onValueChange = {
+                                    plankDurationSeconds.value = it
+                                    showDurationPicker.value = false // close after selection
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp)
+                                    .zIndex(10f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
+
+                // ---- confirmation checkbox ----
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = understood.value,
                         onCheckedChange = { understood.value = it }
@@ -150,6 +244,7 @@ fun ExerciseInfoOverlay(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // ---- actions ----
                 Row(
                     horizontalArrangement = Arrangement.End,
                     modifier = Modifier.fillMaxWidth()
@@ -157,10 +252,19 @@ fun ExerciseInfoOverlay(
                     TextButton(onClick = onCancel) {
                         Text(text = "Cancel", color = Color.White)
                     }
+
                     Spacer(modifier = Modifier.width(8.dp))
+
                     Button(
-                        onClick = onConfirmStart,
                         enabled = understood.value,
+                        onClick = {
+                            val durationOrNull =
+                                if (exercise.id == "plank" && !plankTimed.value) null
+                                else if (exercise.id == "plank") plankDurationSeconds.value
+                                else null
+
+                            onConfirmStart(durationOrNull)
+                        },
                         colors = ButtonDefaults.buttonColors(
                             backgroundColor = Color(0xFF0B3C91),
                             disabledBackgroundColor = Color(0xFF5476A8)
@@ -168,6 +272,68 @@ fun ExerciseInfoOverlay(
                     ) {
                         Text(text = "Start exercise", color = Color.White)
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DurationScrollTapPicker(
+    valueSeconds: Int,
+    onValueChange: (Int) -> Unit,
+    minSeconds: Int = 0,
+    maxSeconds: Int = 600,
+    stepSeconds: Int = 5,
+    modifier: Modifier = Modifier,
+) {
+    val options = remember(minSeconds, maxSeconds, stepSeconds) {
+        (minSeconds..maxSeconds step stepSeconds).toList()
+    }
+
+    fun mmss(totalSeconds: Int): String {
+        val m = totalSeconds / 60
+        val s = totalSeconds % 60
+        return "%02d:%02d".format(m, s)
+    }
+
+    val state = rememberLazyListState()
+
+    LaunchedEffect(options, valueSeconds) {
+        val idx = options.indexOf(valueSeconds).takeIf { it >= 0 } ?: 0
+        state.scrollToItem(idx.coerceAtLeast(0))
+    }
+
+    LazyColumn(
+        state = state,
+        modifier = modifier
+            .background(Color.White, shape = RoundedCornerShape(12.dp))
+            .padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        itemsIndexed(options) { _, sec ->
+            val selected = sec == valueSeconds
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onValueChange(sec) }
+                    .padding(vertical = 10.dp, horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = mmss(sec),
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (selected) Color(0xFF0B3C91) else Color.Black,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (selected) {
+                    Text(
+                        text = "✓",
+                        color = Color(0xFF0B3C91),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

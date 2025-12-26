@@ -34,17 +34,10 @@ data class ExerciseSessionSummary(
 
 class CameraViewModel : ViewModel() {
 
-    // ============================================================================
-    // 🔍 PERFORMANCE DEBUGGING FLAGS
-    // ============================================================================
     companion object {
-        // Set to true to SKIP pose evaluation (test if angle calculations are the bottleneck)
         const val SKIP_POSE_EVALUATION = false
-        
-        // Set to true to ENABLE detailed timing logs for pose evaluation
         const val ENABLE_EVALUATION_TIMING = true
     }
-    // ============================================================================
 
     private lateinit var poseEngine: PoseEngine
     private val poseEvaluator: PoseEvaluator = DefaultPoseEvaluator()
@@ -97,6 +90,14 @@ class CameraViewModel : ViewModel() {
     private val _sessionResult = MutableStateFlow<LiveSessionResult?>(null)
     val sessionResult: StateFlow<LiveSessionResult?> = _sessionResult.asStateFlow()
 
+    // Exercise timer:
+    // remainingSeconds == null => free mode (count up)
+    private val _exerciseRemainingSeconds = MutableStateFlow<Int?>(null)
+    val exerciseRemainingSeconds: StateFlow<Int?> = _exerciseRemainingSeconds.asStateFlow()
+
+    private val _exerciseElapsedSeconds = MutableStateFlow(0)
+    val exerciseElapsedSeconds: StateFlow<Int> = _exerciseElapsedSeconds.asStateFlow()
+
     // Track feedback history during active session
     private val sessionFeedbackHistory = mutableListOf<FeedbackMessage>()
 
@@ -122,20 +123,12 @@ class CameraViewModel : ViewModel() {
         previewView: PreviewView
     ) {
         if (!::poseEngine.isInitialized) {
-            // PERFORMANCE FIX: Use pre-warmed PoseEngine instead of creating new one
-            // This eliminates the 2+ second freeze that would occur on first camera use
             val warmedEngine = ModelWarmer.getInstance(context).getWarmedEngine()
-            
-            if (warmedEngine != null) {
-                // Use the pre-warmed engine (instant, no freeze!)
-                android.util.Log.i("CameraViewModel", "✓ Using pre-warmed PoseEngine (0ms delay)")
-                poseEngine = warmedEngine
+
+            poseEngine = if (warmedEngine != null) {
+                warmedEngine
             } else {
-                // Fallback: Create new engine if warm-up somehow failed or wasn't started
-                // This shouldn't normally happen since MainActivity starts warm-up
-                android.util.Log.w("CameraViewModel", "⚠️ Warmed engine not available, creating new one (will cause delay)")
-                poseEngine = PoseEngine(context)
-                poseEngine.initialize()
+                PoseEngine(context).also { it.initialize() }
             }
 
             viewModelScope.launch {
@@ -143,49 +136,24 @@ class CameraViewModel : ViewModel() {
                     if (_sessionState.value == SessionState.ACTIVE) {
                         _poseResult.value = result
                         result?.let {
-                            // ============ STEP 4: POSE EVALUATION ============
-                            // PERFORMANCE FIX: Move heavy computation to background thread
-                            // Angle calculations are CPU-intensive and should not block main thread
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                                val evaluationStartTime = if (ENABLE_EVALUATION_TIMING) System.nanoTime() else 0L
-                                
                                 val feedbackMsg = if (SKIP_POSE_EVALUATION) {
-                                    if (ENABLE_EVALUATION_TIMING) {
-                                        android.util.Log.w("CameraViewModel", "⚠️ SKIP_POSE_EVALUATION=true - Skipping angle calculations")
-                                    }
-                                    null // Skip evaluation entirely
+                                    null
                                 } else {
                                     poseEvaluator.evaluate(it, _currentExercise.value)
                                 }
-                                
-                                val evaluationEndTime = if (ENABLE_EVALUATION_TIMING) System.nanoTime() else 0L
-                                val evaluationTimeMs = if (ENABLE_EVALUATION_TIMING) {
-                                    (evaluationEndTime - evaluationStartTime) / 1_000_000.0
-                                } else 0.0
-                                
-                                if (ENABLE_EVALUATION_TIMING) {
-                                    android.util.Log.d("CameraViewModel-Timing", String.format(
-                                        "🧮 Pose evaluation: %.2fms (angle calculations + rep counting + feedback) [Background Thread]",
-                                        evaluationTimeMs
-                                    ))
-                                }
-                                
-                                // PERFORMANCE FIX: Only emit feedback if it changed
-                                // This prevents unnecessary recompositions in UI
+
                                 if (feedbackMsg != _feedback.value) {
                                     _feedback.value = feedbackMsg
                                 }
-                                
-                                // Collect feedback for session summary
+
                                 feedbackMsg?.let { msg ->
-                                    // Avoid duplicates of the same message
-                                    if (sessionFeedbackHistory.isEmpty() || 
+                                    if (sessionFeedbackHistory.isEmpty() ||
                                         sessionFeedbackHistory.last().text != msg.text) {
                                         sessionFeedbackHistory.add(msg)
                                     }
                                 }
-                                
-                                // PERFORMANCE FIX: Only emit rep count if it actually changed
+
                                 val newRepCount = poseEvaluator.getRepCount()
                                 if (newRepCount != _repCount.value) {
                                     _repCount.value = newRepCount
@@ -213,11 +181,6 @@ class CameraViewModel : ViewModel() {
             .build()
             .also {
                 it.setAnalyzer(cameraExecutor) { imageProxy ->
-                    // PERFORMANCE OPTIMIZATION: Only process frames during ACTIVE or COUNTDOWN sessions
-                    // This prevents wasted CPU cycles when user is idle on the camera screen.
-                    // Frame processing involves expensive operations (bitmap conversion, MediaPipe inference)
-                    // that should only run when actively needed.
-                    // During IDLE state, the camera preview still shows but pose detection is skipped.
                     val currentState = _sessionState.value
                     if (currentState == SessionState.ACTIVE || currentState == SessionState.COUNTDOWN) {
                         poseEngine.detectPose(imageProxy, _cameraState.value.isFront())
@@ -228,12 +191,11 @@ class CameraViewModel : ViewModel() {
 
         var selectedCameraSelector: CameraSelector? = null
         val preferredCamera = _cameraState.value.toCameraSelector()
-        if (cameraProvider.hasCamera(preferredCamera)) {
-            selectedCameraSelector = preferredCamera
-        } else if (cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
-            selectedCameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-        } else if (cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
-            selectedCameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+        selectedCameraSelector = when {
+            cameraProvider.hasCamera(preferredCamera) -> preferredCamera
+            cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) -> CameraSelector.DEFAULT_BACK_CAMERA
+            cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) -> CameraSelector.DEFAULT_FRONT_CAMERA
+            else -> null
         }
 
         if (selectedCameraSelector == null) {
@@ -267,42 +229,50 @@ class CameraViewModel : ViewModel() {
         }
     }
 
-    fun startSessionCountdown() {
-        if (_sessionState.value == SessionState.IDLE) {
-            viewModelScope.launch {
-                _sessionState.value = SessionState.COUNTDOWN
+    fun startSessionCountdown(durationSeconds: Int?) {
+        if (_sessionState.value != SessionState.IDLE) return
 
-                // 5-second countdown
-                for (i in 5 downTo 1) {
-                    _countdownValue.value = i
-                    delay(1000)
+        viewModelScope.launch {
+            _sessionState.value = SessionState.COUNTDOWN
+
+            for (i in 5 downTo 1) {
+                _countdownValue.value = i
+                delay(1000)
+            }
+
+            poseEvaluator.startSession()
+            sessionStartTimeMillis = System.currentTimeMillis()
+            sessionFeedbackHistory.clear()
+            _sessionState.value = SessionState.ACTIVE
+
+            _exerciseElapsedSeconds.value = 0
+            _exerciseRemainingSeconds.value = durationSeconds
+
+            while (_sessionState.value == SessionState.ACTIVE) {
+                delay(1000)
+
+                val remaining = _exerciseRemainingSeconds.value
+                if (remaining == null) {
+                    _exerciseElapsedSeconds.value += 1
+                } else {
+                    val next = remaining - 1
+                    _exerciseRemainingSeconds.value = next
+                    if (next <= 0) {
+                        finishSession()
+                        break
+                    }
                 }
-
-                // Countdown done: start session & timer
-                poseEvaluator.startSession()
-                sessionStartTimeMillis = System.currentTimeMillis()
-                sessionFeedbackHistory.clear() // Clear previous feedback
-                _sessionState.value = SessionState.ACTIVE
             }
         }
     }
 
     fun finishSession() {
         if (_sessionState.value == SessionState.ACTIVE) {
-
             val now = System.currentTimeMillis()
-
-            // how long the session lasted in ms (if start time is null, use 0)
-            val durationMillis = sessionStartTimeMillis?.let { start ->
-                now - start
-            } ?: 0L
-
+            val durationMillis = sessionStartTimeMillis?.let { start -> now - start } ?: 0L
             val formSummary = poseEvaluator.getEvaluationSummary()
-
-            // Calculate overall score from feedback history
             val overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory)
 
-            // Save this exercise into the "workout" list
             val current = ExerciseSessionSummary(
                 exerciseId = _currentExercise.value,
                 exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
@@ -311,20 +281,17 @@ class CameraViewModel : ViewModel() {
             )
             _workoutSessions.value = _workoutSessions.value + current
 
-            // Compute workout totals
             val totalReps = _workoutSessions.value.sumOf { it.reps }
             val totalDurationMillis = _workoutSessions.value.sumOf { it.durationMillis }
-            val totalDurationText = formatDuration(totalDurationMillis)
             val totalExercises = _workoutSessions.value.size
 
-            // Create comprehensive session result
             val sessionResult = LiveSessionResult(
                 exerciseType = _currentExercise.value,
                 exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
                 targetReps = _targetReps.value,
                 completedReps = _repCount.value,
                 durationMillis = durationMillis,
-                feedbackMessages = sessionFeedbackHistory.toList(), // Copy the list
+                feedbackMessages = sessionFeedbackHistory.toList(),
                 evaluationSummary = formSummary,
                 overallScore = overallScore,
                 totalExercises = totalExercises,
@@ -335,6 +302,9 @@ class CameraViewModel : ViewModel() {
             _sessionResult.value = sessionResult
             _sessionState.value = SessionState.FINISHED
             sessionStartTimeMillis = null
+
+            _exerciseRemainingSeconds.value = null
+            _exerciseElapsedSeconds.value = 0
         }
     }
 
@@ -348,6 +318,9 @@ class CameraViewModel : ViewModel() {
         sessionStartTimeMillis = null
         sessionFeedbackHistory.clear()
         _navigateHomeAfterSummary.value = false
+
+        _exerciseRemainingSeconds.value = null
+        _exerciseElapsedSeconds.value = 0
     }
 
     fun resetRepCount() {

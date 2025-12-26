@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
+
 @Composable
 fun PoseCoachApp() {
     val navController = rememberNavController()
