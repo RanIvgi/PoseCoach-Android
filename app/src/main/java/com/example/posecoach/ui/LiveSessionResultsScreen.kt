@@ -31,8 +31,76 @@ fun LiveSessionResultsScreen(
     navBackToStart: () -> Unit,
     onStartNewExercise: () -> Unit
 ) {
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Current Exercise", "Common Feedback", "All Exercises")
+    // 1. Extract unique exercise types from history
+    // If history is empty (legacy/fallback), just use the single result we have
+    val exerciseTypes = remember(sessionResult.sessionHistory) {
+        if (sessionResult.sessionHistory.isNotEmpty()) {
+            sessionResult.sessionHistory.map { it.exerciseName }.distinct()
+        } else {
+            listOf(sessionResult.exerciseName)
+        }
+    }
+
+    // 2. State for selected exercise type (default to the one just finished)
+    var selectedExerciseType by remember { mutableStateOf(sessionResult.exerciseName) }
+
+    // 3. Filter data based on selected type
+    val historyForType = remember(sessionResult.sessionHistory, selectedExerciseType) {
+        if (sessionResult.sessionHistory.isNotEmpty()) {
+            sessionResult.sessionHistory.filter { it.exerciseName == selectedExerciseType }
+        } else {
+            // Fallback if history is empty
+            emptyList()
+        }
+    }
+
+    // 4. Calculate derived data for the selected type
+    val currentSessionForType = historyForType.lastOrNull()
+    
+    // "Current" feedback: The last session of this type
+    val currentFeedback = if (sessionResult.sessionHistory.isNotEmpty()) {
+        currentSessionForType?.feedbackMessages ?: emptyList()
+    } else {
+        sessionResult.feedbackMessages
+    }
+
+    // "Common" feedback: Intersection for this type
+    val commonFeedback = remember(historyForType) {
+        if (historyForType.isNotEmpty()) {
+            val firstTexts = historyForType.first().feedbackMessages.map { it.text }.toSet()
+            var intersection = firstTexts
+            for (session in historyForType.drop(1)) {
+                intersection = intersection.intersect(session.feedbackMessages.map { it.text }.toSet())
+            }
+            intersection.mapNotNull { text ->
+                historyForType.first().feedbackMessages.find { it.text == text }
+            }
+        } else {
+            sessionResult.commonFeedbackMessages // Fallback
+        }
+    }
+
+    // "All" feedback: Union for this type
+    val allFeedback = remember(historyForType) {
+        if (historyForType.isNotEmpty()) {
+            historyForType.flatMap { it.feedbackMessages }
+        } else {
+            sessionResult.allFeedbackMessages // Fallback
+        }
+    }
+
+    // Stats for the selected type
+    val typeReps = if (historyForType.isNotEmpty()) historyForType.sumOf { it.reps } else sessionResult.completedReps
+    val typeDuration = if (historyForType.isNotEmpty()) historyForType.sumOf { it.durationMillis } else sessionResult.durationMillis
+    val typeExercisesCount = if (historyForType.isNotEmpty()) historyForType.size else 1
+    
+    // Plank specific stats
+    val isPlank = selectedExerciseType.lowercase().contains("plank")
+    val currentFormBreaks = currentSessionForType?.formBreakCount ?: sessionResult.formBreakCount
+    
+    // Tabs for feedback view
+    var selectedFeedbackTabIndex by remember { mutableStateOf(0) }
+    val feedbackTabs = listOf("Current", "Common", "All")
 
     val gradient = Brush.verticalGradient(
         colors = listOf(
@@ -76,6 +144,36 @@ fun LiveSessionResultsScreen(
                     )
                 }
 
+                // Floating Exercise Type Selector (Fixed below top bar)
+                if (exerciseTypes.size > 1) {
+                    ScrollableTabRow(
+                        selectedTabIndex = exerciseTypes.indexOf(selectedExerciseType),
+                        backgroundColor = Color.Transparent,
+                        contentColor = Color.White,
+                        edgePadding = 0.dp,
+                        indicator = { tabPositions ->
+                            TabRowDefaults.Indicator(
+                                Modifier.tabIndicatorOffset(tabPositions[exerciseTypes.indexOf(selectedExerciseType)]),
+                                color = Color.White,
+                                height = 3.dp
+                            )
+                        }
+                    ) {
+                        exerciseTypes.forEach { type ->
+                            Tab(
+                                selected = selectedExerciseType == type,
+                                onClick = { selectedExerciseType = type },
+                                text = { 
+                                    Text(
+                                        text = type,
+                                        fontWeight = if (selectedExerciseType == type) FontWeight.Bold else FontWeight.Normal
+                                    ) 
+                                }
+                            )
+                        }
+                    }
+                }
+
                 // Scrollable Content
                 LazyColumn(
                     modifier = Modifier
@@ -84,10 +182,11 @@ fun LiveSessionResultsScreen(
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Exercise title
+                    
+                    // Exercise title (Selected Type)
                     item {
                         Text(
-                            text = sessionResult.exerciseName,
+                            text = selectedExerciseType,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -136,7 +235,7 @@ fun LiveSessionResultsScreen(
                         }
                     }
 
-                    // Session stats card
+                    // Session Stats Card (Filtered by Type)
                     item {
                         Card(
                             backgroundColor = Color.White.copy(alpha = 0.15f),
@@ -148,21 +247,36 @@ fun LiveSessionResultsScreen(
                                 modifier = Modifier.padding(16.dp)
                             ) {
                                 Text(
-                                    text = "Session Stats",
+                                    text = "$selectedExerciseType Stats",
                                     color = Color.White,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 
-                                StatRow("Completed Reps", "${sessionResult.completedReps}")
-                                StatRow("Target Reps", "${sessionResult.targetReps}")
-                                StatRow("Duration", formatDuration(sessionResult.durationMillis))
+                                if (isPlank) {
+                                    // Plank specific stats
+                                    val currentDuration = currentSessionForType?.durationMillis ?: sessionResult.durationMillis
+                                    StatRow("Duration", formatDuration(currentDuration))
+                                    StatRow("Form Breaks", "$currentFormBreaks")
+                                } else {
+                                    // Rep-based stats
+                                    // For "Session Stats" we usually show the LAST session's stats, not the total for the type.
+                                    // But the user asked for "Total Squat Workout Summary" in the NEXT card.
+                                    // This card is "Session Stats". Let's show the stats for the *current* (last) session of this type.
+                                    val currentReps = currentSessionForType?.reps ?: sessionResult.completedReps
+                                    val currentDuration = currentSessionForType?.durationMillis ?: sessionResult.durationMillis
+                                    
+                                    StatRow("Completed Reps", "$currentReps")
+                                    // Target reps might vary, but usually constant per session type. Using global target for now.
+                                    StatRow("Target Reps", "${sessionResult.targetReps}")
+                                    StatRow("Duration", formatDuration(currentDuration))
+                                }
                             }
                         }
                     }
 
-                    // Workout totals card
+                    // Total Workout Summary (Specific to Exercise Type)
                     if (sessionResult.totalExercises > 1) {
                         item {
                             Card(
@@ -175,86 +289,87 @@ fun LiveSessionResultsScreen(
                                     modifier = Modifier.padding(16.dp)
                                 ) {
                                     Text(
-                                        text = "Workout Totals",
+                                        text = "Total $selectedExerciseType Workout Summary",
                                         color = Color.White,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Spacer(modifier = Modifier.height(12.dp))
                                     
-                                    StatRow("Exercises", "${sessionResult.totalExercises}")
-                                    StatRow("Total Reps", "${sessionResult.totalReps}")
-                                    StatRow("Total Time", formatDuration(sessionResult.totalDurationMillis))
+                                    if (isPlank) {
+                                        StatRow("Total Exercises", "$typeExercisesCount")
+                                        StatRow("Total Time", formatDuration(typeDuration))
+                                    } else {
+                                        StatRow("Total Exercises", "$typeExercisesCount")
+                                        StatRow("Total Reps", "$typeReps")
+                                        StatRow("Total Time", formatDuration(typeDuration))
+                                    }
                                 }
                             }
                         }
                     }
 
                     // Feedback section
-                    if (sessionResult.feedbackMessages.isNotEmpty() || sessionResult.commonFeedbackMessages.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Form Feedback:",
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
+                    item {
+                        Text(
+                            text = "Form Feedback ($selectedExerciseType):",
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
 
-                        if (sessionResult.totalExercises > 1) {
-                            item {
-                                TabRow(
-                                    selectedTabIndex = selectedTabIndex,
-                                    backgroundColor = Color.Transparent,
-                                    contentColor = Color.White,
-                                    indicator = { tabPositions ->
-                                        TabRowDefaults.Indicator(
-                                            Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                                            color = Color.White
-                                        )
-                                    }
-                                ) {
-                                    tabs.forEachIndexed { index, title ->
-                                        Tab(
-                                            selected = selectedTabIndex == index,
-                                            onClick = { selectedTabIndex = index },
-                                            text = { Text(title) }
-                                        )
-                                    }
-                                }
+                    item {
+                        TabRow(
+                            selectedTabIndex = selectedFeedbackTabIndex,
+                            backgroundColor = Color.Transparent,
+                            contentColor = Color.White,
+                            indicator = { tabPositions ->
+                                TabRowDefaults.Indicator(
+                                    Modifier.tabIndicatorOffset(tabPositions[selectedFeedbackTabIndex]),
+                                    color = Color.White
+                                )
+                            }
+                        ) {
+                            feedbackTabs.forEachIndexed { index, title ->
+                                Tab(
+                                    selected = selectedFeedbackTabIndex == index,
+                                    onClick = { selectedFeedbackTabIndex = index },
+                                    text = { Text(title) }
+                                )
                             }
                         }
+                    }
 
-                        // Feedback list
-                        val feedbackToShow = when (selectedTabIndex) {
-                            0 -> sessionResult.feedbackMessages
-                            1 -> sessionResult.commonFeedbackMessages
-                            else -> sessionResult.allFeedbackMessages
-                        }
+                    // Feedback list
+                    val feedbackToShow = when (selectedFeedbackTabIndex) {
+                        0 -> currentFeedback
+                        1 -> commonFeedback
+                        else -> allFeedback
+                    }
 
-                        // Show unique feedback messages (deduplicate)
-                        val uniqueFeedback = feedbackToShow
-                            .distinctBy { it.text }
-                            .take(20) // Limit to 20 most relevant messages
-                        
-                        items(uniqueFeedback) { feedback ->
-                            FeedbackCard(feedback)
-                        }
+                    // Show unique feedback messages (deduplicate)
+                    val uniqueFeedback = feedbackToShow
+                        .distinctBy { it.text }
+                        .take(20) // Limit to 20 most relevant messages
+                    
+                    items(uniqueFeedback) { feedback ->
+                        FeedbackCard(feedback)
+                    }
 
-                        if (uniqueFeedback.isEmpty()) {
-                             item {
-                                Text(
-                                    text = when (selectedTabIndex) {
-                                        0 -> "No feedback for this session."
-                                        1 -> "No common feedback across all sessions."
-                                        else -> "No feedback recorded across any session."
-                                    },
-                                    color = Color.White.copy(alpha = 0.7f),
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp)
-                                )
-                             }
-                        }
+                    if (uniqueFeedback.isEmpty()) {
+                            item {
+                            Text(
+                                text = when (selectedFeedbackTabIndex) {
+                                    0 -> "No feedback for the last $selectedExerciseType session."
+                                    1 -> "No common feedback across $selectedExerciseType sessions."
+                                    else -> "No feedback recorded for $selectedExerciseType."
+                                },
+                                color = Color.White.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(16.dp)
+                            )
+                            }
                     }
                 }
 
