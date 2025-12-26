@@ -17,8 +17,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -27,14 +29,9 @@ import com.example.posecoach.data.CameraState
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-
-// If these are not in this package, change the import paths to where they actually are.
-// (If they ARE in com.example.posecoach.ui, you can delete these imports and it will still work.)
-import com.example.posecoach.ui.SessionState
-import com.example.posecoach.ui.exercises
-import com.example.posecoach.ui.ExerciseInfoOverlay
-import com.example.posecoach.ui.PoseOverlay
-import com.example.posecoach.ui.CameraControls
+import java.util.concurrent.Executors
+import androidx.core.content.ContextCompat
+import kotlin.math.min
 
 @Composable
 fun LogCompositions(tag: String) {
@@ -81,13 +78,10 @@ fun CameraScreen(
     val exerciseElapsedSeconds by viewModel.exerciseElapsedSeconds.collectAsState()
 
     val isPlank = currentExercise == "plank"
-
     var infoExerciseId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(sessionResult) {
-        if (sessionResult != null) {
-            navToSessionResults()
-        }
+        if (sessionResult != null) navToSessionResults()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -126,11 +120,8 @@ fun CameraScreen(
                 },
                 onTargetRepsChange = { viewModel.setTargetReps(it) },
                 onBackToHome = {
-                    if (sessionState == SessionState.ACTIVE) {
-                        viewModel.finishSessionAndGoHome()
-                    } else {
-                        navBackToStart()
-                    }
+                    if (sessionState == SessionState.ACTIVE) viewModel.finishSessionAndGoHome()
+                    else navBackToStart()
                 },
                 showReps = !isPlank,
                 modifier = Modifier.fillMaxSize()
@@ -138,14 +129,16 @@ fun CameraScreen(
 
             if (sessionState == SessionState.ACTIVE) {
                 val shownSeconds = exerciseRemainingSeconds ?: exerciseElapsedSeconds
-
                 if (isPlank) {
                     PlankTimerOverlay(
                         timeText = formatMmSs(shownSeconds),
                         caption = if (exerciseRemainingSeconds != null) "Time left" else "Time"
                     )
                 } else {
-                    TimerOverlayTop(text = formatMmSs(shownSeconds))
+                    TimerOverlayTop(
+                        text = formatMmSs(shownSeconds),
+                        sizeMultiplier = 0.8f
+                    )
                 }
             }
 
@@ -168,59 +161,106 @@ fun CameraScreen(
                 }
             }
 
-            cameraError?.let {
-                ErrorOverlay(it)
-            }
+            cameraError?.let { ErrorOverlay(it) }
 
         } else {
-            PermissionDeniedScreen {
-                cameraPermission.launchPermissionRequest()
-            }
+            PermissionDeniedScreen { cameraPermission.launchPermissionRequest() }
         }
     }
 }
 
 @Composable
-fun TimerOverlayTop(text: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
+fun TimerOverlayTop(
+    text: String,
+    sizeMultiplier: Float = 1f
+) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter
     ) {
+        val cfg = LocalConfiguration.current
+        val w = maxWidth.value
+
+        // Samsung-friendly: scale from WIDTH, and compensate for fontScale
+        val scale = (w / 360f).clamp(0.85f, 1.35f)
+        val fontScale = cfg.fontScale.clamp(0.85f, 1.25f)
+        val finalTextScale = (scale / fontScale).clamp(0.85f, 1.35f)
+
+        val topPad = (10f * scale).dp
+        val font = (24f * finalTextScale * sizeMultiplier)
+            .clamp(14f, 30f)
+            .sp
+        val corner = (14f * scale).clamp(12f, 22f).dp
+        val hPad = (14f * scale).clamp(10f, 22f).dp
+        val vPad = (7f * scale).clamp(6f, 14f).dp
+
         Text(
             text = text,
             color = Color.White,
-            fontSize = 28.sp,
+            fontSize = font,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
-                .padding(top = 24.dp)
-                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .padding(top = topPad)
+                .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(corner))
+                .padding(horizontal = hPad, vertical = vPad)
         )
     }
 }
 
 @Composable
-fun PlankTimerOverlay(timeText: String, caption: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
+fun PlankTimerOverlay(
+    timeText: String,
+    caption: String,
+    sizeMultiplier: Float = 1f
+) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopStart
     ) {
+        val cfg = LocalConfiguration.current
+        val w = maxWidth.value
+        val h = maxHeight.value
+        val base = min(w, h)
+
+        // Mix width + min dimension for better behavior on tablets/landscape
+        val scale = ((0.75f * (w / 360f)) + (0.25f * (base / 360f))).clamp(0.85f, 1.45f)
+
+        val fontScale = cfg.fontScale.clamp(0.85f, 1.25f)
+        val finalTextScale = (scale / fontScale).clamp(0.85f, 1.45f)
+
+        val topPad = (8f * scale).dp
+        val corner = (16f * scale).clamp(12f, 24f).dp
+        val hPad = (16f * scale).clamp(10f, 26f).dp
+        val vPad = (11f * scale).clamp(8f, 20f).dp
+
+        val captionSp = (11f * finalTextScale * sizeMultiplier)
+            .clamp(9f, 14f)
+            .sp
+
+        val timeSp = (14f * finalTextScale * sizeMultiplier)
+            .clamp(12f, 24f)
+            .sp
+
         Column(
             modifier = Modifier
-                .padding(top = 18.dp)
-                .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(14.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(top = topPad)
+                .background(Color.Black.copy(alpha = 0.50f), RoundedCornerShape(corner))
+                .padding(horizontal = hPad, vertical = vPad),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = caption,
                 color = Color.White.copy(alpha = 0.85f),
-                fontSize = 10.sp
+                fontSize = captionSp
             )
             Text(
                 text = timeText,
                 color = Color.White,
-                fontSize = 28.sp,
+                fontSize = timeSp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -230,8 +270,8 @@ fun PlankTimerOverlay(timeText: String, caption: String) {
 @Composable
 fun CountdownOverlay(countdownValue: Int) {
     val scale by animateFloatAsState(
-        targetValue = 1.2f,
-        animationSpec = tween(500)
+        targetValue = if (countdownValue > 0) 1.2f else 0.8f,
+        animationSpec = tween(400)
     )
 
     Box(
@@ -259,9 +299,7 @@ fun PermissionDeniedScreen(onRequestPermission: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Camera permission is required", textAlign = TextAlign.Center)
             Spacer(Modifier.height(12.dp))
-            Button(onClick = onRequestPermission) {
-                Text("Grant permission")
-            }
+            Button(onClick = onRequestPermission) { Text("Grant permission") }
         }
     }
 }
@@ -286,14 +324,35 @@ fun CameraPreview(
 ) {
     val context = LocalContext.current
     val previewView = remember { PreviewView(context) }
+    val mainExecutor = remember { ContextCompat.getMainExecutor(context) }
 
-    DisposableEffect(cameraState) {
-        val provider = ProcessCameraProvider.getInstance(context).get()
-        onCameraReady(provider, previewView)
-        onDispose { provider.unbindAll() }
+    // Use a stable provider future (don’t block with .get() on composition thread)
+    val providerFuture = remember { ProcessCameraProvider.getInstance(context) }
+
+    DisposableEffect(Unit) {
+        val listener = Runnable {
+            // This Runnable runs on MAIN thread because we pass mainExecutor
+            val provider = providerFuture.get()
+            onCameraReady(provider, previewView)
+        }
+
+        providerFuture.addListener(listener, mainExecutor)
+
+        onDispose {
+            // Ensure unbindAll happens on MAIN thread
+            mainExecutor.execute {
+                runCatching { providerFuture.get().unbindAll() }
+            }
+        }
     }
 
-    AndroidView({ previewView }, modifier)
+    AndroidView(factory = { previewView }, modifier = modifier)
+}
+
+private fun Float.clamp(minV: Float, maxV: Float): Float = when {
+    this < minV -> minV
+    this > maxV -> maxV
+    else -> this
 }
 
 private fun formatMmSs(sec: Int): String =

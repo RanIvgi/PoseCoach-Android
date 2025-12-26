@@ -42,6 +42,12 @@ class DefaultPoseEvaluator : PoseEvaluator {
     private var pushupRepCount: Int = 0
     private var insufficientDepthPushups: Int = 0
     
+    // Internal state for plank evaluation
+    private var plankState: PlankState = PlankState.NOT_IN_POSITION
+    private var plankHoldStartTime: Long = 0L // When user achieved good form
+    private var plankTotalGoodFormTimeMs: Long = 0L // Total time with good form
+    private var plankFormBreakCount: Int = 0 // How many times form was broken
+    
     // Session tracking
     private var sessionStartTime: Long = 0L
     private var currentExerciseType: String = "squat" // Track which exercise is active
@@ -70,6 +76,7 @@ class DefaultPoseEvaluator : PoseEvaluator {
             "squat" -> evaluateSquat(poseResult)
             "pushup", "push-up", "push_up" -> evaluatePushup(poseResult)
             "lunge" -> evaluateLunge(poseResult)
+            "plank" -> evaluatePlank(poseResult)
             else -> evaluateGeneral(poseResult)
         }
     }
@@ -369,6 +376,153 @@ class DefaultPoseEvaluator : PoseEvaluator {
         )
     }
     
+    override fun evaluatePlank(poseResult: PoseResult): FeedbackMessage? {
+        // ============================================================================
+        // PLANK EVALUATION - Optimized for SIDE VIEW
+        // ============================================================================
+        // Planks are isometric holds, so we focus on:
+        // 1. Body alignment (shoulder-hip-ankle should form ~180° line)
+        // 2. Hip position (not sagging or piking)
+        // 3. Hold duration tracking with good form
+        //
+        // Unlike reps-based exercises, planks track time spent in good form
+        // ============================================================================
+        
+        // ============================================================================
+        // STEP 1: LANDMARK RETRIEVAL & ANGLE CALCULATIONS
+        // ============================================================================
+        // Calculate body alignment angle from both sides
+        val leftBodyAlignmentAngle = poseResult.calculateAngle(
+            PoseLandmarkIndex.LEFT_SHOULDER,
+            PoseLandmarkIndex.LEFT_HIP,
+            PoseLandmarkIndex.LEFT_ANKLE
+        )
+        val rightBodyAlignmentAngle = poseResult.calculateAngle(
+            PoseLandmarkIndex.RIGHT_SHOULDER,
+            PoseLandmarkIndex.RIGHT_HIP,
+            PoseLandmarkIndex.RIGHT_ANKLE
+        )
+        
+        // ============================================================================
+        // STEP 2: LANDMARK VALIDATION
+        // ============================================================================
+        if (leftBodyAlignmentAngle == null && rightBodyAlignmentAngle == null) {
+            // Can't see the critical landmarks for plank evaluation
+            return FeedbackMessage(
+                text = "Position camera to see your full body from the side.",
+                severity = FeedbackSeverity.WARNING
+            )
+        }
+        
+        // ============================================================================
+        // STEP 3: USE BEST AVAILABLE ANGLE
+        // ============================================================================
+        val avgBodyAlignmentAngle = when {
+            leftBodyAlignmentAngle != null && rightBodyAlignmentAngle != null -> 
+                (leftBodyAlignmentAngle + rightBodyAlignmentAngle) / 2
+            leftBodyAlignmentAngle != null -> leftBodyAlignmentAngle
+            rightBodyAlignmentAngle != null -> rightBodyAlignmentAngle
+            else -> return FeedbackMessage("Cannot detect body alignment.", FeedbackSeverity.WARNING)
+        }
+        
+        // ============================================================================
+        // STEP 4: FORM VALIDATION
+        // ============================================================================
+        val currentTime = System.currentTimeMillis()
+        var currentFeedback: FeedbackMessage? = null
+        
+        // Check if form is good (body is straight, not sagging or piking)
+        val isFormGood = avgBodyAlignmentAngle >= AngleThresholds.PLANK_HIP_SAG_THRESHOLD &&
+                         avgBodyAlignmentAngle <= AngleThresholds.PLANK_HIP_PIKE_THRESHOLD
+        
+        // Detect specific form issues
+        if (avgBodyAlignmentAngle < AngleThresholds.PLANK_HIP_SAG_THRESHOLD) {
+            // Hips are sagging (body angle too small)
+            currentFeedback = FeedbackMessage(
+                "Hips sagging! Engage your core and lift hips.",
+                FeedbackSeverity.ERROR
+            )
+        } else if (avgBodyAlignmentAngle > AngleThresholds.PLANK_HIP_PIKE_THRESHOLD) {
+            // Hips are too high/piked (body angle too large)
+            currentFeedback = FeedbackMessage(
+                "Hips too high! Lower them to form a straight line.",
+                FeedbackSeverity.WARNING
+            )
+        }
+        
+        // ============================================================================
+        // STEP 5: STATE MACHINE & TIME TRACKING
+        // ============================================================================
+        when (plankState) {
+            PlankState.NOT_IN_POSITION -> {
+                if (isFormGood) {
+                    // Transitioning to good form
+                    plankState = PlankState.HOLDING
+                    plankHoldStartTime = currentTime
+                    currentFeedback = FeedbackMessage("Good form! Hold this position.", FeedbackSeverity.INFO)
+                } else {
+                    // Still not in position
+                    if (currentFeedback == null) {
+                        currentFeedback = FeedbackMessage(
+                            "Get into plank position: body straight, elbows under shoulders.",
+                            FeedbackSeverity.INFO
+                        )
+                    }
+                }
+            }
+            PlankState.HOLDING -> {
+                if (isFormGood) {
+                    // Continue holding with good form
+                    val holdDurationMs = currentTime - plankHoldStartTime
+                    
+                    // Only start counting after grace period (avoid counting brief touches)
+                    if (holdDurationMs >= AngleThresholds.PLANK_GOOD_FORM_GRACE_PERIOD_MS) {
+                        plankTotalGoodFormTimeMs += (currentTime - plankHoldStartTime)
+                        plankHoldStartTime = currentTime // Reset for next accumulation
+                    }
+                    
+                    if (currentFeedback == null) {
+                        // Calculate total accumulated time including current hold
+                        val totalTimeMs = plankTotalGoodFormTimeMs + holdDurationMs
+                        val totalTimeSec = TimeUnit.MILLISECONDS.toSeconds(totalTimeMs)
+                        
+                        currentFeedback = FeedbackMessage(
+                            "Holding: ${totalTimeSec}s. Keep it steady!",
+                            FeedbackSeverity.INFO
+                        )
+                    }
+                } else {
+                    // Form broke while holding
+                    plankState = PlankState.FORM_BROKEN
+                    plankFormBreakCount++
+                    
+                    // Add accumulated time from this hold (if it was long enough)
+                    val holdDurationMs = currentTime - plankHoldStartTime
+                    if (holdDurationMs >= AngleThresholds.PLANK_GOOD_FORM_GRACE_PERIOD_MS) {
+                        plankTotalGoodFormTimeMs += holdDurationMs
+                    }
+                    
+                    // currentFeedback already set by form validation above
+                }
+            }
+            PlankState.FORM_BROKEN -> {
+                if (isFormGood) {
+                    // Recovered form, start holding again
+                    plankState = PlankState.HOLDING
+                    plankHoldStartTime = currentTime
+                    currentFeedback = FeedbackMessage("Form recovered! Keep holding.", FeedbackSeverity.INFO)
+                } else {
+                    // Still broken, currentFeedback already set by form validation
+                }
+            }
+        }
+        
+        // ============================================================================
+        // STEP 6: RETURN FEEDBACK
+        // ============================================================================
+        return currentFeedback ?: FeedbackMessage("Hold the plank position.", FeedbackSeverity.INFO)
+    }
+    
     /**
      * General pose evaluation when no specific exercise is selected.
      */
@@ -402,6 +556,12 @@ class DefaultPoseEvaluator : PoseEvaluator {
         pushupState = PushupState.UP
         minElbowAngleAchieved = 180f
         insufficientDepthPushups = 0
+        
+        // Reset plank state
+        plankState = PlankState.NOT_IN_POSITION
+        plankHoldStartTime = 0L
+        plankTotalGoodFormTimeMs = 0L
+        plankFormBreakCount = 0
         
         // Reset session tracking
         sessionStartTime = 0L
@@ -466,6 +626,31 @@ class DefaultPoseEvaluator : PoseEvaluator {
                     summary.append("\nNo squats were completed in this session.\n")
                 }
             }
+            "plank" -> {
+                // Add any remaining hold time if still in HOLDING state
+                var totalGoodFormTime = plankTotalGoodFormTimeMs
+                if (plankState == PlankState.HOLDING) {
+                    val currentHoldDuration = System.currentTimeMillis() - plankHoldStartTime
+                    if (currentHoldDuration >= AngleThresholds.PLANK_GOOD_FORM_GRACE_PERIOD_MS) {
+                        totalGoodFormTime += currentHoldDuration
+                    }
+                }
+                
+                val totalGoodFormSeconds = TimeUnit.MILLISECONDS.toSeconds(totalGoodFormTime)
+                
+                summary.append("Plank Session Summary:\n")
+                summary.append("Total Good Form Time: ${totalGoodFormSeconds}s\n")
+                summary.append("Session Duration: $durationSeconds seconds\n")
+
+                if (plankFormBreakCount > 0) {
+                    summary.append("\nNotes:\n")
+                    summary.append("- Form broke $plankFormBreakCount time(s). Focus on keeping your body straight throughout the hold!\n")
+                } else if (totalGoodFormSeconds > 0) {
+                    summary.append("\nExcellent! You maintained good form throughout the plank.\n")
+                } else {
+                    summary.append("\nNo plank hold was completed with good form in this session.\n")
+                }
+            }
             else -> {
                 summary.append("Session Summary:\n")
                 summary.append("Duration: $durationSeconds seconds\n")
@@ -489,6 +674,7 @@ class DefaultPoseEvaluator : PoseEvaluator {
 
     private enum class SquatState { UP, DOWN }
     private enum class PushupState { UP, DOWN }
+    private enum class PlankState { NOT_IN_POSITION, HOLDING, FORM_BROKEN }
 
     private object AngleThresholds {
         // Squat thresholds
@@ -501,6 +687,13 @@ class DefaultPoseEvaluator : PoseEvaluator {
         const val PUSHUP_ELBOW_TRANSITION_UP = 160f    // Angle to detect start of ascent
         const val PUSHUP_ELBOW_MIN_DEPTH = 90f         // Target elbow angle at bottom
         const val PUSHUP_BODY_ALIGNMENT_MAX = 15f      // Max deviation from straight line (degrees)
+        
+        // Plank thresholds
+        const val PLANK_BODY_ALIGNMENT_MIN = 165f  // Minimum body angle (shoulder-hip-ankle)
+        const val PLANK_BODY_ALIGNMENT_MAX = 195f  // Maximum body angle (to detect pike)
+        const val PLANK_HIP_SAG_THRESHOLD = 165f   // Below this angle = hips sagging
+        const val PLANK_HIP_PIKE_THRESHOLD = 185f  // Above this angle = hips too high
+        const val PLANK_GOOD_FORM_GRACE_PERIOD_MS = 500L // Time to stabilize form before counting
     }
 
     private object RelativePositionThresholds {
