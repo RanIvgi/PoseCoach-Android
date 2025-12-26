@@ -29,7 +29,8 @@ data class ExerciseSessionSummary(
     val exerciseId: String,
     val exerciseName: String,
     val reps: Int,
-    val durationMillis: Long
+    val durationMillis: Long,
+    val feedbackMessages: List<FeedbackMessage> = emptyList()
 )
 
 class CameraViewModel : ViewModel() {
@@ -182,6 +183,7 @@ class CameraViewModel : ViewModel() {
                                     if (sessionFeedbackHistory.isEmpty() || 
                                         sessionFeedbackHistory.last().text != msg.text) {
                                         sessionFeedbackHistory.add(msg)
+                                        android.util.Log.d("CameraViewModel", "Feedback added: ${msg.text}")
                                     }
                                 }
                                 
@@ -297,7 +299,7 @@ class CameraViewModel : ViewModel() {
                 now - start
             } ?: 0L
 
-            val formSummary = poseEvaluator.getEvaluationSummary()
+            val formSummary = poseEvaluator.getEvaluationSummary(_currentExercise.value)
 
             // Calculate overall score from feedback history
             val overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory)
@@ -307,15 +309,40 @@ class CameraViewModel : ViewModel() {
                 exerciseId = _currentExercise.value,
                 exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
                 reps = _repCount.value,
-                durationMillis = durationMillis
+                durationMillis = durationMillis,
+                feedbackMessages = sessionFeedbackHistory.toList()
             )
-            _workoutSessions.value = _workoutSessions.value + current
+            val updatedWorkoutSessions = _workoutSessions.value + current
+            _workoutSessions.value = updatedWorkoutSessions
 
             // Compute workout totals
-            val totalReps = _workoutSessions.value.sumOf { it.reps }
-            val totalDurationMillis = _workoutSessions.value.sumOf { it.durationMillis }
-            val totalDurationText = formatDuration(totalDurationMillis)
-            val totalExercises = _workoutSessions.value.size
+            val totalReps = updatedWorkoutSessions.sumOf { it.reps }
+            val totalDurationMillis = updatedWorkoutSessions.sumOf { it.durationMillis }
+            val totalExercises = updatedWorkoutSessions.size
+
+            // Calculate common feedback (intersection)
+            val commonFeedback = if (updatedWorkoutSessions.isNotEmpty()) {
+                val firstSessionFeedback = updatedWorkoutSessions.first().feedbackMessages.map { it.text }.toSet()
+                var intersection = firstSessionFeedback
+                for (session in updatedWorkoutSessions.drop(1)) {
+                    val sessionFeedbackTexts = session.feedbackMessages.map { it.text }.toSet()
+                    intersection = intersection.intersect(sessionFeedbackTexts)
+                }
+                intersection.mapNotNull { text ->
+                    updatedWorkoutSessions.first().feedbackMessages.find { it.text == text }
+                }
+            } else {
+                emptyList()
+            }
+
+            // Calculate all feedback (union/concatenation)
+            val allFeedback = updatedWorkoutSessions.flatMap { it.feedbackMessages }
+
+            android.util.Log.d("CameraViewModel", "Session Finished. Current Feedback: ${sessionFeedbackHistory.size}, Common Feedback: ${commonFeedback.size}, All Feedback: ${allFeedback.size}")
+            android.util.Log.d("CameraViewModel", "Workout Sessions: ${updatedWorkoutSessions.size}")
+            updatedWorkoutSessions.forEachIndexed { index, session ->
+                android.util.Log.d("CameraViewModel", "Session $index (${session.exerciseName}): ${session.feedbackMessages.size} msgs")
+            }
 
             // Create comprehensive session result
             val sessionResult = LiveSessionResult(
@@ -329,7 +356,9 @@ class CameraViewModel : ViewModel() {
                 overallScore = overallScore,
                 totalExercises = totalExercises,
                 totalReps = totalReps,
-                totalDurationMillis = totalDurationMillis
+                totalDurationMillis = totalDurationMillis,
+                commonFeedbackMessages = commonFeedback,
+                allFeedbackMessages = allFeedback
             )
 
             _sessionResult.value = sessionResult

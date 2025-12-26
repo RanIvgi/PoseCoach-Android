@@ -8,8 +8,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.material.TabRow
+import androidx.compose.material.Tab
+import androidx.compose.material.TabRowDefaults
+import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -27,6 +31,9 @@ fun LiveSessionResultsScreen(
     navBackToStart: () -> Unit,
     onStartNewExercise: () -> Unit
 ) {
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("Current Exercise", "Common Feedback", "All Exercises")
+
     val gradient = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF0D47A1),
@@ -44,13 +51,13 @@ fun LiveSessionResultsScreen(
                 .background(gradient)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Top bar
+                // Top bar (Fixed)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = navBackToStart) {
@@ -69,148 +76,193 @@ fun LiveSessionResultsScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Exercise title
-                Text(
-                    text = sessionResult.exerciseName,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Overall score card
-                Card(
-                    backgroundColor = Color.White.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = 0.dp,
-                    modifier = Modifier.fillMaxWidth()
+                // Scrollable Content
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    // Exercise title
+                    item {
                         Text(
-                            text = "Overall Form Score",
+                            text = sessionResult.exerciseName,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "${sessionResult.overallScore}%",
-                            color = Color.White,
-                            fontSize = 48.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = when {
-                                sessionResult.overallScore >= 80 -> "Excellent Form!"
-                                sessionResult.overallScore >= 60 -> "Good Form - Minor improvements needed"
-                                else -> "Form needs improvement"
-                            },
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Session stats card
-                Card(
-                    backgroundColor = Color.White.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = 0.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Session Stats",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        StatRow("Completed Reps", "${sessionResult.completedReps}")
-                        StatRow("Target Reps", "${sessionResult.targetReps}")
-                        StatRow("Duration", formatDuration(sessionResult.durationMillis))
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Workout totals card
-                if (sessionResult.totalExercises > 1) {
-                    Card(
-                        backgroundColor = Color.White.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = 0.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
+                    // Overall score card
+                    item {
+                        Card(
+                            backgroundColor = Color.White.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = 0.dp,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = "Workout Totals",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
-                            StatRow("Exercises", "${sessionResult.totalExercises}")
-                            StatRow("Total Reps", "${sessionResult.totalReps}")
-                            StatRow("Total Time", formatDuration(sessionResult.totalDurationMillis))
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Overall Form Score",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "${sessionResult.overallScore}%",
+                                    color = Color.White,
+                                    fontSize = 48.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = when {
+                                        sessionResult.overallScore >= 80 -> "Excellent Form!"
+                                        sessionResult.overallScore >= 60 -> "Good Form - Minor improvements needed"
+                                        else -> "Form needs improvement"
+                                    },
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+                    // Session stats card
+                    item {
+                        Card(
+                            backgroundColor = Color.White.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = 0.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Session Stats",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                StatRow("Completed Reps", "${sessionResult.completedReps}")
+                                StatRow("Target Reps", "${sessionResult.targetReps}")
+                                StatRow("Duration", formatDuration(sessionResult.durationMillis))
+                            }
+                        }
+                    }
 
-                // Feedback section
-                if (sessionResult.feedbackMessages.isNotEmpty()) {
-                    Text(
-                        text = "Form Feedback:",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    // Workout totals card
+                    if (sessionResult.totalExercises > 1) {
+                        item {
+                            Card(
+                                backgroundColor = Color.White.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = 0.dp,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Text(
+                                        text = "Workout Totals",
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    
+                                    StatRow("Exercises", "${sessionResult.totalExercises}")
+                                    StatRow("Total Reps", "${sessionResult.totalReps}")
+                                    StatRow("Total Time", formatDuration(sessionResult.totalDurationMillis))
+                                }
+                            }
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    // Feedback section
+                    if (sessionResult.feedbackMessages.isNotEmpty() || sessionResult.commonFeedbackMessages.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "Form Feedback:",
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
 
-                    // Feedback list
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                        if (sessionResult.totalExercises > 1) {
+                            item {
+                                TabRow(
+                                    selectedTabIndex = selectedTabIndex,
+                                    backgroundColor = Color.Transparent,
+                                    contentColor = Color.White,
+                                    indicator = { tabPositions ->
+                                        TabRowDefaults.Indicator(
+                                            Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                                            color = Color.White
+                                        )
+                                    }
+                                ) {
+                                    tabs.forEachIndexed { index, title ->
+                                        Tab(
+                                            selected = selectedTabIndex == index,
+                                            onClick = { selectedTabIndex = index },
+                                            text = { Text(title) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Feedback list
+                        val feedbackToShow = when (selectedTabIndex) {
+                            0 -> sessionResult.feedbackMessages
+                            1 -> sessionResult.commonFeedbackMessages
+                            else -> sessionResult.allFeedbackMessages
+                        }
+
                         // Show unique feedback messages (deduplicate)
-                        val uniqueFeedback = sessionResult.feedbackMessages
+                        val uniqueFeedback = feedbackToShow
                             .distinctBy { it.text }
-                            .take(10) // Limit to 10 most relevant messages
+                            .take(20) // Limit to 20 most relevant messages
                         
                         items(uniqueFeedback) { feedback ->
                             FeedbackCard(feedback)
                         }
+
+                        if (uniqueFeedback.isEmpty()) {
+                             item {
+                                Text(
+                                    text = when (selectedTabIndex) {
+                                        0 -> "No feedback for this session."
+                                        1 -> "No common feedback across all sessions."
+                                        else -> "No feedback recorded across any session."
+                                    },
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp)
+                                )
+                             }
+                        }
                     }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Action buttons
+                // Action buttons (Fixed at bottom)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
