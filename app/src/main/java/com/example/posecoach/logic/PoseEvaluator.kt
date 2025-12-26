@@ -117,7 +117,7 @@ interface PoseEvaluator {
 object AngleThresholds {
     // Squat thresholds
     const val SQUAT_KNEE_MIN = 70f  // Minimum knee angle at bottom (degrees)
-    const val SQUAT_KNEE_MAX = 110f // Maximum knee angle at bottom
+    const val SQUAT_KNEE_MAX = 120f // Maximum knee angle at bottom (Relaxed from 110f)
     const val SQUAT_HIP_MIN = 60f   // Minimum hip angle at bottom
     
     // Push-up thresholds

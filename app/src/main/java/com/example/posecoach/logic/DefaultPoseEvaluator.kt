@@ -494,7 +494,7 @@ class DefaultPoseEvaluator : PoseEvaluator {
         // Squat thresholds
         const val SQUAT_KNEE_TRANSITION_DOWN = 150f // Angle to detect start of squat (from UP to DOWN)
         const val SQUAT_KNEE_TRANSITION_UP = 160f   // Angle to detect end of squat (from DOWN to UP)
-        const val SQUAT_KNEE_MIN_DEPTH = 90f        // Target angle for full squat depth
+        const val SQUAT_KNEE_MIN_DEPTH = 115f       // Target angle for full squat depth (Relaxed from 90f)
         
         // Push-up thresholds
         const val PUSHUP_ELBOW_TRANSITION_DOWN = 150f  // Angle to detect start of descent

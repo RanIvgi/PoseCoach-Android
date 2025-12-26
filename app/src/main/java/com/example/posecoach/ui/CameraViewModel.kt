@@ -14,6 +14,7 @@ import com.example.posecoach.data.LiveSessionResult
 import com.example.posecoach.data.PoseResult
 import com.example.posecoach.logic.DefaultPoseEvaluator
 import com.example.posecoach.logic.PoseEvaluator
+import com.example.posecoach.logic.FeedbackAnalyzer
 import com.example.posecoach.pose.PoseEngine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -290,12 +291,19 @@ class CameraViewModel : ViewModel() {
 
         val overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory)
 
+        // Analyze feedback to generate summary
+        val summarizedFeedback = FeedbackAnalyzer.analyze(
+            sessionFeedbackHistory,
+            _currentExercise.value,
+            _repCount.value
+        )
+
         val current = ExerciseSessionSummary(
             exerciseId = _currentExercise.value,
             exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
             reps = _repCount.value,
             durationMillis = durationMillis,
-            feedbackMessages = sessionFeedbackHistory.toList()
+            feedbackMessages = summarizedFeedback
         )
 
         val updatedWorkoutSessions = _workoutSessions.value + current
@@ -328,7 +336,7 @@ class CameraViewModel : ViewModel() {
             targetReps = _targetReps.value,
             completedReps = _repCount.value,
             durationMillis = durationMillis,
-            feedbackMessages = sessionFeedbackHistory.toList(),
+            feedbackMessages = summarizedFeedback,
             evaluationSummary = formSummary,
             overallScore = overallScore,
             totalExercises = totalExercises,
