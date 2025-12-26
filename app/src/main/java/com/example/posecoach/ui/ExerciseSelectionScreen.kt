@@ -196,6 +196,8 @@ fun ExerciseDetailsView(
     onBack: () -> Unit,
     onStartSession: () -> Unit
 ) {
+    var attemptedStart by remember { mutableStateOf(false) }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -349,23 +351,45 @@ fun ExerciseDetailsView(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Confirmation checkbox
+                // Confirmation checkbox with red highlight when needed
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { onUnderstoodChange(!understood) }
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = if (attemptedStart && !understood) 
+                                Color.Red.copy(alpha = 0.3f) 
+                            else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(8.dp)
+                        .clickable { 
+                            onUnderstoodChange(!understood)
+                            if (understood) attemptedStart = false
+                        }
                 ) {
                     Checkbox(
                         checked = understood,
-                        onCheckedChange = onUnderstoodChange,
+                        onCheckedChange = { 
+                            onUnderstoodChange(it)
+                            if (it) attemptedStart = false
+                        },
                         colors = CheckboxDefaults.colors(
                             checkedColor = Color(0xFF0B3C91),
-                            uncheckedColor = Color.White
+                            uncheckedColor = if (attemptedStart && !understood) 
+                                Color.Red 
+                            else Color.White
                         )
                     )
                     Text(
                         text = "I understand the instructions",
-                        color = Color.White,
-                        fontSize = 16.sp
+                        color = if (attemptedStart && !understood) 
+                            Color(0xFFFFCDD2) 
+                        else Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = if (attemptedStart && !understood) 
+                            FontWeight.Bold 
+                        else FontWeight.Normal
                     )
                 }
             }
@@ -390,15 +414,20 @@ fun ExerciseDetailsView(
             }
             
             Button(
-                onClick = onStartSession,
-                enabled = understood,
+                onClick = {
+                    if (!understood) {
+                        attemptedStart = true
+                    } else {
+                        onStartSession()
+                    }
+                },
                 modifier = Modifier.weight(1f).height(52.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(0xFF0B3C91),
-                    disabledBackgroundColor = Color(0xFF5476A8)
+                    backgroundColor = if (understood) Color(0xFF0B3C91) else Color(0xFF5476A8),
+                    contentColor = Color.White
                 )
             ) {
-                Text("Start Session", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Start Session", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
         
