@@ -68,6 +68,20 @@ interface PoseEvaluator {
     fun evaluateLunge(poseResult: PoseResult): FeedbackMessage?
     
     /**
+     * Evaluate plank form specifically.
+     * 
+     * Key checks for planks:
+     * - Body alignment (shoulders, hips, ankles should form a straight line ~180 degrees)
+     * - Hip position (should not sag or pike)
+     * - Elbow position (elbows should be directly under shoulders)
+     * - Neck alignment (head should be neutral, looking down)
+     * 
+     * @param poseResult The detected pose
+     * @return Feedback about plank form
+     */
+    fun evaluatePlank(poseResult: PoseResult): FeedbackMessage?
+    
+    /**
      * Reset any internal state (e.g., rep counters, movement tracking).
      * Called when starting a new exercise session.
      */
@@ -129,6 +143,12 @@ object AngleThresholds {
     const val LUNGE_FRONT_KNEE_MAX = 110f // Maximum front knee angle
     const val LUNGE_BACK_KNEE_MIN = 70f   // Minimum back knee angle
     const val LUNGE_BACK_KNEE_MAX = 110f  // Maximum back knee angle
+    
+    // Plank thresholds
+    const val PLANK_BODY_ALIGNMENT_MIN = 165f  // Minimum body angle (shoulder-hip-ankle)
+    const val PLANK_BODY_ALIGNMENT_MAX = 195f  // Maximum body angle (to detect pike)
+    const val PLANK_HIP_SAG_THRESHOLD = 165f   // Below this angle = hips sagging
+    const val PLANK_HIP_PIKE_THRESHOLD = 185f  // Above this angle = hips too high
     
     // General thresholds
     const val LANDMARK_VISIBILITY_THRESHOLD = 0.5f // Minimum visibility to trust a landmark
