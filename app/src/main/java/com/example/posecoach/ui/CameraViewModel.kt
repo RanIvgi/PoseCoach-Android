@@ -114,10 +114,14 @@ class CameraViewModel : ViewModel() {
         _targetReps.value = target
     }
 
-    fun setExercise(exercise: String) {
+    fun setExercise(exercise: String, durationSeconds: Int? = null) {
         _currentExercise.value = exercise
         poseEvaluator.reset()
         _repCount.value = 0
+        // Store the duration for plank exercises
+        if (exercise == "plank") {
+            _exerciseRemainingSeconds.value = durationSeconds
+        }
     }
 
     fun finishSessionAndGoHome() {

@@ -25,12 +25,27 @@ fun PoseCoachApp() {
         composable("start") {
             StartScreen(
                 onLetsBeginClicked = {
-                    navController.navigate("camera")
+                    navController.navigate("exercise_selection")
                 },
                 onAnalyzeVideoClicked = {
                     // Clear previous results when starting new analysis
                     videoAnalysisViewModel.clearAnalysisResult()
                     navController.navigate("video_upload")
+                }
+            )
+        }
+
+        composable("exercise_selection") {
+            ExerciseSelectionScreen(
+                onBackToStart = {
+                    navController.navigate("start") {
+                        popUpTo("exercise_selection") { inclusive = true }
+                    }
+                },
+                onStartSession = { exerciseId, durationSeconds ->
+                    // Set the exercise in the camera view model
+                    cameraViewModel.setExercise(exerciseId, durationSeconds)
+                    navController.navigate("camera")
                 }
             )
         }
