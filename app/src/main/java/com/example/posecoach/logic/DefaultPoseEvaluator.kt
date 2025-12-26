@@ -576,6 +576,10 @@ class DefaultPoseEvaluator : PoseEvaluator {
             else -> 0
         }
     }
+
+    override fun getFormBreakCount(): Int {
+        return plankFormBreakCount
+    }
     
     override fun getMetrics(): Map<String, Any> {
         // TODO (Student 3): Return useful metrics

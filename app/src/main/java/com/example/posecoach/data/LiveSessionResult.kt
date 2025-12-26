@@ -17,7 +17,9 @@ data class LiveSessionResult(
     val totalReps: Int,
     val totalDurationMillis: Long,
     val commonFeedbackMessages: List<FeedbackMessage> = emptyList(),
-    val allFeedbackMessages: List<FeedbackMessage> = emptyList()
+    val allFeedbackMessages: List<FeedbackMessage> = emptyList(),
+    val sessionHistory: List<ExerciseSessionSummary> = emptyList(),
+    val formBreakCount: Int = 0
 ) {
     companion object {
         /**

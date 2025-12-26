@@ -16,6 +16,7 @@ import com.example.posecoach.logic.DefaultPoseEvaluator
 import com.example.posecoach.logic.PoseEvaluator
 import com.example.posecoach.logic.FeedbackAnalyzer
 import com.example.posecoach.pose.PoseEngine
+import com.example.posecoach.data.ExerciseSessionSummary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,15 +25,6 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
 enum class SessionState { IDLE, COUNTDOWN, ACTIVE, FINISHED }
-
-// Per-exercise session summary
-data class ExerciseSessionSummary(
-    val exerciseId: String,
-    val exerciseName: String,
-    val reps: Int,
-    val durationMillis: Long,
-    val feedbackMessages: List<FeedbackMessage> = emptyList()
-)
 
 class CameraViewModel : ViewModel() {
 
@@ -302,12 +294,15 @@ class CameraViewModel : ViewModel() {
             _repCount.value
         )
 
+        val formBreakCount = poseEvaluator.getFormBreakCount()
+
         val current = ExerciseSessionSummary(
             exerciseId = _currentExercise.value,
             exerciseName = _currentExercise.value.replaceFirstChar { it.uppercase() },
             reps = _repCount.value,
             durationMillis = durationMillis,
-            feedbackMessages = summarizedFeedback
+            feedbackMessages = summarizedFeedback,
+            formBreakCount = formBreakCount
         )
 
         val updatedWorkoutSessions = _workoutSessions.value + current
@@ -347,7 +342,9 @@ class CameraViewModel : ViewModel() {
             totalReps = totalReps,
             totalDurationMillis = totalDurationMillis,
             commonFeedbackMessages = commonFeedback,
-            allFeedbackMessages = allFeedback
+            allFeedbackMessages = allFeedback,
+            sessionHistory = updatedWorkoutSessions,
+            formBreakCount = formBreakCount
         )
 
         _sessionResult.value = sessionResult

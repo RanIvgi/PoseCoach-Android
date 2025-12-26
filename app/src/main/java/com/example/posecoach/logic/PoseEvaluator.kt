@@ -94,6 +94,11 @@ interface PoseEvaluator {
      * @return Number of reps completed.
      */
     fun getRepCount(): Int
+
+    /**
+     * Get the number of times form was broken (e.g. for Plank).
+     */
+    fun getFormBreakCount(): Int
     
     /**
      * Get exercise-specific metrics (e.g., max depth, average speed).
