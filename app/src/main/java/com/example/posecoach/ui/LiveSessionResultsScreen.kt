@@ -348,14 +348,14 @@ fun LiveSessionResultsScreen(
                         else -> allFeedback
                     }
 
-                    // Show unique feedback messages (deduplicate)
+                    // Show unique feedback messages (deduplicate) and group by severity
                     val uniqueFeedback = feedbackToShow
                         .distinctBy { it.text }
-                        .take(20) // Limit to 20 most relevant messages
                     
-                    items(uniqueFeedback) { feedback ->
-                        FeedbackCard(feedback)
-                    }
+                    // Group by severity type
+                    val errorMessages = uniqueFeedback.filter { it.severity == FeedbackSeverity.ERROR }
+                    val warningMessages = uniqueFeedback.filter { it.severity == FeedbackSeverity.WARNING }
+                    val infoMessages = uniqueFeedback.filter { it.severity == FeedbackSeverity.INFO }
 
                     if (uniqueFeedback.isEmpty()) {
                             item {
@@ -370,6 +370,51 @@ fun LiveSessionResultsScreen(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp)
                             )
                             }
+                    } else {
+                        // Show INFO section (Good Form first)
+                        if (infoMessages.isNotEmpty()) {
+                            item {
+                                FeedbackSectionHeader(
+                                    title = "Good Form",
+                                    count = infoMessages.size,
+                                    icon = Icons.Default.CheckCircle,
+                                    color = Color(0xFF4CAF50)
+                                )
+                            }
+                            items(infoMessages) { feedback ->
+                                FeedbackCard(feedback)
+                            }
+                        }
+
+                        // Show WARNING section
+                        if (warningMessages.isNotEmpty()) {
+                            item {
+                                FeedbackSectionHeader(
+                                    title = "Warnings",
+                                    count = warningMessages.size,
+                                    icon = Icons.Default.Warning,
+                                    color = Color(0xFFFF9800)
+                                )
+                            }
+                            items(warningMessages) { feedback ->
+                                FeedbackCard(feedback)
+                            }
+                        }
+
+                        // Show ERROR section (Errors last)
+                        if (errorMessages.isNotEmpty()) {
+                            item {
+                                FeedbackSectionHeader(
+                                    title = "Errors",
+                                    count = errorMessages.size,
+                                    icon = Icons.Default.Error,
+                                    color = Color(0xFFF44336)
+                                )
+                            }
+                            items(errorMessages) { feedback ->
+                                FeedbackCard(feedback)
+                            }
+                        }
                     }
                 }
 
@@ -428,6 +473,62 @@ fun LiveSessionResultsScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeedbackSectionHeader(
+    title: String,
+    count: Int,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color
+) {
+    Card(
+        backgroundColor = color.copy(alpha = 0.2f),
+        shape = RoundedCornerShape(12.dp),
+        elevation = 0.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Card(
+                backgroundColor = color.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(16.dp),
+                elevation = 0.dp
+            ) {
+                Text(
+                    text = "$count",
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
             }
         }
     }
