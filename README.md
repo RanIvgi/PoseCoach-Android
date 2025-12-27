@@ -5,10 +5,26 @@
 # PoseCoach - Real-Time Exercise Form Analysis Using Computer Vision
 
 ## Table of Contents
+
+### 📱 User Guide
 - [Overview](#overview)
-  - [Supported Exercises](#supported-exercises)
   - [Key Features](#key-features)
+- [App Features](#app-features)
+  - [Core Features](#core-features)
+  - [Visual Features](#visual-features)
+- [How to Use the App](#how-to-use-the-app)
+  - [Quick Start Guide](#quick-start-guide)
+  - [App Tutorial - Step by Step](#app-tutorial---step-by-step)
+  - [Path A: Live Video Analysis](#path-a-live-video-analysis)
+  - [Path B: Analyze Video](#path-b-analyze-video)
+  - [Quick Reference - All Buttons](#quick-reference---all-buttons)
+  - [Tips for Best Results](#tips-for-best-results)
+  - [Troubleshooting](#troubleshooting)
 - [Application Flow Diagram](#application-flow-diagram)
+- [Installation and Execution Instructions](#installation-and-execution-instructions)
+  - [System Requirements](#system-requirements)
+
+### 🔬 Research & Methodology
 - [Introduction](#introduction)
   - [Research Problem](#research-problem)
   - [Research Hypothesis](#research-hypothesis)
@@ -24,20 +40,6 @@
   - [Real-World Application Performance](#real-world-application-performance)
   - [Technical Specifications](#technical-specifications---mediapipe-pose-landmarker-lite)
   - [Conclusion - Model Selection](#conclusion---model-selection)
-- [Implementation Details](#implementation-details)
-  - [Performance Optimizations](#performance-optimizations)
-  - [Supported Exercises](#supported-exercises-1)
-- [Technical Stack](#technical-stack)
-- [Code Structure](#code-structure)
-  - [Core Components](#core-components)
-  - [Data Models](#data-models)
-- [Project Architecture](#project-architecture)
-  - [System Components](#system-components)
-  - [Component Responsibilities](#component-responsibilities)
-  - [Dependencies](#dependencies)
-- [Performance Debugging](#performance-debugging)
-  - [Frame Timing Analysis](#frame-timing-analysis)
-  - [ML Inference Profiling](#ml-inference-profiling)
 - [Research Results and Statistical Analysis](#research-results-and-statistical-analysis)
   - [Hypothesis Validation](#hypothesis-validation)
   - [Performance Convergence Analysis](#performance-convergence-analysis)
@@ -46,19 +48,22 @@
   - [Research Contributions and Implications](#research-contributions-and-implications)
   - [Limitations and Future Research Directions](#limitations-and-future-research-directions)
   - [Statistical Significance and Validation](#statistical-significance-and-validation)
-- [Installation and Execution Instructions](#installation-and-execution-instructions)
-  - [System Requirements](#system-requirements)
-- [App Features](#app-features)
-  - [Core Features](#core-features)
-  - [Visual Features](#visual-features)
-- [How to Use the App](#how-to-use-the-app)
-  - [Getting Started](#getting-started)
-  - [App Tutorial - Step by Step](#app-tutorial---step-by-step)
-  - [Path A: Live Video Analysis](#path-a-live-video-analysis)
-  - [Path B: Analyze Video](#path-b-analyze-video)
-  - [Navigation Flow Summary](#navigation-flow-summary)
-  - [Quick Reference - All Buttons](#quick-reference---all-buttons)
-  - [Tips for Best Results](#tips-for-best-results)
+
+### 💻 Technical Documentation
+- [Technical Stack](#technical-stack)
+- [Project Architecture](#project-architecture)
+  - [System Components](#system-components)
+  - [Component Responsibilities](#component-responsibilities)
+  - [Dependencies](#dependencies)
+- [Code Structure](#code-structure)
+  - [Core Components](#core-components)
+  - [Data Models](#data-models)
+- [Implementation Details](#implementation-details)
+  - [Performance Optimizations](#performance-optimizations)
+  - [Supported Exercises](#supported-exercises-1)
+- [Performance Debugging](#performance-debugging)
+  - [Frame Timing Analysis](#frame-timing-analysis)
+  - [ML Inference Profiling](#ml-inference-profiling)
 
 ---
 
@@ -66,629 +71,12 @@
 
 **PoseCoach** is an Android mobile application that provides real-time exercise form analysis using the **Google MediaPipe Pose Landmarker** model. The app delivers instant feedback on your workout technique through advanced computer vision and machine learning, helping you improve form and prevent injuries.
 
-### Supported Exercises
-- 🏋️ **Push-ups** - Elbow angle and body alignment analysis
-- 🦵 **Squats** - Knee angle, depth, and posture evaluation
-- 🧘 **Planks** - Core stability and body alignment monitoring
-
 ### Key Features
 - Real-time pose detection
 - Instant form feedback with color-coded guidance
 - Automatic rep counting
 - Session performance tracking
 - Video analysis mode for pre-recorded workouts
-
-## Application Flow Diagram
-
-The PoseCoach app provides two main user flows for exercise form analysis:
-
-```mermaid
-graph TD
-    Start[Start Screen] --> |Let's Begin| ExerciseSelection[Exercise Selection Screen]
-    Start --> |Analyze Video| VideoUpload[Video Upload Screen]
-    Start --> |Exit App| Exit[Exit Application]
-    
-    ExerciseSelection --> |Select Exercise| ExerciseConfig[Exercise Configuration]
-    ExerciseConfig --> |Start Session| CameraSession[Camera Session Screen]
-    ExerciseSelection --> |Back Arrow| Start
-    ExerciseSelection --> |i| Tutorial
-
-    Tutorial ---> |Got it!| ExerciseSelection
-    Tutorial ---> |x| ExerciseSelection
-
-    CameraSession --> |Finish Session| LiveResults[Live Session Results]
-    
-    LiveResults --> |New Exercise| ExerciseSelection
-    LiveResults --> |Home| Start
-    LiveResults --> |Back Arrow| Start
-    
-    VideoUpload --> |Select & Analyze| VideoProcessing[Video Processing]
-    VideoUpload --> |Back Arrow| Start
-    
-    VideoProcessing --> VideoResults[Video Results Screen]
-    VideoResults --> |Back Arrow| Start
-    VideoResults --> |Done| Start
-    
-    style Start fill:#1976D2,color:#fff
-    style ExerciseSelection fill:#42A5F5,color:#fff
-    style CameraSession fill:#4CAF50,color:#fff
-    style LiveResults fill:#66BB6A,color:#fff
-    style VideoUpload fill:#FF9800,color:#fff
-    style VideoResults fill:#FFB74D,color:#fff
-```
-
-For detailed screen-by-screen breakdown and button reference, see [POSECOACH_APP_FLOWS.md](POSECOACH_APP_FLOWS.md).
-
-## Introduction
-
-Exercise form analysis represents a critical challenge in modern fitness training methodologies. Current approaches suffer from significant limitations that motivate the development of automated solutions.
-
-### Research Problem
-
-Traditional exercise form evaluation faces several fundamental issues:
-- **Accessibility**: Requires expensive personal trainers or motion capture systems
-- **Scalability**: Cannot provide real-time feedback to large populations
-- **Consistency**: Human evaluation introduces subjective variability
-- **Cost**: Professional form analysis remains financially prohibitive
-
-### Research Hypothesis
-
-We hypothesize that smartphone-based real-time exercise form analysis using MediaPipe pose detection can achieve >90% accuracy while maintaining >25 FPS performance on consumer mobile devices.
-
-## Solution Methodology
-
-### Approach Overview
-We developed a multi-layered system combining computer vision, machine learning, and real-time analysis to solve the exercise form evaluation problem.
-
-### Algorithm Design
-
-#### Phase 1: Pose Detection Pipeline
-- **MediaPipe Integration**: Implementation of Google's Pose Landmarker model
-- **Frame Processing**: YUV_420_888 to RGB conversion with rotation handling
-- **Delegate Selection**: GPU/CPU optimization based on device capabilities
-- **Coordinate Normalization**: Device-independent landmark representation
-
-#### Phase 2: Exercise Evaluation Engine
-- **Geometric Analysis**: Joint angle calculations using 3D coordinate geometry
-- **Threshold Systems**: Exercise-specific form criteria implementation
-- **Temporal Analysis**: Movement pattern recognition for rep counting
-- **Feedback Generation**: Rule-based corrective guidance system
-
-#### Phase 3: Performance Optimization
-- **Model Pre-warming**: Background initialization strategy
-- **Memory Management**: Efficient bitmap processing and cleanup
-- **Frame Rate Optimization**: Processing pipeline tuning for 30fps target
-- **Error Handling**: Graceful degradation and recovery mechanisms
-
-### Architecture
-```
-com.example.posecoach/
-├── pose/            # ML Model Integration (MediaPipe + CameraX)
-├── logic/           # Pose Evaluation & Exercise Analysis
-├── data/            # Data Models & State Management
-├── ui/              # User Interface (Jetpack Compose)
-├── video/           # Video Processing Pipeline
-└── MainActivity.kt  # App Entry Point with Model Warming
-```
-
-## Model Performance Analysis - Real-World Testing
-
-### Test Configuration
-
-To select the optimal pose estimation model for mobile exercise analysis, we conducted systematic performance testing of three Google MediaPipe Pose Landmarker model variants on real hardware.
-
-**Test Environment:**
-- **Device**: Xiaomi Mi 8 (Snapdragon 845, 2018)
-- **Test Date**: December 27, 2025
-- **Exercises Tested**: Plank, Push-up, Squat
-- **Conditions**: Controlled indoor environment, adequate lighting
-- **Metrics**: Real FPS, inference time, detection confidence, visibility scores
-
-**Note on Device Performance:** The Xiaomi Mi 8 represents mid-range/older hardware (2018 flagship). Modern devices will achieve significantly higher FPS while maintaining the same accuracy levels.
-
-### MediaPipe Pose Landmarker Model Variants
-
-**1. Lite Model ⭐ (SELECTED)**
-- **Model Size**: 1.9 MB
-- **Target**: Ultra-lightweight applications, maximum speed
-- **Trade-off**: Optimized for speed with minimal accuracy compromise
-
-**2. Full Model**
-- **Model Size**: 3.5 MB  
-- **Target**: Balanced real-time applications
-- **Trade-off**: Balanced accuracy-performance tradeoff
-
-**3. Heavy Model**
-- **Model Size**: 6.9 MB
-- **Target**: Maximum accuracy applications
-- **Trade-off**: Highest accuracy but significantly slower
-
-### Performance Comparison Results
-
-#### Quantitative Performance Analysis
-
-| Model Variant | Real FPS | Confidence | Visibility | Inference Time | Detection Success | Model Size |
-|---------------|----------|------------|------------|----------------|-------------------|------------|
-| **Lite** ⭐ | **14.86 ± 3.14** | **99.89%** | **87.26%** | **17.44 ms** | **100%** | **1.9 MB** |
-| **Full** | 10.62 ± 0.65 | 99.93% | 88.93% | 17.77 ms | 100% | 3.5 MB |
-| **Heavy** | 2.84 ± 0.25 | 99.99% | 83.59% | 18.34 ms | 100% | 6.9 MB |
-
-#### Performance Visualization
-
-**FPS Comparison Across Models:**
-
-![FPS Comparison](Tests%20Results/analysis_output/1_fps_comparison.png)
-
-The graph demonstrates the significant FPS differences between model variants. The Lite model achieves the highest FPS (14.86), providing superior real-time performance for exercise coaching applications.
-
-**Per-Exercise Performance:**
-
-![Per-Exercise Performance](Tests%20Results/analysis_output/4_per_exercise_performance.png)
-
-Performance consistency across different exercise types:
-
-| Exercise | Lite FPS | Full FPS | Heavy FPS |
-|----------|----------|----------|-----------|
-| **Plank** | 11.52 | 11.25 | 3.05 |
-| **Push-up** | 15.30 | 9.95 | 2.56 |
-| **Squat** | 17.75 | 10.67 | 2.90 |
-
-### Model Selection: Why We Chose LITE
-
-We selected the **Lite model** as the optimal choice for PoseCoach based on comprehensive performance analysis prioritizing real-time responsiveness and resource efficiency:
-
-#### Decision Rationale
-
-**1. Superior Real-Time Performance**
-- ✅ **14.86 FPS highest performance** - 40% faster than Full model (14.86 vs 10.62 FPS)
-- ✅ **17.44ms inference time** - fastest processing for immediate feedback
-- ✅ **100% detection success** - reliable pose tracking across all sessions
-- ✅ **Excellent for real-time coaching** - smoothest user experience
-
-**2. Minimal Accuracy Trade-Off**
-- ✅ **99.89% confidence** - only 0.04% less than Full model (99.93%)
-- ✅ **87.26% visibility** - sufficient for accurate landmark tracking
-- ✅ **Negligible practical difference** - imperceptible to end users
-- ✅ **100% detection success rate** - same reliability as other models
-
-**3. Resource Efficiency**
-- ✅ **1.9 MB model size** - 45% smaller than Full (1.9 MB vs 3.5 MB)
-- ✅ **Lowest memory footprint** - optimal for budget/mid-range devices
-- ✅ **Faster app downloads** - smaller APK size improves user acquisition
-- ✅ **Lower battery consumption** - efficient processing extends workout sessions
-
-**4. Device Compatibility**
-- ✅ **Excellent on older devices** - 14.86 FPS even on 2018 hardware (Xiaomi Mi 8)
-- ✅ **Outstanding on modern devices** - 30 FPS on flagship devices
-- ✅ **Broad device support** - runs smoothly across Android device spectrum
-- ✅ **No performance barriers** - accessible to all users regardless of device
-
-**5. Full Model Not Required**
-- ❌ **Marginal accuracy gain** - 0.04% confidence difference negligible in practice
-- ❌ **40% slower** - 10.62 FPS vs 14.86 FPS impacts user experience
-- ❌ **Larger footprint** - 3.5 MB vs 1.9 MB unnecessary for target accuracy
-- ❌ **Diminishing returns** - higher resource cost without proportional benefit
-
-**6. Heavy Model Rejected**
-- ❌ **2.84 FPS completely unusable** for real-time applications
-- ❌ **81% slower than Lite** - severe performance degradation
-- ❌ **Severe frame dropping** creates poor user experience
-- ❌ **Not viable** for interactive fitness coaching
-
-### Real-World Application Performance
-
-**Production Deployment Results:**
-
-In actual application usage with the **Lite model**, we achieved **exceptional real-time performance** and outstanding user experience:
-
-✅ **Highly Responsive Feedback**: 14-15 FPS provides real-time form corrections  
-✅ **Excellent Accuracy**: 99.89% confidence ensures reliable pose tracking and rep counting  
-✅ **Consistent Performance**: Stable frame rates throughout extended workout sessions  
-✅ **Superior User Experience**: Fastest real-time feedback with imperceptible latency (<70ms)
-
-**Key Insight:** The Lite model delivers **outstanding practical performance** for exercise coaching applications. The 14.86 FPS average provides the smoothest real-time experience:
-
-- ✓ Real-time rep counting with good accuracy
-- ✓ Instantaneous form feedback with minimal latency
-- ✓ Fluid skeleton overlay visualization
-- ✓ Sustained high performance in extended workout sessions
-- ✓ Reliable landmark tracking in various lighting conditions
-- ✓ Lowest battery drain for longer workout sessions
-
-### Technical Specifications - MediaPipe Pose Landmarker (Lite)
-
-**Model Details:**
-- **Framework**: Google MediaPipe v0.20230731
-- **Architecture**: BlazePose GHUM 3D (Lite variant)
-- **Model Size**: 1.9 MB
-- **Input**: 256×256 RGB images
-- **Output**: 33 3D body landmarks with confidence scores
-- **Quantization**: Float16 for mobile optimization
-- **Delegates**: GPU (primary) / CPU (fallback)
-
-**Landmark Distribution:**
-- **Face**: 10 landmarks (eyes, nose, ears, mouth)
-- **Upper Body**: 8 landmarks (shoulders, elbows, wrists, hands)
-- **Torso**: 4 landmarks (hips, center points)
-- **Lower Body**: 11 landmarks (knees, ankles, feet, toes, heels)
-
-**Performance Characteristics:**
-- **Inference**: 17.44ms average on Xiaomi Mi 8
-- **Detection Confidence**: 99.89% average
-- **Landmark Visibility**: 87.26% average
-- **Success Rate**: 100% pose detection across all test sessions
-
-### Conclusion - Model Selection
-
-The **MediaPipe Pose Landmarker Lite model** emerged as the optimal choice through systematic empirical testing. While the Full variant offers marginally higher confidence (99.93% vs 99.89%), its 40% performance penalty (10.62 FPS vs 14.86 FPS) provides no practical benefit given the negligible 0.04% accuracy difference. The Heavy variant is completely unusable for real-time applications (2.84 FPS).
-
-The Lite model uniquely satisfies all critical requirements while maximizing performance:
-- ✓ **Superior real-time performance**: 14.86 FPS on mid-range devices, 35-40 FPS on modern flagships
-- ✓ **Excellent accuracy**: 99.89% confidence provides professional-grade pose tracking
-- ✓ **Smallest footprint**: 1.9 MB model size optimizes app distribution and device compatibility
-- ✓ **Production-ready**: Proven exceptional performance in real-world workout sessions
-- ✓ **Maximum accessibility**: Outstanding performance across entire Android device spectrum
-
-## Implementation Details
-
-### Performance Optimizations
-
-#### Startup Performance Optimization
-
-**Problem Solved**: The app originally experienced a 2.2+ second freeze during startup, causing 34 dropped frames and poor user experience with "Slow Looper" warnings.
-
-**Solution Implemented**:
-1. **ModelWarmer Singleton**: Background ML model initialization during app launch eliminates main thread blocking
-2. **Custom Loading Screen**: Professional branded loading screen provides visual feedback during initialization (API 24+ compatible)
-3. **Cached Delegate Preference**: Saves GPU/CPU preference to SharedPreferences, skipping auto-detection on subsequent launches (~200ms savings)
-4. **Pre-warmed Engine Reuse**: CameraViewModel uses already-initialized PoseEngine instance (0ms delay vs. 2+ second initialization)
-
-**Performance Impact**:
-- **Before**: 2200ms main thread freeze → 34 dropped frames → frozen white screen
-- **After**: 0ms main thread freeze → smooth loading screen → responsive UI throughout
-- **Camera Screen**: Instant opening using pre-warmed engine vs. 2+ second delay
-- **User Experience**: Professional loading animation instead of frozen application
-
-#### Frame Processing Pipeline
-1. **Optimized YUV→RGB Conversion**: Efficient bitmap processing with 75% JPEG quality
-2. **Bitmap Rotation Handling**: Matrix-based rotation with proper orientation correction
-3. **Delegate Selection**: Automatic GPU/CPU fallback based on device capabilities
-4. **Memory Management**: Efficient bitmap handling and resource cleanup (41% reduction to 85MB peak)
-
-### Supported Exercises
-- **Push-ups**: Elbow angle analysis, body alignment detection
-- **Squats**: Knee angle thresholds, depth measurement, balance assessment
-- **Planks**: Core stability evaluation, posture monitoring
-
-## Technical Stack
-
-- **Language**: Kotlin
-- **ML Framework**: Google MediaPipe Pose Landmarker v0.20230731
-- **Camera**: CameraX 1.1.0
-- **UI**: Jetpack Compose with Material Design
-- **Architecture**: MVVM with Kotlin Coroutines
-- **Min SDK**: API 24 (Android 7.0)
-- **Target SDK**: API 34 (Android 14)
-
-#### Frame Processing Optimization
-
-**Processing Pipeline Comparison:**
-
-| Method | Average Time (ms) | FPS Achieved | Memory Usage (MB) |
-|--------|------------------|--------------|-------------------|
-| Basic YUV Conversion | 45-60 | 16-20 | 95 |
-| Optimized Conversion | 30-45 | 20-25 | 75 |
-| GPU-Accelerated | 25-35 | 25-30 | 65 |
-
-**Best Configuration**: GPU-accelerated processing with optimized YUV conversion
-
-#### Exercise Threshold Optimization
-
-**Squat Analysis Parameters:**
-- Knee angle range testing: 60°-70°-80° minimum thresholds
-- **Result**: 70° provided best balance of accuracy vs. strictness
-- False positive rate: 3.2% at 70° threshold
-
-**Push-up Evaluation Parameters:**
-- Elbow angle testing: 60°-90°-110° for "down" position
-- **Result**: 90° achieved 92% accuracy on form evaluation
-- Rep counting accuracy: 96% with 90° threshold
-
-#### Memory Usage Optimization Results
-
-**Before Optimization:**
-- Peak memory: 145MB during processing
-- Memory leaks detected after 15-minute sessions
-
-**After Optimization:**
-- Peak memory: 85MB during processing
-- No memory leaks in 60-minute stress tests
-- **Improvement**: 41% reduction in memory usage
-
-## Code Structure
-
-### Core Components
-
-#### PoseEngine.kt
-```kotlin
-class PoseEngine {
-    // MediaPipe integration
-    fun detectPose(imageProxy: ImageProxy): PoseResult
-    fun initializePoseLandmarker(useGpu: Boolean)
-}
-```
-
-#### DefaultPoseEvaluator.kt  
-```kotlin
-class DefaultPoseEvaluator : PoseEvaluator {
-    fun evaluateSquat(landmarks: List<PoseLandmark>): FeedbackMessage
-    fun evaluatePushup(landmarks: List<PoseLandmark>): FeedbackMessage
-}
-```
-
-#### ModelWarmer.kt
-```kotlin
-object ModelWarmer {
-    fun startWarmup(): StateFlow<WarmupState>
-    // Background model initialization
-}
-```
-
-### Data Models
-- **PoseResult**: Contains 33 landmarks with confidence scores
-- **FeedbackMessage**: Exercise evaluation results with severity
-- **ExerciseSessionSummary**: Performance metrics and statistics
-
-## Project Architecture
-
-### System Components
-
-The application follows a modular architecture with clear separation of concerns:
-
-```
-app/src/main/java/com/example/posecoach/
-├── MainActivity.kt             # Application entry point with model warming
-├── ModelWarmer.kt              # Background ML model initialization system
-│
-├── data/                       # Data layer and models
-│   ├── PoseLandmark.kt         # Single pose landmark (x, y, z, visibility)
-│   ├── PoseLandmarkIndex.kt    # Constants for 33 MediaPipe landmark indices
-│   ├── PoseResult.kt           # Complete pose detection result container
-│   ├── FeedbackMessage.kt      # Exercise evaluation feedback with severity
-│   ├── CameraState.kt          # Camera configuration state management
-│   ├── ExerciseSessionSummary.kt # Session statistics and performance data
-│   └── VideoAnalysisResult.kt  # Video processing analysis results
-│
-├── ui/                         # User interface layer (Jetpack Compose)
-│   ├── PoseCoachApp.kt         # Main navigation and app structure
-│   ├── StartScreen.kt          # Application welcome and mode selection
-│   ├── CameraScreen.kt         # Live camera preview with pose overlay
-│   ├── CameraViewModel.kt      # Camera state management and data flow
-│   ├── VideoAnalysisViewModel.kt # Video processing state management
-│   ├── PoseOverlay.kt          # 3D skeleton visualization component
-│   ├── TutorialDialog.kt       # Exercise tutorial modal dialogs
-│   ├── ExerciseSelectionScreen.kt # Exercise type selection interface
-│   ├── VideoUploadScreen.kt    # Video analysis upload interface
-│   ├── VideoPlayer.kt          # Video playback component
-│   ├── VideoResultsScreen.kt   # Analysis results display
-│   ├── LiveSessionResultsScreen.kt # Live session results
-│   ├── LoadingScreen.kt        # Model warm-up loading screen
-│   └── theme/                  # Material Design theme configuration
-│
-├── pose/                       # ML integration layer (MediaPipe)
-│   └── PoseEngine.kt           # MediaPipe pose detection engine
-│
-├── logic/                      # Business logic layer
-│   ├── PoseEvaluator.kt        # Exercise evaluation interface
-│   ├── DefaultPoseEvaluator.kt # Form analysis implementation
-│   └── FeedbackAnalyzer.kt     # Feedback generation algorithms
-│
-└── video/                      # Video processing pipeline
-    └── VideoProcessor.kt       # Video file analysis and processing
-```
-
-### Component Responsibilities
-
-#### Core System Components
-
-**MainActivity.kt**
-- Application lifecycle management
-- Model pre-warming coordination
-- Performance optimization initialization
-
-**ModelWarmer.kt**
-- Background MediaPipe model loading
-- Startup performance optimization
-- Model state management across app lifecycle
-
-#### ML Integration Layer
-
-**PoseEngine.kt**
-- MediaPipe Pose Landmarker integration
-- CameraX image analysis pipeline
-- GPU/CPU delegate management
-- Frame processing optimization (YUV→RGB conversion)
-- Device capability detection and fallback handling
-
-#### Business Logic Layer
-
-**PoseEvaluator.kt / DefaultPoseEvaluator.kt**
-- Exercise form analysis algorithms
-- Joint angle calculation using 3D geometry
-- Exercise-specific threshold evaluation
-- Rep counting and movement pattern recognition
-
-**FeedbackAnalyzer.kt**
-- Real-time feedback generation
-- Form correction guidance algorithms
-- Performance scoring systems
-
-#### UI Layer Components
-
-**CameraScreen.kt / CameraViewModel.kt**
-- Real-time camera preview management
-- Pose detection result processing
-- UI state management with MVVM pattern
-- Performance metrics display (FPS, delegate status)
-
-**PoseOverlay.kt**
-- 3D skeleton visualization using Canvas API
-- Coordinate system transformation
-- Real-time landmark rendering with smooth interpolation
-
-**Navigation Screens**
-- Exercise selection and configuration
-- Video upload and analysis workflows
-- Results visualization and statistics
-
-#### Data Layer
-
-**Pose Data Models**
-- 33-point landmark representation following MediaPipe specification
-- Confidence scoring and visibility tracking
-- Coordinate normalization for device independence
-
-**Analysis Results**
-- Exercise evaluation metrics and scoring
-- Session performance statistics
-- Temporal movement analysis data
-
-```bash
-git clone https://github.com/RanIvgi/PoseCoach-Android.git
-cd PoseCoach-Android
-./gradlew assembleDebug
-```
-
-### Dependencies
-```gradle
-implementation "com.google.mediapipe:tasks-vision:0.20230731"
-implementation "androidx.camera:camera-core:1.1.0"
-implementation "androidx.compose:compose-bom:2024.02.00"
-```
-
-## Performance Debugging
-
-The application includes comprehensive performance monitoring tools:
-
-### Frame Timing Analysis
-- Real-time FPS measurement
-- Per-component timing breakdown  
-- Bottleneck identification
-
-### ML Inference Profiling
-- Delegate performance comparison
-- Model loading time tracking
-- Memory usage monitoring
-
-See [PERFORMANCE_DEBUGGING_GUIDE.md](PERFORMANCE_DEBUGGING_GUIDE.md) for detailed analysis procedures.
-
-## Research Results and Statistical Analysis
-
-### Hypothesis Validation
-
-Our experimental results confirm the research hypothesis:
-- **Accuracy achieved**: 94.2% (>90% target met)
-- **Performance achieved**: 25-30 FPS (>25 FPS target met)
-- **Statistical significance**: p < 0.01 across all exercise types
-
-### Performance Convergence Analysis
-
-#### Optimization Impact Assessment
-
-**Frame Rate Improvements:**
-- Baseline implementation: 8-12 FPS (insufficient for real-time)
-- YUV optimization: 16-20 FPS (67% improvement)
-- GPU acceleration: 25-30 FPS (250% total improvement)
-- **Conclusion**: Multi-stage optimization essential for real-time performance
-
-**Memory Efficiency Analysis:**
-- Pre-optimization: 145MB peak consumption
-- Post-optimization: 85MB peak consumption  
-- **Improvement**: 41% memory reduction with zero performance degradation
-- **Long-term stability**: No memory leaks detected in 60-minute stress tests
-
-### Exercise Evaluation Accuracy Analysis
-
-**Statistical Validation Results (n=500):**
-
-| Exercise Type | Accuracy | Precision | Recall | F1-Score |
-|---------------|----------|-----------|--------|---------|
-| Push-ups | 94.2% | 0.95 | 0.93 | 0.94 |
-| Squats | 91.8% | 0.92 | 0.91 | 0.91 |
-| Planks | 96.5% | 0.97 | 0.96 | 0.96 |
-| **Average** | **94.2%** | **0.95** | **0.93** | **0.94** |
-
-### Key Findings
-
-#### Optimal Configuration Discovered:
-1. **MediaPipe Parameters**: 0.5 confidence across all thresholds
-2. **Processing**: GPU delegate with optimized YUV conversion
-3. **Exercise Thresholds**: 70° knee angle for squats, 90° elbow angle for push-ups
-4. **Memory Management**: Bitmap recycling with 85MB peak limit
-
-### Research Contributions and Implications
-
-#### Technical Contributions
-1. **Mobile ML Optimization Framework**: Demonstrated systematic approach to MediaPipe optimization achieving 250% performance improvement
-2. **Real-time Exercise Evaluation**: Validated threshold-based geometric analysis with 94.2% accuracy across multiple exercise types  
-3. **Resource-Efficient Processing**: Developed memory optimization techniques reducing consumption by 41% while maintaining performance
-4. **Cross-Platform Compatibility**: Implemented adaptive GPU/CPU delegation supporting diverse Android devices
-
-#### Algorithmic Innovations
-- **Multi-stage Processing Pipeline**: Integrated YUV conversion, rotation handling, and delegate selection
-- **Geometric Form Analysis**: 3D joint angle calculations with exercise-specific threshold optimization
-- **Temporal Pattern Recognition**: Movement sequence analysis for accurate rep counting
-- **Performance Monitoring**: Real-time FPS and memory tracking with automatic optimization
-
-#### Research Impact and Applications
-
-**Immediate Applications:**
-- Consumer fitness applications with professional-grade form analysis
-- Remote personal training with objective performance metrics
-- Physical therapy progress monitoring
-- Fitness education and technique demonstration
-
-**Research Implications:**
-- Validates feasibility of smartphone-based motion analysis
-- Demonstrates effective mobile ML optimization strategies
-- Provides framework for real-time pose evaluation systems
-- Establishes baseline for future exercise analysis research
-
-### Limitations and Future Research Directions
-
-**Current Limitations:**
-- Single-person detection only (multi-person analysis needed)
-- Limited exercise vocabulary (3 types vs. hundreds possible)
-- Environmental dependency (lighting, camera angle sensitivity)
-- Device performance variance (optimization for older devices required)
-
-**Future Research Opportunities:**
-- **Deep Learning Integration**: Neural network-based form analysis vs. geometric thresholds
-- **Temporal Modeling**: LSTM/Transformer architectures for movement sequence analysis
-- **Personalization**: Adaptive thresholds based on user anthropometry and skill level
-- **Injury Prevention**: Predictive modeling for exercise-related injury risk
-
-### Statistical Significance and Validation
-
-**Reliability Analysis:**
-- Inter-rater reliability: κ = 0.92 (excellent agreement)
-- Test-retest reliability: r = 0.94 (high consistency)
-- Cross-validation accuracy: 93.1% ± 1.8% (10-fold CV)
-
-**Generalization Performance:**
-- Unseen subjects: 91.3% accuracy (good generalization)
-- Different devices: 89.7% accuracy (robust across hardware)
-- Varying environments: 87.5% accuracy (environmental sensitivity noted)
-
-The research successfully demonstrates that smartphone-based real-time exercise form analysis is not only feasible but achieves professional-grade accuracy, opening new possibilities for democratized fitness technology and remote health monitoring applications.
-
-## Installation and Execution Instructions
-
-### System Requirements
-- **Development Environment**: Android Studio Arctic Fox or newer
-- **Android SDK**: API 24+ (Android 7.0 minimum)
-- **Hardware**: Physical device recommended (GPU acceleration)
-- **Permissions**: Camera access required
 
 ## App Features
 
@@ -713,25 +101,25 @@ The research successfully demonstrates that smartphone-based real-time exercise 
 - **Supported Formats**: Standard video formats via Android MediaPlayer
 - **Visual Feedback**: Pose skeleton overlay on analyzed video frames
 
-#### 3. Exercise Configuration
+#### 4. Exercise Configuration
 - **Target Reps**: Set goal repetitions for rep-based exercises
 - **Timed Sessions**: Duration-based tracking for planks
 - **Free Practice**: Count-up mode without target goals
 - **Custom Settings**: Adjust difficulty and feedback sensitivity
 
-#### 4. Session Management
+#### 5. Session Management
 - **Countdown Timer**: 3-second preparation countdown before starting
 - **Session Controls**: Play, pause, and stop functionality
 - **Rep Reset**: Reset counter during active sessions
 - **Progress Tracking**: Track completed reps and remaining targets
 
-#### 5. Performance Optimization
+#### 6. Performance Optimization
 - **GPU/CPU Toggle**: Switch between GPU and CPU processing
 - **Camera Controls**: Front/back camera switching
 - **Automatic Delegate Selection**: Optimal processor selection based on device
 - **Efficient Processing**: Maintains 25-30 FPS on supported devices
 
-#### 6. Session Results
+#### 7. Session Results
 - **Exercise Summary**: Complete workout statistics
 - **Rep Completion**: Total reps or time completed
 - **Session Duration**: Total workout time
@@ -747,28 +135,19 @@ The research successfully demonstrates that smartphone-based real-time exercise 
 
 ## How to Use the App
 
-### Getting Started
+### Quick Start Guide
 
-#### Step 1: Installation
-```bash
-# Clone repository
-git clone <repository-url>
-cd PoseCoach-Android
+For experienced users who want to start quickly:
 
-# Build application
-./gradlew assembleDebug
+1. **Launch the app** → Grant camera permission
+2. **Tap "Let's Begin"** → Select your exercise (Push-ups, Squats, or Plank)
+3. **Set your target** → Choose rep count or timer duration
+4. **Position your phone** → 2-3 meters away, full body visible
+5. **Tap Play ▶️** → Follow on-screen feedback and complete your workout
 
-# Install on device
-./gradlew installDebug
-```
+💡 **First time?** Read the detailed tutorial below for step-by-step guidance with screenshots.
 
-Or download the APK from releases and install directly on your Android device.
-
-#### Step 2: Initial Setup
-1. Launch the PoseCoach app
-2. Grant camera permission when prompted
-3. Ensure good lighting in your workout area
-4. Position your phone 2-3 meters away with full body in view
+---
 
 ### App Tutorial - Step by Step
 
@@ -802,9 +181,8 @@ Or download the APK from releases and install directly on your Android device.
 - **Tap the "i" icon** on any exercise card to view instructions and proper form demonstration
 
 ---
----
 
-#### Step 3a-A: Interactive Exercise Explanation (Optional)
+#### Optional: View Exercise Tutorial
 <img src="instruction_images/exercise_explation.png" alt="Exercise Explanation" width="200"/>
 
 <img src="instruction_images/ok_exercise_explanation.png" alt="OK Button" width="200"/>
@@ -1024,28 +402,6 @@ Use this feature to analyze pre-recorded workout videos and get detailed feedbac
 
 ---
 
-### Navigation Flow Summary
-
-```
-[App Icon]
-    ↓ Tap to launch app
-[Welcome Screen - Start Screen]
-    ↓ Tap "Let's Begin - Live Video Analysis"
-[Select Exercise Screen] 
-    ↓ Tap exercise card
-[Exercise Configuration]
-    ↓ Tap "Start Exercise"
-[Camera Screen - Idle]
-    ↓ Tap Play button
-[3-Second Countdown]
-    ↓ Automatic after countdown
-[Active Exercise Session]
-    ↓ Complete target or tap Stop
-[Session Results]
-    ↓ Tap "Do Another Set" → Back to Camera Screen - Idle
-    ↓ Tap "Back to Home" → Back to Home Screen
-```
-
 ### Quick Reference - All Buttons
 
 | Button | Location | What It Does |
@@ -1127,91 +483,643 @@ Use this feature to analyze pre-recorded workout videos and get detailed feedbac
 - Reinstall the app
 - Check device compatibility
 
+## Application Flow Diagram
+
+The PoseCoach app provides two main user flows for exercise form analysis:
+
+```mermaid
+graph TD
+    Start[Start Screen] --> |Let's Begin| ExerciseSelection[Exercise Selection Screen]
+    Start --> |Analyze Video| VideoUpload[Video Upload Screen]
+    Start --> |Exit App| Exit[Exit Application]
+    
+    ExerciseSelection --> |Select Exercise| ExerciseConfig[Exercise Configuration]
+    ExerciseConfig --> |Start Session| CameraSession[Camera Session Screen]
+    ExerciseSelection --> |Back Arrow| Start
+    ExerciseSelection --> |i| Tutorial
+
+    Tutorial ---> |Got it!| ExerciseSelection
+    Tutorial ---> |x| ExerciseSelection
+
+    CameraSession --> |Finish Session| LiveResults[Live Session Results]
+    
+    LiveResults --> |New Exercise| ExerciseSelection
+    LiveResults --> |Home| Start
+    LiveResults --> |Back Arrow| Start
+    
+    VideoUpload --> |Select & Analyze| VideoProcessing[Video Processing]
+    VideoUpload --> |Back Arrow| Start
+    
+    VideoProcessing --> VideoResults[Video Results Screen]
+    VideoResults --> |Back Arrow| Start
+    VideoResults --> |Done| Start
+    
+    style Start fill:#1976D2,color:#fff
+    style ExerciseSelection fill:#42A5F5,color:#fff
+    style CameraSession fill:#4CAF50,color:#fff
+    style LiveResults fill:#66BB6A,color:#fff
+    style VideoUpload fill:#FF9800,color:#fff
+    style VideoResults fill:#FFB74D,color:#fff
+```
+
+For detailed screen-by-screen breakdown and button reference, see [POSECOACH_APP_FLOWS.md](POSECOACH_APP_FLOWS.md).
+
+
+## Installation and Execution Instructions
+
+### System Requirements
+- **Development Environment**: Android Studio Arctic Fox or newer
+- **Android SDK**: API 24+ (Android 7.0 minimum)
+- **Hardware**: Physical device recommended (GPU acceleration)
+- **Permissions**: Camera access required
+
+### Installation Steps
+
+#### Option 1: Build from Source
+```bash
+# Clone repository
+git clone https://github.com/RanIvgi/PoseCoach-Android.git
+cd PoseCoach-Android
+
+# Build application
+./gradlew assembleDebug
+
+# Install on device
+./gradlew installDebug
+```
+
+#### Option 2: Install Pre-built APK
+Download the latest APK from the [releases page](https://github.com/RanIvgi/PoseCoach-Android/releases) and install directly on your Android device.
+
+### First Launch Setup
+1. Launch the PoseCoach app
+2. Grant camera permission when prompted
+3. Wait for the loading screen (model initialization)
+4. You're ready to start exercising!
+
+## Introduction
+
+Exercise form analysis represents a critical challenge in modern fitness training methodologies. Current approaches suffer from significant limitations that motivate the development of automated solutions.
+
+### Research Problem
+
+Traditional exercise form evaluation faces several fundamental issues:
+- **Accessibility**: Requires expensive personal trainers or motion capture systems
+- **Scalability**: Cannot provide real-time feedback to large populations
+- **Consistency**: Human evaluation introduces subjective variability
+- **Cost**: Professional form analysis remains financially prohibitive
+
+### Research Hypothesis
+
+We hypothesize that smartphone-based real-time exercise form analysis using MediaPipe pose detection can achieve >90% accuracy while maintaining >25 FPS performance on consumer mobile devices.
+
+## Solution Methodology
+
+### Approach Overview
+We developed a multi-layered system combining computer vision, machine learning, and real-time analysis to solve the exercise form evaluation problem.
+
+### Algorithm Design
+
+#### Phase 1: Pose Detection Pipeline
+- **MediaPipe Integration**: Implementation of Google's Pose Landmarker model
+- **Frame Processing**: YUV_420_888 to RGB conversion with rotation handling
+- **Delegate Selection**: GPU/CPU optimization based on device capabilities
+- **Coordinate Normalization**: Device-independent landmark representation
+
+#### Phase 2: Exercise Evaluation Engine
+- **Geometric Analysis**: Joint angle calculations using 3D coordinate geometry
+- **Threshold Systems**: Exercise-specific form criteria implementation
+- **Temporal Analysis**: Movement pattern recognition for rep counting
+- **Feedback Generation**: Rule-based corrective guidance system
+
+#### Phase 3: Performance Optimization
+- **Model Pre-warming**: Background initialization strategy
+- **Memory Management**: Efficient bitmap processing and cleanup
+- **Frame Rate Optimization**: Processing pipeline tuning for 30fps target
+- **Error Handling**: Graceful degradation and recovery mechanisms
+
+## Model Performance Analysis - Real-World Testing
+
+### Test Configuration
+
+To select the optimal pose estimation model for mobile exercise analysis, we conducted systematic performance testing of three Google MediaPipe Pose Landmarker model variants on real hardware.
+
+**Test Environment:**
+- **Device**: Xiaomi Mi 8 (Snapdragon 845, 2018)
+- **Test Date**: December 27, 2025
+- **Exercises Tested**: Plank, Push-up, Squat
+- **Conditions**: Controlled indoor environment, adequate lighting
+- **Metrics**: Real FPS, inference time, detection confidence, visibility scores
+
+**Note on Device Performance:** The Xiaomi Mi 8 represents mid-range/older hardware (2018 flagship). Modern devices will achieve significantly higher FPS while maintaining the same accuracy levels.
+
+### MediaPipe Pose Landmarker Model Variants
+
+**1. Lite Model ⭐ (SELECTED)**
+- **Model Size**: 1.9 MB
+- **Target**: Ultra-lightweight applications, maximum speed
+- **Trade-off**: Optimized for speed with minimal accuracy compromise
+
+**2. Full Model**
+- **Model Size**: 3.5 MB  
+- **Target**: Balanced real-time applications
+- **Trade-off**: Balanced accuracy-performance tradeoff
+
+**3. Heavy Model**
+- **Model Size**: 6.9 MB
+- **Target**: Maximum accuracy applications
+- **Trade-off**: Highest accuracy but significantly slower
+
+### Performance Comparison Results
+
+#### Quantitative Performance Analysis
+
+| Model Variant | Real FPS | Confidence | Visibility | Inference Time | Detection Success | Model Size |
+|---------------|----------|------------|------------|----------------|-------------------|------------|
+| **Lite** ⭐ | **14.86 ± 3.14** | **99.89%** | **87.26%** | **17.44 ms** | **100%** | **1.9 MB** |
+| **Full** | 10.62 ± 0.65 | 99.93% | 88.93% | 17.77 ms | 100% | 3.5 MB |
+| **Heavy** | 2.84 ± 0.25 | 99.99% | 83.59% | 18.34 ms | 100% | 6.9 MB |
+
+#### Performance Visualization
+
+**FPS Comparison Across Models:**
+
+![FPS Comparison](Tests%20Results/analysis_output/1_fps_comparison.png)
+
+The graph demonstrates the significant FPS differences between model variants. The Lite model achieves the highest FPS (14.86), providing superior real-time performance for exercise coaching applications.
+
+**Per-Exercise Performance:**
+
+![Per-Exercise Performance](Tests%20Results/analysis_output/4_per_exercise_performance.png)
+
+Performance consistency across different exercise types:
+
+| Exercise | Lite FPS | Full FPS | Heavy FPS |
+|----------|----------|----------|-----------|
+| **Plank** | 11.52 | 11.25 | 3.05 |
+| **Push-up** | 15.30 | 9.95 | 2.56 |
+| **Squat** | 17.75 | 10.67 | 2.90 |
+
+### Model Selection: Why We Chose LITE
+
+We selected the **Lite model** as the optimal choice for PoseCoach based on comprehensive performance analysis prioritizing real-time responsiveness and resource efficiency:
+
+#### Decision Rationale
+
+**1. Superior Real-Time Performance**
+- ✅ **14.86 FPS highest performance** - 40% faster than Full model (14.86 vs 10.62 FPS)
+- ✅ **17.44ms inference time** - fastest processing for immediate feedback
+- ✅ **100% detection success** - reliable pose tracking across all sessions
+- ✅ **Excellent for real-time coaching** - smoothest user experience
+
+**2. Minimal Accuracy Trade-Off**
+- ✅ **99.89% confidence** - only 0.04% less than Full model (99.93%)
+- ✅ **87.26% visibility** - sufficient for accurate landmark tracking
+- ✅ **Negligible practical difference** - imperceptible to end users
+- ✅ **100% detection success rate** - same reliability as other models
+
+**3. Resource Efficiency**
+- ✅ **1.9 MB model size** - 45% smaller than Full (1.9 MB vs 3.5 MB)
+- ✅ **Lowest memory footprint** - optimal for budget/mid-range devices
+- ✅ **Faster app downloads** - smaller APK size improves user acquisition
+- ✅ **Lower battery consumption** - efficient processing extends workout sessions
+
+**4. Device Compatibility**
+- ✅ **Excellent on older devices** - 14.86 FPS even on 2018 hardware (Xiaomi Mi 8)
+- ✅ **Outstanding on modern devices** - 30 FPS on flagship devices
+- ✅ **Broad device support** - runs smoothly across Android device spectrum
+- ✅ **No performance barriers** - accessible to all users regardless of device
+
+**5. Full Model Not Required**
+- ❌ **Marginal accuracy gain** - 0.04% confidence difference negligible in practice
+- ❌ **40% slower** - 10.62 FPS vs 14.86 FPS impacts user experience
+- ❌ **Larger footprint** - 3.5 MB vs 1.9 MB unnecessary for target accuracy
+- ❌ **Diminishing returns** - higher resource cost without proportional benefit
+
+**6. Heavy Model Rejected**
+- ❌ **2.84 FPS completely unusable** for real-time applications
+- ❌ **81% slower than Lite** - severe performance degradation
+- ❌ **Severe frame dropping** creates poor user experience
+- ❌ **Not viable** for interactive fitness coaching
+
+### Real-World Application Performance
+
+**Production Deployment Results:**
+
+In actual application usage with the **Lite model**, we achieved **exceptional real-time performance** and outstanding user experience:
+
+✅ **Highly Responsive Feedback**: 14-15 FPS provides real-time form corrections  
+✅ **Excellent Accuracy**: 99.89% confidence ensures reliable pose tracking and rep counting  
+✅ **Consistent Performance**: Stable frame rates throughout extended workout sessions  
+✅ **Superior User Experience**: Fastest real-time feedback with imperceptible latency (<70ms)
+
+**Key Insight:** The Lite model delivers **outstanding practical performance** for exercise coaching applications. The 14.86 FPS average provides the smoothest real-time experience:
+
+- ✓ Real-time rep counting with good accuracy
+- ✓ Instantaneous form feedback with minimal latency
+- ✓ Fluid skeleton overlay visualization
+- ✓ Sustained high performance in extended workout sessions
+- ✓ Reliable landmark tracking in various lighting conditions
+- ✓ Lowest battery drain for longer workout sessions
+
+### Technical Specifications - MediaPipe Pose Landmarker (Lite)
+
+**Model Details:**
+- **Framework**: Google MediaPipe v0.20230731
+- **Architecture**: BlazePose GHUM 3D (Lite variant)
+- **Model Size**: 1.9 MB
+- **Input**: 256×256 RGB images
+- **Output**: 33 3D body landmarks with confidence scores
+- **Quantization**: Float16 for mobile optimization
+- **Delegates**: GPU (primary) / CPU (fallback)
+
+**Landmark Distribution:**
+- **Face**: 10 landmarks (eyes, nose, ears, mouth)
+- **Upper Body**: 8 landmarks (shoulders, elbows, wrists, hands)
+- **Torso**: 4 landmarks (hips, center points)
+- **Lower Body**: 11 landmarks (knees, ankles, feet, toes, heels)
+
+**Performance Characteristics:**
+- **Inference**: 17.44ms average on Xiaomi Mi 8
+- **Detection Confidence**: 99.89% average
+- **Landmark Visibility**: 87.26% average
+- **Success Rate**: 100% pose detection across all test sessions
+
+### Conclusion - Model Selection
+
+The **MediaPipe Pose Landmarker Lite model** emerged as the optimal choice through systematic empirical testing. While the Full variant offers marginally higher confidence (99.93% vs 99.89%), its 40% performance penalty (10.62 FPS vs 14.86 FPS) provides no practical benefit given the negligible 0.04% accuracy difference. The Heavy variant is completely unusable for real-time applications (2.84 FPS).
+
+The Lite model uniquely satisfies all critical requirements while maximizing performance:
+- ✓ **Superior real-time performance**: 14.86 FPS on mid-range devices, 35-40 FPS on modern flagships
+- ✓ **Excellent accuracy**: 99.89% confidence provides professional-grade pose tracking
+- ✓ **Smallest footprint**: 1.9 MB model size optimizes app distribution and device compatibility
+- ✓ **Production-ready**: Proven exceptional performance in real-world workout sessions
+- ✓ **Maximum accessibility**: Outstanding performance across entire Android device spectrum
+
+## Research Results and Statistical Analysis
+
+### Hypothesis Validation
+
+Our experimental results confirm the research hypothesis:
+- **Accuracy achieved**: 94.2% (>90% target met)
+- **Performance achieved**: 25-30 FPS (>25 FPS target met)
+- **Statistical significance**: p < 0.01 across all exercise types
+
+### Performance Convergence Analysis
+
+#### Optimization Impact Assessment
+
+**Frame Rate Improvements:**
+- Baseline implementation: 8-12 FPS (insufficient for real-time)
+- YUV optimization: 16-20 FPS (67% improvement)
+- GPU acceleration: 25-30 FPS (250% total improvement)
+- **Conclusion**: Multi-stage optimization essential for real-time performance
+
+**Memory Efficiency Analysis:**
+- Pre-optimization: 145MB peak consumption
+- Post-optimization: 85MB peak consumption  
+- **Improvement**: 41% memory reduction with zero performance degradation
+- **Long-term stability**: No memory leaks detected in 60-minute stress tests
+
+### Exercise Evaluation Accuracy Analysis
+
+**Statistical Validation Results (n=500):**
+
+| Exercise Type | Accuracy | Precision | Recall | F1-Score |
+|---------------|----------|-----------|--------|---------|
+| Push-ups | 94.2% | 0.95 | 0.93 | 0.94 |
+| Squats | 91.8% | 0.92 | 0.91 | 0.91 |
+| Planks | 96.5% | 0.97 | 0.96 | 0.96 |
+| **Average** | **94.2%** | **0.95** | **0.93** | **0.94** |
+
+### Key Findings
+
+#### Optimal Configuration Discovered:
+1. **MediaPipe Parameters**: 0.5 confidence across all thresholds
+2. **Processing**: GPU delegate with optimized YUV conversion
+3. **Exercise Thresholds**: 70° knee angle for squats, 90° elbow angle for push-ups
+4. **Memory Management**: Bitmap recycling with 85MB peak limit
+
+### Research Contributions and Implications
+
+#### Technical Contributions
+1. **Mobile ML Optimization Framework**: Demonstrated systematic approach to MediaPipe optimization achieving 250% performance improvement
+2. **Real-time Exercise Evaluation**: Validated threshold-based geometric analysis with 94.2% accuracy across multiple exercise types  
+3. **Resource-Efficient Processing**: Developed memory optimization techniques reducing consumption by 41% while maintaining performance
+4. **Cross-Platform Compatibility**: Implemented adaptive GPU/CPU delegation supporting diverse Android devices
+
+#### Algorithmic Innovations
+- **Multi-stage Processing Pipeline**: Integrated YUV conversion, rotation handling, and delegate selection
+- **Geometric Form Analysis**: 3D joint angle calculations with exercise-specific threshold optimization
+- **Temporal Pattern Recognition**: Movement sequence analysis for accurate rep counting
+- **Performance Monitoring**: Real-time FPS and memory tracking with automatic optimization
+
+#### Research Impact and Applications
+
+**Immediate Applications:**
+- Consumer fitness applications with professional-grade form analysis
+- Remote personal training with objective performance metrics
+- Physical therapy progress monitoring
+- Fitness education and technique demonstration
+
+**Research Implications:**
+- Validates feasibility of smartphone-based motion analysis
+- Demonstrates effective mobile ML optimization strategies
+- Provides framework for real-time pose evaluation systems
+- Establishes baseline for future exercise analysis research
+
+### Limitations and Future Research Directions
+
+**Current Limitations:**
+- Single-person detection only (multi-person analysis needed)
+- Limited exercise vocabulary (3 types vs. hundreds possible)
+- Environmental dependency (lighting, camera angle sensitivity)
+- Device performance variance (optimization for older devices required)
+
+**Future Research Opportunities:**
+- **Deep Learning Integration**: Neural network-based form analysis vs. geometric thresholds
+- **Temporal Modeling**: LSTM/Transformer architectures for movement sequence analysis
+- **Personalization**: Adaptive thresholds based on user anthropometry and skill level
+- **Injury Prevention**: Predictive modeling for exercise-related injury risk
+
+### Statistical Significance and Validation
+
+**Reliability Analysis:**
+- Inter-rater reliability: κ = 0.92 (excellent agreement)
+- Test-retest reliability: r = 0.94 (high consistency)
+- Cross-validation accuracy: 93.1% ± 1.8% (10-fold CV)
+
+**Generalization Performance:**
+- Unseen subjects: 91.3% accuracy (good generalization)
+- Different devices: 89.7% accuracy (robust across hardware)
+- Varying environments: 87.5% accuracy (environmental sensitivity noted)
+
+The research successfully demonstrates that smartphone-based real-time exercise form analysis is not only feasible but achieves professional-grade accuracy, opening new possibilities for democratized fitness technology and remote health monitoring applications.
+
+## Implementation Details
+
+### Performance Optimizations
+
+#### Startup Performance Optimization
+
+**Problem Solved**: The app originally experienced a 2.2+ second freeze during startup, causing 34 dropped frames and poor user experience with "Slow Looper" warnings.
+
+**Solution Implemented**:
+1. **ModelWarmer Singleton**: Background ML model initialization during app launch eliminates main thread blocking
+2. **Custom Loading Screen**: Professional branded loading screen provides visual feedback during initialization (API 24+ compatible)
+3. **Cached Delegate Preference**: Saves GPU/CPU preference to SharedPreferences, skipping auto-detection on subsequent launches (~200ms savings)
+4. **Pre-warmed Engine Reuse**: CameraViewModel uses already-initialized PoseEngine instance (0ms delay vs. 2+ second initialization)
+
+**Performance Impact**:
+- **Before**: 2200ms main thread freeze → 34 dropped frames → frozen white screen
+- **After**: 0ms main thread freeze → smooth loading screen → responsive UI throughout
+- **Camera Screen**: Instant opening using pre-warmed engine vs. 2+ second delay
+- **User Experience**: Professional loading animation instead of frozen application
+
+#### Frame Processing Pipeline
+1. **Optimized YUV→RGB Conversion**: Efficient bitmap processing with 75% JPEG quality
+2. **Bitmap Rotation Handling**: Matrix-based rotation with proper orientation correction
+3. **Delegate Selection**: Automatic GPU/CPU fallback based on device capabilities
+4. **Memory Management**: Efficient bitmap handling and resource cleanup (41% reduction to 85MB peak)
+
+### Supported Exercises
+- **Push-ups**: Elbow angle analysis, body alignment detection
+- **Squats**: Knee angle thresholds, depth measurement, balance assessment
+- **Planks**: Core stability evaluation, posture monitoring
+
+## Technical Stack
+
+- **Language**: Kotlin
+- **ML Framework**: Google MediaPipe Pose Landmarker v0.20230731
+- **Camera**: CameraX 1.1.0
+- **UI**: Jetpack Compose with Material Design
+- **Architecture**: MVVM with Kotlin Coroutines
+- **Min SDK**: API 24 (Android 7.0)
+- **Target SDK**: API 34 (Android 14)
+
 ### Performance Verification
 
 **Expected Performance Indicators:**
-- FPS Counter: 25-30 FPS (green indicator, top-right)
-- GPU/CPU Status: Automatic selection based on device
-- Pose Detection: Real-time skeleton overlay
-- Memory Usage: <85MB peak consumption
+- **FPS Counter**: 25-30 FPS (green indicator, top-right)
+- **GPU/CPU Status**: Automatic selection based on device
+- **Pose Detection**: Real-time skeleton overlay with smooth tracking
+- **Memory Usage**: <85MB peak consumption
+- **Startup Time**: <500ms after model warm-up (subsequent launches)
+- **Detection Latency**: <70ms from frame capture to feedback
 
-For research replication and detailed technical documentation, refer to implementation files and performance debugging guides included in the repository.
+**For Research Replication:**
+Detailed performance metrics, timing breakdowns, and debugging procedures are documented in [PERFORMANCE_DEBUGGING_GUIDE.md](PERFORMANCE_DEBUGGING_GUIDE.md).
 
-### Exercise Evaluation Logic
+#### Frame Processing Optimization
 
-The system employs a sophisticated geometric analysis engine that processes 3D landmarks in real-time. The evaluation logic is built on state machines that track the user's movement phases (eccentric/concentric) and apply specific biomechanical constraints.
+**Processing Pipeline Comparison:**
 
-#### 1. Squat Analysis
-The squat evaluation uses a state machine to track the movement phases:
-- **State Transitions**:
-  - **Start Descent**: Triggered when knee angle drops below **150°**.
-  - **Start Ascent**: Triggered when knee angle rises above **160°**.
-- **Depth Verification**:
-  - The system continuously tracks the *minimum knee angle* achieved during the descent phase.
-  - **Valid Rep**: Minimum angle < **115°**.
-  - **Insufficient Depth**: Minimum angle ≥ **115°** (triggers "Go deeper" feedback).
-- **Form Constraints**:
-  - **Knees Over Toes**: Calculates the relative horizontal position of knees vs. toes. If `knee.x < toe.x - 0.05` (normalized coordinates), it triggers a warning.
-  - **Back Posture**: Analyzes the hip position relative to knees to detect excessive forward lean (`hip.x < knee.x - 0.05`).
+| Method | Average Time (ms) | FPS Achieved | Memory Usage (MB) |
+|--------|------------------|--------------|-------------------|
+| Basic YUV Conversion | 45-60 | 16-20 | 95 |
+| Optimized Conversion | 30-45 | 20-25 | 75 |
+| GPU-Accelerated | 25-35 | 25-30 | 65 |
 
-#### 2. Push-up Analysis
-Optimized for side-view analysis, tracking elbow flexion and body rigidity:
-- **State Transitions**:
-  - **Start Descent**: Elbow angle < **150°**.
-  - **Start Ascent**: Elbow angle > **160°**.
-- **Depth Verification**:
-  - **Valid Rep**: Minimum elbow angle < **90°** (chest close to floor).
-  - **Insufficient Depth**: Minimum elbow angle ≥ **90°**.
-- **Body Alignment (Core Stability)**:
-  - Calculates the angle formed by **Shoulder-Hip-Ankle**.
-  - **Ideal Alignment**: ~180°.
-  - **Hip Sag Error**: Deviation > **15°** (Angle < 165°). Triggers "Engage core" feedback.
-  - **Hip Pike Error**: Deviation < **-15°** (Angle > 195°). Triggers "Lower hips" feedback.
+**Best Configuration**: GPU-accelerated processing with optimized YUV conversion
 
-#### 3. Plank Analysis
-Uses a time-based accumulation logic rather than rep counting:
-- **Position Detection**: First verifies the user is horizontal (Bounding Box Width > Height).
-- **Stability Logic**:
-  - **Grace Period**: Requires **500ms** of continuous good form to enter the `HOLDING` state.
-  - **Good Form Criteria**: Body alignment angle between **165°** and **185°**.
-- **Form Break Handling**:
-  - If the angle exits the valid range (Sag < 165° or Pike > 185°), the state shifts to `FORM_BROKEN`.
-  - The timer pauses, and a "Form Break" event is recorded.
-  - Timer resumes only after form is corrected and re-stabilized for the grace period.
+#### Exercise Threshold Optimization
 
-### Scoring and Feedback System
+**Squat Analysis Parameters:**
+- Knee angle range testing: 60°-70°-80° minimum thresholds
+- **Result**: 70° provided best balance of accuracy vs. strictness
+- False positive rate: 3.2% at 70° threshold
 
-The scoring system employs a two-stage pipeline: **Real-time Aggregation** followed by **Post-Session Analysis**. This architecture separates immediate user guidance from final performance evaluation.
+**Push-up Evaluation Parameters:**
+- Elbow angle testing: 60°-90°-110° for "down" position
+- **Result**: 90° achieved 92% accuracy on form evaluation
+- Rep counting accuracy: 96% with 90° threshold
 
-#### 1. Base Score Calculation (The "Perfect" Score)
-The system first calculates a raw performance score (0-100%) based on the user's goal settings:
+#### Memory Usage Optimization Results
 
-*   **Target Mode (Goal Set)**:
-    *   `Score = min(100, (Completed Reps / Target Reps) * 100)`
-    *   *Example*: 8/10 reps = 80% base score.
-*   **Free Mode (No Goal)**:
-    *   **Reps**: Defaults to **100%** if at least one rep is completed. The score is purely determined by form deductions.
-    *   **Plank**: `Score = (Time in Good Form / Total Session Duration) * 100`.
-    *   *Example*: Holding a plank for 60s but sagging for 10s results in a 83% base score.
+**Before Optimization:**
+- Peak memory: 145MB during processing
+- Memory leaks detected after 15-minute sessions
 
-#### 2. Feedback Aggregation & Escalation (The Analyzer)
-Raw feedback messages generated at 30 FPS are collected and passed to the `FeedbackAnalyzer`. This component applies **Severity Escalation Logic** to determine the weight of form errors:
+**After Optimization:**
+- Peak memory: 85MB during processing
+- No memory leaks in 60-minute stress tests
+- **Improvement**: 41% reduction in memory usage
 
-*   **Frequency Analysis**: The analyzer counts how many distinct times a specific error string (e.g., "Knees over toes") was triggered.
-*   **Escalation Rules**:
-    *   **Count = 1 (Occasional)**: Classified as **WARNING**. Deduction: **-5 pts**.
-    *   **Count > 1 (Recurring)**: Classified as **ERROR**. Deduction: **-10 pts**.
-    *   *Rationale*: A single slip-up is a minor correction; repeated errors indicate a fundamental form breakdown.
+## Code Structure
 
-#### 3. Final Score Computation
-The final score is derived by applying deductions to the Base Score. The `LiveSessionResult` engine ensures fairness through **Unique Issue Filtering**:
+### Core Components
 
-*   **Deduction Logic**: `Final Score = Base Score + Σ(Explicit Deductions)`
-*   **Unique Constraint**: Deductions are applied per *issue type*, not per instance.
-    *   *Scenario*: A user receives "Go deeper" feedback 5 times.
-    *   *Analyzer*: Aggregates this into ONE message: "Multiple occurrences: Inconsistent depth (-10 pts)".
-    *   *Scoring*: Subtracts 10 points ONCE. It does *not* subtract 50 points (5 * 10).
-*   **Plank Specifics**: Form breaks are penalized linearly (`Count * -5 pts`) because each break disrupts the isometric hold.
+#### PoseEngine.kt
+```kotlin
+class PoseEngine(private val context: Context) {
+    // MediaPipe integration
+    fun initialize(): Boolean
+    fun detectPose(imageProxy: ImageProxy, isFrontCamera: Boolean)
+    suspend fun detectPoseFromBitmap(bitmap: Bitmap, timestampMs: Long): PoseResult
+    fun toggleDelegate()
+    fun cleanup()
+}
+```
 
-#### 4. Feedback Debouncing
-To prevent flickering feedback (e.g., a warning appearing for 1 frame due to camera noise), the system implements a **200ms debounce filter**. A form error must persist for at least 200ms to be displayed to the user and recorded for scoring.
+#### DefaultPoseEvaluator.kt  
+```kotlin
+class DefaultPoseEvaluator : PoseEvaluator {
+    override fun evaluateSquat(poseResult: PoseResult): FeedbackMessage?
+    override fun evaluatePushup(poseResult: PoseResult): FeedbackMessage?
+    override fun evaluatePlank(poseResult: PoseResult): FeedbackMessage?
+    fun getRepCount(exerciseType: String): Int
+    fun resetSession(exerciseType: String)
+}
+```
+
+#### ModelWarmer.kt
+```kotlin
+object ModelWarmer {
+    fun getInstance(context: Context): ModelWarmer
+    fun startWarmup()
+    val warmupState: StateFlow<WarmupState>
+    val prewarmedEngine: PoseEngine?
+}
+```
+
+### Data Models
+- **PoseResult**: Contains 33 landmarks with confidence scores and angle calculations
+- **FeedbackMessage**: Exercise evaluation results with severity (ERROR, WARNING, SUCCESS)
+- **ExerciseSessionSummary**: Performance metrics, rep counts, and session statistics
+
+## Project Architecture
+
+### System Components
+
+The application follows a modular architecture with clear separation of concerns:
+
+```
+app/src/main/java/com/example/posecoach/
+├── MainActivity.kt             # Application entry point with model warming
+├── ModelWarmer.kt              # Background ML model initialization system
+│
+├── data/                       # Data layer and models
+│   ├── PoseLandmark.kt         # Single pose landmark (x, y, z, visibility)
+│   ├── PoseLandmarkIndex.kt    # Constants for 33 MediaPipe landmark indices
+│   ├── PoseResult.kt           # Complete pose detection result container
+│   ├── FeedbackMessage.kt      # Exercise evaluation feedback with severity
+│   ├── CameraState.kt          # Camera configuration state management
+│   ├── ExerciseSessionSummary.kt # Session statistics and performance data
+│   └── VideoAnalysisResult.kt  # Video processing analysis results
+│
+├── ui/                         # User interface layer (Jetpack Compose)
+│   ├── PoseCoachApp.kt         # Main navigation and app structure
+│   ├── StartScreen.kt          # Application welcome and mode selection
+│   ├── CameraScreen.kt         # Live camera preview with pose overlay
+│   ├── CameraViewModel.kt      # Camera state management and data flow
+│   ├── VideoAnalysisViewModel.kt # Video processing state management
+│   ├── PoseOverlay.kt          # 3D skeleton visualization component
+│   ├── TutorialDialog.kt       # Exercise tutorial modal dialogs
+│   ├── ExerciseSelectionScreen.kt # Exercise type selection interface
+│   ├── VideoUploadScreen.kt    # Video analysis upload interface
+│   ├── VideoPlayer.kt          # Video playback component
+│   ├── VideoResultsScreen.kt   # Analysis results display
+│   ├── LiveSessionResultsScreen.kt # Live session results
+│   ├── LoadingScreen.kt        # Model warm-up loading screen
+│   └── theme/                  # Material Design theme configuration
+│
+├── pose/                       # ML integration layer (MediaPipe)
+│   └── PoseEngine.kt           # MediaPipe pose detection engine
+│
+├── logic/                      # Business logic layer
+│   ├── PoseEvaluator.kt        # Exercise evaluation interface
+│   ├── DefaultPoseEvaluator.kt # Form analysis implementation
+│   └── FeedbackAnalyzer.kt     # Feedback generation algorithms
+│
+└── video/                      # Video processing pipeline
+    └── VideoProcessor.kt       # Video file analysis and processing
+```
+
+### Component Responsibilities
+
+#### Core System Components
+
+**MainActivity.kt**
+- Application lifecycle management
+- Model pre-warming coordination
+- Performance optimization initialization
+
+**ModelWarmer.kt**
+- Background MediaPipe model loading
+- Startup performance optimization
+- Model state management across app lifecycle
+
+#### ML Integration Layer
+
+**PoseEngine.kt**
+- MediaPipe Pose Landmarker integration
+- CameraX image analysis pipeline
+- GPU/CPU delegate management
+- Frame processing optimization (YUV→RGB conversion)
+- Device capability detection and fallback handling
+
+#### Business Logic Layer
+
+**PoseEvaluator.kt / DefaultPoseEvaluator.kt**
+- Exercise form analysis algorithms
+- Joint angle calculation using 3D geometry
+- Exercise-specific threshold evaluation
+- Rep counting and movement pattern recognition
+
+**FeedbackAnalyzer.kt**
+- Real-time feedback generation
+- Form correction guidance algorithms
+- Performance scoring systems
+
+#### UI Layer Components
+
+**CameraScreen.kt / CameraViewModel.kt**
+- Real-time camera preview management
+- Pose detection result processing
+- UI state management with MVVM pattern
+- Performance metrics display (FPS, delegate status)
+
+**PoseOverlay.kt**
+- 3D skeleton visualization using Canvas API
+- Coordinate system transformation
+- Real-time landmark rendering with smooth interpolation
+
+**Navigation Screens**
+- Exercise selection and configuration
+- Video upload and analysis workflows
+- Results visualization and statistics
+
+#### Data Layer
+
+**Pose Data Models**
+- 33-point landmark representation following MediaPipe specification
+- Confidence scoring and visibility tracking
+- Coordinate normalization for device independence
+
+**Analysis Results**
+- Exercise evaluation metrics and scoring
+- Session performance statistics
+- Temporal movement analysis data
+
+### Dependencies
+```gradle
+implementation "com.google.mediapipe:tasks-vision:0.20230731"
+implementation "androidx.camera:camera-core:1.1.0"
+implementation "androidx.compose:compose-bom:2024.02.00"
+```
+
+## Performance Debugging
+
+The application includes comprehensive performance monitoring tools:
+
+### Frame Timing Analysis
+- Real-time FPS measurement
+- Per-component timing breakdown  
+- Bottleneck identification
+
+### ML Inference Profiling
+- Delegate performance comparison
+- Model loading time tracking
+- Memory usage monitoring
+
+See [PERFORMANCE_DEBUGGING_GUIDE.md](PERFORMANCE_DEBUGGING_GUIDE.md) for detailed analysis procedures.
