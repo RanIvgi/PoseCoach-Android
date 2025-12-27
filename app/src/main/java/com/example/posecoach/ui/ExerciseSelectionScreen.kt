@@ -376,7 +376,7 @@ fun ExerciseDetailsView(
                             onClick = { onPlankTimedChange(true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = if (plankTimed) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                backgroundColor = if (plankTimed) MaterialTheme.colors.primary else Color(0xFFB0C4DE),
                                 contentColor = Color.White
                             )
                         ) {
@@ -387,7 +387,7 @@ fun ExerciseDetailsView(
                             onClick = { onPlankTimedChange(false) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = if (!plankTimed) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                backgroundColor = if (!plankTimed) MaterialTheme.colors.primary else Color(0xFFB0C4DE),
                                 contentColor = Color.White
                             )
                         ) {
@@ -459,7 +459,7 @@ fun ExerciseDetailsView(
                             onClick = { onSquatCountedModeChange(true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = if (squatCountedMode) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                backgroundColor = if (squatCountedMode) MaterialTheme.colors.primary else Color(0xFFB0C4DE),
                                 contentColor = Color.White
                             )
                         ) {
@@ -470,7 +470,7 @@ fun ExerciseDetailsView(
                             onClick = { onSquatCountedModeChange(false) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = if (!squatCountedMode) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                backgroundColor = if (!squatCountedMode) MaterialTheme.colors.primary else Color(0xFFB0C4DE),
                                 contentColor = Color.White
                             )
                         ) {
@@ -542,7 +542,7 @@ fun ExerciseDetailsView(
                             onClick = { onPushupCountedModeChange(true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = if (pushupCountedMode) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                backgroundColor = if (pushupCountedMode) MaterialTheme.colors.primary else Color(0xFFB0C4DE),
                                 contentColor = Color.White
                             )
                         ) {
@@ -553,7 +553,7 @@ fun ExerciseDetailsView(
                             onClick = { onPushupCountedModeChange(false) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = if (!pushupCountedMode) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                backgroundColor = if (!pushupCountedMode) MaterialTheme.colors.primary else Color(0xFFB0C4DE),
                                 contentColor = Color.White
                             )
                         ) {
