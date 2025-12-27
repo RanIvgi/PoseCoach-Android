@@ -10,10 +10,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,6 +44,8 @@ fun VideoUploadScreen(
     val isProcessing by viewModel.isProcessing.collectAsState()
     val processingProgress by viewModel.processingProgress.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    
+    var showTutorialDialog by remember { mutableStateOf<ExerciseUi?>(null) }
 
     // Determine which permission to request based on API level
     val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -84,7 +88,13 @@ fun VideoUploadScreen(
                     errorMessage = errorMessage,
                     navBackToStart = navBackToStart,
                     onVideoSelect = { videoPickerLauncher.launch("video/*") },
-                    onExerciseSelect = { viewModel.setExercise(it) },
+                    onExerciseSelect = { exerciseId ->
+                        // Just set the exercise in the view model
+                        viewModel.setExercise(exerciseId)
+                    },
+                    onInfoClick = { exercise ->
+                        showTutorialDialog = exercise
+                    },
                     onAnalyze = { uri, exerciseId ->
                         viewModel.startAnalysis(uri, exerciseId) {
                             navToResults(uri, exerciseId)
@@ -103,6 +113,14 @@ fun VideoUploadScreen(
                     onBack = navBackToStart
                 )
             }
+            
+            // Tutorial Dialog
+            showTutorialDialog?.let { exercise ->
+                ExerciseTutorialDialog(
+                    exercise = exercise,
+                    onDismiss = { showTutorialDialog = null }
+                )
+            }
         }
     }
 }
@@ -117,6 +135,7 @@ private fun VideoUploadContent(
     navBackToStart: () -> Unit,
     onVideoSelect: () -> Unit,
     onExerciseSelect: (String) -> Unit,
+    onInfoClick: (ExerciseUi) -> Unit,
     onAnalyze: (String, String) -> Unit
 ) {
     Column(
@@ -201,10 +220,11 @@ private fun VideoUploadContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         exercises.forEach { exercise ->
-            ExerciseSelectionCard(
+            VideoExerciseSelectionCard(
                 exercise = exercise,
                 isSelected = selectedExercise == exercise.id,
                 onSelect = { onExerciseSelect(exercise.id) },
+                onInfoClick = { onInfoClick(exercise) },
                 enabled = !isProcessing
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -356,10 +376,11 @@ private fun PermissionDeniedScreen(
 }
 
 @Composable
-private fun ExerciseSelectionCard(
+private fun VideoExerciseSelectionCard(
     exercise: ExerciseUi,
     isSelected: Boolean,
     onSelect: () -> Unit,
+    onInfoClick: () -> Unit,
     enabled: Boolean
 ) {
     Card(
@@ -368,7 +389,6 @@ private fun ExerciseSelectionCard(
         elevation = 4.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled) { onSelect() }
             .then(
                 if (isSelected) {
                     Modifier.border(
@@ -383,8 +403,9 @@ private fun ExerciseSelectionCard(
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .clickable(enabled = enabled) { onSelect() }
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
@@ -407,10 +428,20 @@ private fun ExerciseSelectionCard(
                     maxLines = 2
                 )
             }
-            if (isSelected) {
+            
+            // Info button
+            IconButton(
+                onClick = onInfoClick,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = MaterialTheme.colors.primary.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    )
+            ) {
                 Icon(
-                    painter = painterResource(android.R.drawable.checkbox_on_background),
-                    contentDescription = "Selected",
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "View tutorial for ${exercise.title}",
                     tint = MaterialTheme.colors.primary,
                     modifier = Modifier.size(24.dp)
                 )
