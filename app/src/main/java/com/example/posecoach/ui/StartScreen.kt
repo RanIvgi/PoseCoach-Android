@@ -20,6 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.posecoach.R
@@ -29,24 +32,15 @@ fun StartScreen(
     onLetsBeginClicked: () -> Unit,
     onAnalyzeVideoClicked: () -> Unit
 ) {
-    // Blue vertical gradient background
-    val gradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF0D47A1), // dark blue
-            Color(0xFF1976D2), // medium blue
-            Color(0xFF42A5F5)  // light blue
-        )
-    )
-
     val activity = LocalContext.current as? Activity
 
     Surface(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colors.background
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradient)
                 .padding(24.dp)
         ) {
             Column(
@@ -69,9 +63,9 @@ fun StartScreen(
                 // App title
                 Text(
                     text = "PoseCoach",
-                    fontSize = 34.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colors.primary,
                     textAlign = TextAlign.Center
                 )
 
@@ -79,7 +73,8 @@ fun StartScreen(
                 Text(
                     text = "Improve your exercise technique with real-time AI pose feedback.",
                     fontSize = 17.sp,
-                    color = Color.White.copy(alpha = 0.9f),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colors.onBackground,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
@@ -88,9 +83,9 @@ fun StartScreen(
 
                 // How it works card
                 Card(
-                    backgroundColor = Color.White.copy(alpha = 0.15f),
+                    backgroundColor = MaterialTheme.colors.surface,
                     shape = RoundedCornerShape(16.dp),
-                    elevation = 0.dp,
+                    elevation = 4.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -98,7 +93,7 @@ fun StartScreen(
                     ) {
                         Text(
                             text = "How it works",
-                            color = Color.White,
+                            color = MaterialTheme.colors.primary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
                         )
@@ -123,17 +118,21 @@ fun StartScreen(
                         onClick = onLetsBeginClicked,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF0B3C91)
+                            backgroundColor = MaterialTheme.colors.primary,
+                            contentColor = MaterialTheme.colors.onPrimary
+                        ),
+                        elevation = ButtonDefaults.elevation(
+                            defaultElevation = 8.dp,
+                            pressedElevation = 12.dp
                         )
                     ) {
                         Text(
                             text = "Let's Begin",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.button,
+                            fontSize = 20.sp
                         )
                     }
 
@@ -144,17 +143,21 @@ fun StartScreen(
                         onClick = onAnalyzeVideoClicked,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF1565C0)
+                            backgroundColor = Color(0xFFD0DEFF),
+                            contentColor = MaterialTheme.colors.primary
+                        ),
+                        elevation = ButtonDefaults.elevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp
                         )
                     ) {
                         Text(
                             text = "Analyze Video",
-                            color = Color.White,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.button,
+                            fontSize = 20.sp
                         )
                     }
 
@@ -166,16 +169,20 @@ fun StartScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFFB71C1C) // red-ish
+                            backgroundColor = Color(0xFFEF5350),
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.elevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp
                         )
                     ) {
                         Text(
                             text = "Exit App",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
+                            style = MaterialTheme.typography.button,
+                            fontSize = 18.sp
                         )
                     }
                 }
@@ -193,14 +200,14 @@ private fun Step(text: String) {
             text = "•",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = MaterialTheme.colors.secondary
         )
         Spacer(Modifier.width(6.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.body1,
             fontSize = 15.sp,
-            color = Color.White
+            color = MaterialTheme.colors.onSurface
         )
     }
 }

@@ -1,6 +1,7 @@
 package com.example.posecoach.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -38,21 +39,12 @@ fun ExerciseSelectionScreen(
     var plankDurationSeconds by remember { mutableStateOf(60) }
     var showDurationPicker by remember { mutableStateOf(false) }
 
-    val gradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF0D47A1),
-            Color(0xFF1976D2),
-            Color(0xFF42A5F5)
-        )
-    )
-
     Surface(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colors.background
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(gradient)
+            modifier = Modifier.fillMaxSize()
         ) {
             Column(
                 modifier = Modifier
@@ -68,7 +60,7 @@ fun ExerciseSelectionScreen(
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = MaterialTheme.colors.primary
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -76,7 +68,7 @@ fun ExerciseSelectionScreen(
                         text = "Select Exercise",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colors.primary
                     )
                 }
 
@@ -87,7 +79,8 @@ fun ExerciseSelectionScreen(
                     Text(
                         text = "Choose your exercise:",
                         fontSize = 18.sp,
-                        color = Color.White,
+                        color = MaterialTheme.colors.primary,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
@@ -150,7 +143,7 @@ fun ExerciseCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        backgroundColor = Color.White.copy(alpha = 0.15f),
+        backgroundColor = MaterialTheme.colors.surface,
         shape = RoundedCornerShape(12.dp),
         elevation = 4.dp
     ) {
@@ -169,13 +162,13 @@ fun ExerciseCard(
                     text = exercise.title,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colors.primary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = exercise.description,
                     fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.9f)
+                    color = MaterialTheme.colors.onSurface
                 )
             }
         }
@@ -204,7 +197,7 @@ fun ExerciseDetailsView(
             .verticalScroll(rememberScrollState())
     ) {
         Card(
-            backgroundColor = Color.White.copy(alpha = 0.15f),
+            backgroundColor = MaterialTheme.colors.surface,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -226,7 +219,7 @@ fun ExerciseDetailsView(
                     text = exercise.title,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colors.primary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -236,7 +229,7 @@ fun ExerciseDetailsView(
                 Text(
                     text = exercise.description,
                     fontSize = 16.sp,
-                    color = Color.White,
+                    color = MaterialTheme.colors.onSurface,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -247,7 +240,7 @@ fun ExerciseDetailsView(
                     text = "How to perform:",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White
+                    color = MaterialTheme.colors.primary
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -257,13 +250,13 @@ fun ExerciseDetailsView(
                         Text(
                             text = "•",
                             fontSize = 16.sp,
-                            color = Color.White,
+                            color = MaterialTheme.colors.primary,
                             modifier = Modifier.padding(end = 8.dp)
                         )
                         Text(
                             text = instruction,
                             fontSize = 15.sp,
-                            color = Color.White,
+                            color = MaterialTheme.colors.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -277,7 +270,7 @@ fun ExerciseDetailsView(
                         text = "Plank Mode:",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = MaterialTheme.colors.primary
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
@@ -290,20 +283,22 @@ fun ExerciseDetailsView(
                             onClick = { onPlankTimedChange(true) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = if (plankTimed) Color(0xFF0B3C91) else Color(0xFF5476A8)
+                                backgroundColor = if (plankTimed) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                contentColor = Color.White
                             )
                         ) {
-                            Text("Timed", color = Color.White)
+                            Text("Timed")
                         }
                         
                         Button(
                             onClick = { onPlankTimedChange(false) },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                backgroundColor = if (!plankTimed) Color(0xFF0B3C91) else Color(0xFF5476A8)
+                                backgroundColor = if (!plankTimed) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                contentColor = Color.White
                             )
                         ) {
-                            Text("Free", color = Color.White)
+                            Text("Free")
                         }
                     }
                     
@@ -313,7 +308,8 @@ fun ExerciseDetailsView(
                         Text(
                             text = "Duration:",
                             fontSize = 16.sp,
-                            color = Color.White
+                            color = MaterialTheme.colors.onSurface,
+                            fontWeight = FontWeight.Medium
                         )
                         
                         Spacer(modifier = Modifier.height(6.dp))
@@ -322,13 +318,13 @@ fun ExerciseDetailsView(
                             onClick = { onShowDurationPickerChange(!showDurationPicker) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                backgroundColor = Color.White,
-                                contentColor = Color.Black
-                            )
+                                backgroundColor = MaterialTheme.colors.surface,
+                                contentColor = MaterialTheme.colors.primary
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colors.primary)
                         ) {
                             Text(
                                 text = "Selected: ${formatMmSs(plankDurationSeconds)}",
-                                color = Color.Black,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -358,8 +354,8 @@ fun ExerciseDetailsView(
                         .fillMaxWidth()
                         .background(
                             color = if (attemptedStart && !understood) 
-                                Color.Red.copy(alpha = 0.3f) 
-                            else Color.Transparent,
+                                Color(0xFFFFEBEE)
+                            else MaterialTheme.colors.surface.copy(alpha = 0.5f),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(8.dp)
@@ -375,17 +371,18 @@ fun ExerciseDetailsView(
                             if (it) attemptedStart = false
                         },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = Color(0xFF0B3C91),
+                            checkedColor = Color(0xFF06B6D4),
+                            checkmarkColor = Color.White,
                             uncheckedColor = if (attemptedStart && !understood) 
-                                Color.Red 
-                            else Color.White
+                                Color(0xFFEF5350) 
+                            else MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
                         )
                     )
                     Text(
                         text = "I understand the instructions",
                         color = if (attemptedStart && !understood) 
-                            Color(0xFFFFCDD2) 
-                        else Color.White,
+                            Color(0xFFEF5350) 
+                        else MaterialTheme.colors.onSurface,
                         fontSize = 16.sp,
                         fontWeight = if (attemptedStart && !understood) 
                             FontWeight.Bold 
@@ -407,10 +404,11 @@ fun ExerciseDetailsView(
                 modifier = Modifier.weight(1f).height(52.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     backgroundColor = Color.Transparent,
-                    contentColor = Color.White
-                )
+                    contentColor = MaterialTheme.colors.primary
+                ),
+                border = BorderStroke(2.dp, MaterialTheme.colors.primary)
             ) {
-                Text("Back", fontSize = 16.sp)
+                Text("Back", fontSize = 16.sp, fontWeight = FontWeight.Medium)
             }
             
             Button(
@@ -423,8 +421,13 @@ fun ExerciseDetailsView(
                 },
                 modifier = Modifier.weight(1f).height(52.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = if (understood) Color(0xFF0B3C91) else Color(0xFF5476A8),
+                    backgroundColor = if (understood) MaterialTheme.colors.primary else Color(0xFFB0C4DE),
                     contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.elevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp,
+                    disabledElevation = 2.dp
                 )
             ) {
                 Text("Start Session", fontSize = 16.sp, fontWeight = FontWeight.Bold)

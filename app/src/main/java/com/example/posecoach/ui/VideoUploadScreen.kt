@@ -65,21 +65,14 @@ fun VideoUploadScreen(
         uri?.let { viewModel.setVideoUri(it) }
     }
 
-    val gradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF0D47A1),
-            Color(0xFF1976D2),
-            Color(0xFF42A5F5)
-        )
-    )
-
     Surface(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colors.background
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradient)
+                .background(MaterialTheme.colors.background)
         ) {
             if (storagePermission.status.isGranted) {
                 // Main content - permission granted
@@ -140,14 +133,14 @@ private fun VideoUploadContent(
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = MaterialTheme.colors.primary
                 )
             }
             Text(
                 text = "Analyze Video",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colors.primary,
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
@@ -156,9 +149,9 @@ private fun VideoUploadContent(
 
         // Video selection card
         Card(
-            backgroundColor = Color.White.copy(alpha = 0.15f),
+            backgroundColor = MaterialTheme.colors.surface,
             shape = RoundedCornerShape(16.dp),
-            elevation = 0.dp,
+            elevation = 4.dp,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(enabled = !isProcessing) {
@@ -174,20 +167,20 @@ private fun VideoUploadContent(
                 Icon(
                     imageVector = Icons.Default.VideoLibrary,
                     contentDescription = "Select Video",
-                    tint = Color.White,
+                    tint = MaterialTheme.colors.primary,
                     modifier = Modifier.size(64.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = if (selectedVideoUri != null) "Video Selected" else "Tap to Select Video",
-                    color = Color.White,
+                    color = MaterialTheme.colors.primary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 if (selectedVideoUri != null) {
                     Text(
                         text = "Tap to change video",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
                         fontSize = 14.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -200,7 +193,7 @@ private fun VideoUploadContent(
         // Exercise selection
         Text(
             text = "Select Exercise:",
-            color = Color.White,
+            color = MaterialTheme.colors.primary,
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -249,13 +242,13 @@ private fun VideoUploadContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp),
-                    color = Color.White,
-                    backgroundColor = Color.White.copy(alpha = 0.3f)
+                    color = MaterialTheme.colors.primary,
+                    backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.2f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Processing video... ${(processingProgress * 100).toInt()}%",
-                    color = Color.White,
+                    color = MaterialTheme.colors.onSurface,
                     fontSize = 14.sp
                 )
             }
@@ -277,13 +270,17 @@ private fun VideoUploadContent(
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = Color(0xFF0B3C91),
-                disabledBackgroundColor = Color(0xFF5476A8)
+                backgroundColor = MaterialTheme.colors.primary,
+                disabledBackgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                contentColor = Color.White
+            ),
+            elevation = ButtonDefaults.elevation(
+                defaultElevation = 6.dp,
+                pressedElevation = 8.dp
             )
         ) {
             Text(
                 text = if (isProcessing) "Processing..." else "Analyze Video",
-                color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -308,7 +305,7 @@ private fun PermissionDeniedScreen(
             text = "Permission Required",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = MaterialTheme.colors.primary,
             textAlign = TextAlign.Center
         )
         
@@ -317,7 +314,7 @@ private fun PermissionDeniedScreen(
         Text(
             text = "PoseCoach needs $permissionName permission to analyze videos from your device.",
             fontSize = 16.sp,
-            color = Color.White.copy(alpha = 0.9f),
+            color = MaterialTheme.colors.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
@@ -331,12 +328,16 @@ private fun PermissionDeniedScreen(
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = Color(0xFF0B3C91)
+                backgroundColor = MaterialTheme.colors.primary,
+                contentColor = Color.White
+            ),
+            elevation = ButtonDefaults.elevation(
+                defaultElevation = 6.dp,
+                pressedElevation = 8.dp
             )
         ) {
             Text(
                 text = "Grant Permission",
-                color = Color.White,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -347,7 +348,7 @@ private fun PermissionDeniedScreen(
         TextButton(onClick = onBack) {
             Text(
                 text = "Go Back",
-                color = Color.White,
+                color = MaterialTheme.colors.primary,
                 fontSize = 16.sp
             )
         }
@@ -362,9 +363,9 @@ private fun ExerciseSelectionCard(
     enabled: Boolean
 ) {
     Card(
-        backgroundColor = if (isSelected) Color(0xFF1565C0) else Color.White.copy(alpha = 0.15f),
+        backgroundColor = MaterialTheme.colors.surface,
         shape = RoundedCornerShape(12.dp),
-        elevation = if (isSelected) 4.dp else 0.dp,
+        elevation = 4.dp,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled) { onSelect() }
@@ -372,7 +373,7 @@ private fun ExerciseSelectionCard(
                 if (isSelected) {
                     Modifier.border(
                         width = 2.dp,
-                        color = Color.White,
+                        color = MaterialTheme.colors.primary,
                         shape = RoundedCornerShape(12.dp)
                     )
                 } else {
@@ -395,13 +396,13 @@ private fun ExerciseSelectionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = exercise.title,
-                    color = Color.White,
+                    color = MaterialTheme.colors.primary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = exercise.description,
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = MaterialTheme.colors.onSurface,
                     fontSize = 13.sp,
                     maxLines = 2
                 )
@@ -410,7 +411,7 @@ private fun ExerciseSelectionCard(
                 Icon(
                     painter = painterResource(android.R.drawable.checkbox_on_background),
                     contentDescription = "Selected",
-                    tint = Color.White,
+                    tint = MaterialTheme.colors.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
