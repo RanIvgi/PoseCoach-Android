@@ -12,8 +12,6 @@
 - 🏋️ **Push-ups** - Elbow angle and body alignment analysis
 - 🦵 **Squats** - Knee angle, depth, and posture evaluation  
 - 🧘 **Planks** - Core stability and body alignment monitoring
-- 🚶 **Lunges** - Leg positioning and balance assessment
-- 💪 **Bicep Curls** - Elbow position and range of motion analysis
 
 ### Key Features
 - Real-time pose detection at 25-30 FPS
