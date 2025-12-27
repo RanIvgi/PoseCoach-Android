@@ -22,12 +22,14 @@ object FeedbackAnalyzer {
                 val timeOutOfPositionMillis = targetDurationMillis - goodFormDurationMillis
                 if (timeOutOfPositionMillis > 1000) { // Ignore small differences (< 1s)
                     val secondsLost = timeOutOfPositionMillis / 1000
-                    val pointsLost = ((timeOutOfPositionMillis.toDouble() / targetDurationMillis.toDouble()) * 100.0).toInt()
+                    // We calculate points lost for display/info, but we DO NOT apply explicit deduction
+                    // because the base score is already calculated from (goodFormDuration / targetDuration).
+                    // Applying deduction here would be double-counting the penalty.
                     
                     summarizedFeedback.add(FeedbackMessage(
                         text = "Time out of position: ${secondsLost}s",
-                        severity = FeedbackSeverity.WARNING,
-                        explicitPointDeduction = -pointsLost
+                        severity = FeedbackSeverity.WARNING
+                        // No explicitPointDeduction
                     ))
                 }
             }

@@ -946,17 +946,17 @@ Or download the APK from releases and install directly on your Android device.
 ### App Tutorial - Step by Step
 
 #### Step 1: Launch the App
-<img src="app/src/main/res/instruction_images/choose_app.png" alt="App Icon" width="200"/>
+<img src="instruction_images/choose_app.png" alt="App Icon" width="200"/>
 
 - Tap on the PoseCoach app icon on your Android device home screen
 - Wait for the app to load
 
-<img src="app/src/main/res/instruction_images/reload.png" alt="App Loading" width="200"/>
+<img src="instruction_images/reload.png" alt="App Loading" width="200"/>
 
 ---
 
 #### Step 2: Welcome Screen - Choose Your Mode
-<img src="app/src/main/res/instruction_images/choose_picture_way.png" alt="Start Screen" width="200"/>
+<img src="instruction_images/choose_picture_way.png" alt="Start Screen" width="200"/>
 
 - **Tap "Let's Begin - Live Video Analysis"** to start real-time camera tracking
 - Or **tap "Upload Video for Analysis"** to analyze a pre-recorded video (if available)
@@ -964,7 +964,7 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 3: Select Your Exercise
-<img src="app/src/main/res/instruction_images/choose_exercise.png" alt="Home Screen" width="200"/>
+<img src="instruction_images/choose_exercise.png" alt="Home Screen" width="200"/>
 
 - **Tap on any exercise card** to select:
   - 🏋️ Push-ups
@@ -976,9 +976,9 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 3a: Interactive Exercise Explanation (Optional)
-<img src="app/src/main/res/instruction_images/exercise_explation.png" alt="Exercise Explanation" width="200"/>
+<img src="instruction_images/exercise_explation.png" alt="Exercise Explanation" width="200"/>
 
-<img src="app/src/main/res/instruction_images/ok_exercise_explanation.png" alt="OK Button" width="200"/>
+<img src="instruction_images/ok_exercise_explanation.png" alt="OK Button" width="200"/>
 
 - Watch the demonstration video to understand proper form
 - **Tap "Got it!"** to proceed to exercise configuration
@@ -986,12 +986,12 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 4: Exercise Configuration
-<img src="app/src/main/res/instruction_images/reps.png" alt="Exercise Selection" width="200"/>
+<img src="instruction_images/reps.png" alt="Exercise Selection" width="200"/>
 
 **Choose your exercise mode:**
 
 **Option 1: Free Mode with Timer**
-<img src="app/src/main/res/instruction_images/free.png" alt="Free Mode" width="200"/>
+<img src="instruction_images/free.png" alt="Free Mode" width="200"/>
 
 - Set timer to unlimited mode
 - Exercise without a target rep count
@@ -1002,7 +1002,7 @@ Or download the APK from releases and install directly on your Android device.
 - The app will track your progress toward your target
 
 **Camera Setup:**
-<img src="app/src/main/res/instruction_images/understand_instructions.png" alt="Camera Setup" width="200"/>
+<img src="instruction_images/understand_instructions.png" alt="Camera Setup" width="200"/>
 
 1. Position your phone 2-3 meters away on a stable surface
 2. Make sure your full body is visible in the camera
