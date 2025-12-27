@@ -51,22 +51,22 @@ fun StartScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Logo at the top
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "PoseCoach Logo",
-                    modifier = Modifier
-                        .size(160.dp)
-                        .padding(top = 8.dp)
-                )
-
-                // App title
+                // App title above logo
                 Text(
                     text = "PoseCoach",
-                    fontSize = 28.sp,
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colors.primary,
                     textAlign = TextAlign.Center
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                // Logo
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "PoseCoach Logo",
+                    modifier = Modifier.size(160.dp)
                 )
 
                 // Subtitle

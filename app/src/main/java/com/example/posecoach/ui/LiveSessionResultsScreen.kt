@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.material.TabRow
@@ -126,22 +127,22 @@ fun LiveSessionResultsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Text(
+                        text = "Session Complete !",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                     IconButton(onClick = navBackToStart) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.Default.ArrowForward,
                             contentDescription = "Back",
                             tint = Color.White
                         )
                     }
-                    Text(
-                        text = "Session Complete!",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
                 }
 
                 // Floating Exercise Type Selector (Fixed below top bar)
