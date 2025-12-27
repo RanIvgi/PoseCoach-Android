@@ -261,16 +261,40 @@ fun CountdownOverlay(countdownValue: Int) {
             .background(Color.Black.copy(alpha = 0.5f)),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = countdownValue.toString(),
-            fontSize = 120.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.graphicsLayer(
-                scaleX = scale,
-                scaleY = scale
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            Text(
+                text = "Exercise about to start",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
             )
-        )
+            
+            Text(
+                text = "Please position yourself\nin the middle of the camera",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White.copy(alpha = 0.9f),
+                textAlign = TextAlign.Center,
+                lineHeight = 24.sp
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = countdownValue.toString(),
+                fontSize = 120.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale
+                )
+            )
+        }
     }
 }
 

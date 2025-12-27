@@ -149,34 +149,39 @@ fun CameraControls(
             }
         }
 
+        // Play button in center when IDLE
+        if (sessionState == SessionState.IDLE) {
+            FloatingActionButton(
+                onClick = onStartSession,
+                backgroundColor = MaterialTheme.colors.primary,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(72.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = "Start Session",
+                    tint = Color.White,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+        }
+
         Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (sessionState == SessionState.IDLE) {
-                FloatingActionButton(
-                    onClick = onStartSession,
-                    backgroundColor = Color(0xFF4CAF50)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = "Start Session",
-                        tint = Color.White
-                    )
-                }
-            }
-
             if (sessionState == SessionState.ACTIVE) {
                 FloatingActionButton(
                     onClick = onFinishSession,
-                    backgroundColor = Color(0xFFF44336)
+                    backgroundColor = Color.White
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Stop,
                         contentDescription = "Finish Session",
-                        tint = Color.White
+                        tint = Color(0xFFEF5350)
                     )
                 }
             }
@@ -184,35 +189,35 @@ fun CameraControls(
             if (sessionState == SessionState.ACTIVE) {
                 FloatingActionButton(
                     onClick = onResetRepCount,
-                    backgroundColor = Color.Gray
+                    backgroundColor = Color.White
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Refresh,
                         contentDescription = "Reset Rep Count",
-                        tint = Color.White
+                        tint = MaterialTheme.colors.primary
                     )
                 }
             }
 
             FloatingActionButton(
                 onClick = onToggleDelegate,
-                backgroundColor = MaterialTheme.colors.secondary
+                backgroundColor = Color.White
             ) {
                 Icon(
                     imageVector = Icons.Filled.Memory,
                     contentDescription = if (useGpu) "Switch to CPU" else "Switch to GPU",
-                    tint = Color.White
+                    tint = MaterialTheme.colors.primary
                 )
             }
 
             FloatingActionButton(
                 onClick = onCameraSwitch,
-                backgroundColor = MaterialTheme.colors.primary
+                backgroundColor = Color.White
             ) {
                 Icon(
                     imageVector = Icons.Filled.Cameraswitch,
                     contentDescription = "Switch Camera",
-                    tint = Color.White
+                    tint = MaterialTheme.colors.primary
                 )
             }
         }
