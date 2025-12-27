@@ -601,6 +601,24 @@ private fun FeedbackCard(feedback: FeedbackMessage) {
                 fontSize = 14.sp,
                 modifier = Modifier.weight(1f)
             )
+            
+            // Show point deduction for warnings and errors
+            if (feedback.severity == FeedbackSeverity.WARNING || feedback.severity == FeedbackSeverity.ERROR) {
+                val points = if (feedback.severity == FeedbackSeverity.WARNING) "-5" else "-10"
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "$points pts",
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .background(
+                            color = Color.Black.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
         }
     }
 }

@@ -74,6 +74,9 @@ class CameraViewModel : ViewModel() {
     private val _repCount = MutableStateFlow(0)
     val repCount: StateFlow<Int> = _repCount.asStateFlow()
 
+    private val _targetReps = MutableStateFlow(10)
+    val targetReps: StateFlow<Int> = _targetReps.asStateFlow()
+
     // Computed property for countdown display (reps remaining)
     val repsRemaining: StateFlow<Int> = combine(
         _repCount,
@@ -103,9 +106,6 @@ class CameraViewModel : ViewModel() {
 
     private val _currentExercise = MutableStateFlow("squat")
     val currentExercise: StateFlow<String> = _currentExercise.asStateFlow()
-
-    private val _targetReps = MutableStateFlow(10)
-    val targetReps: StateFlow<Int> = _targetReps.asStateFlow()
 
     private var sessionStartTimeMillis: Long? = null
 
