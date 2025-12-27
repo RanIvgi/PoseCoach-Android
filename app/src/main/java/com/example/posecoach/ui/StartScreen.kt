@@ -16,13 +16,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.posecoach.R
@@ -39,12 +43,31 @@ fun StartScreen(
         color = MaterialTheme.colors.background
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
-            Column(
+            // Background image
+            Image(
+                painter = painterResource(id = R.drawable.background_image),
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            
+            // White fade overlay (70%)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White.copy(alpha = 0.7f))
+            )
+            
+            // Content
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -54,9 +77,10 @@ fun StartScreen(
                 // App title above logo
                 Text(
                     text = "PoseCoach",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colors.primary,
+                    fontSize = 42.sp,  // Larger for Passion One
+                    fontFamily = FontFamily(Font(R.font.passion_one_black)),  // Custom font
+                    letterSpacing = 1.5.sp,  // Letter spacing
+                    color = Color(0xFF0D47A1),  // Darker blue
                     textAlign = TextAlign.Center
                 )
 
@@ -187,6 +211,7 @@ fun StartScreen(
                     }
                 }
             }
+        }
         }
     }
 }
