@@ -112,7 +112,7 @@ class PoseEngine(private val context: Context) {
             // Configure MediaPipe base options
             val baseOptions = BaseOptions.builder()
                 .setDelegate(delegate)
-                .setModelAssetPath("pose_landmarker_full.task") // Model in assets folder
+                .setModelAssetPath("pose_landmarker_lite.task") // Model in assets folder
                 .build()
             
             // Configure Pose Landmarker options
@@ -150,7 +150,7 @@ class PoseEngine(private val context: Context) {
                 try {
                     val cpuBaseOptions = BaseOptions.builder()
                         .setDelegate(Delegate.CPU)
-                        .setModelAssetPath("pose_landmarker_full.task")
+                        .setModelAssetPath("pose_landmarker_lite.task")
                         .build()
                     
                     val cpuOptions = PoseLandmarker.PoseLandmarkerOptions.builder()
@@ -309,7 +309,7 @@ class PoseEngine(private val context: Context) {
             
             val baseOptions = BaseOptions.builder()
                 .setDelegate(delegate)
-                .setModelAssetPath("pose_landmarker_full.task")
+                .setModelAssetPath("pose_landmarker_lite.task")
                 .build()
             
             val options = PoseLandmarker.PoseLandmarkerOptions.builder()
@@ -334,7 +334,7 @@ class PoseEngine(private val context: Context) {
                 try {
                     val cpuBaseOptions = BaseOptions.builder()
                         .setDelegate(Delegate.CPU)
-                        .setModelAssetPath("pose_landmarker_full.task")
+                        .setModelAssetPath("pose_landmarker_lite.task")
                         .build()
                     
                     val cpuOptions = PoseLandmarker.PoseLandmarkerOptions.builder()
