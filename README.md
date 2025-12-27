@@ -91,9 +91,11 @@ graph TD
     ExerciseSelection --> |Select Exercise| ExerciseConfig[Exercise Configuration]
     ExerciseConfig --> |Start Session| CameraSession[Camera Session Screen]
     ExerciseSelection --> |Back Arrow| Start
+    ExerciseSelection --> |i| Tutorial
+
+    Tutorial ---> |Got it!/x|
     
     CameraSession --> |Finish Session| LiveResults[Live Session Results]
-    CameraSession --> |Home Button| Start
     
     LiveResults --> |New Exercise| ExerciseSelection
     LiveResults --> |Home| Start
@@ -103,7 +105,7 @@ graph TD
     VideoUpload --> |Back Arrow| Start
     
     VideoProcessing --> VideoResults[Video Results Screen]
-    VideoResults --> |Back Arrow| Start
+    VideoResults --> |Back Arrow/Done| Start
     
     style Start fill:#1976D2,color:#fff
     style ExerciseSelection fill:#42A5F5,color:#fff
