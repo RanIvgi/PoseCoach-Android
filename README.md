@@ -54,15 +54,8 @@
 - [Project Architecture](#project-architecture)
   - [System Components](#system-components)
   - [Component Responsibilities](#component-responsibilities)
-  - [Dependencies](#dependencies)
-- [Code Structure](#code-structure)
-  - [Core Components](#core-components)
-  - [Data Models](#data-models)
 - [Implementation Details](#implementation-details)
   - [Performance Optimizations](#performance-optimizations)
-- [Performance Debugging](#performance-debugging)
-  - [Frame Timing Analysis](#frame-timing-analysis)
-  - [ML Inference Profiling](#ml-inference-profiling)
 
 ### 📋 Conclusion
 - [Summary](#summary)
@@ -947,94 +940,100 @@ Detailed performance metrics, timing breakdowns, and debugging procedures are do
 - No memory leaks in 60-minute stress tests
 - **Improvement**: 41% reduction in memory usage
 
-## Code Structure
+## Project Architecture
 
-### Core Components
+### System Components
 
-#### PoseEngine.kt
-```kotlin
-class PoseEngine(private val context: Context) {
-    // MediaPipe integration
-    fun initialize(): Boolean
-    fun detectPose(imageProxy: ImageProxy, isFrontCamera: Boolean)
-    suspend fun detectPoseFromBitmap(bitmap: Bitmap, timestampMs: Long): PoseResult
-    fun toggleDelegate()
-    fun cleanup()
-}
+Below is a high-level file tree of the main app modules for quick navigation:
+
 ```
-
-#### DefaultPoseEvaluator.kt  
-```kotlin
-class DefaultPoseEvaluator : PoseEvaluator {
-    override fun evaluateSquat(poseResult: PoseResult): FeedbackMessage?
-    override fun evaluatePushup(poseResult: PoseResult): FeedbackMessage?
-    override fun evaluatePlank(poseResult: PoseResult): FeedbackMessage?
-    fun getRepCount(exerciseType: String): Int
-    fun resetSession(exerciseType: String)
-}
+app/src/main/java/com/example/posecoach/
+├── MainActivity.kt
+├── ModelWarmer.kt
+│
+├── data/
+│   ├── PoseLandmark.kt
+│   ├── PoseLandmarkIndex.kt
+│   ├── PoseResult.kt
+│   ├── FeedbackMessage.kt
+│   ├── CameraState.kt
+│   ├── ExerciseSessionSummary.kt
+│   └── VideoAnalysisResult.kt
+│
+├── ui/
+│   ├── PoseCoachApp.kt
+│   ├── StartScreen.kt
+│   ├── CameraScreen.kt
+│   ├── CameraViewModel.kt
+│   ├── VideoAnalysisViewModel.kt
+│   ├── PoseOverlay.kt
+│   ├── TutorialDialog.kt
+│   ├── ExerciseSelectionScreen.kt
+│   ├── VideoUploadScreen.kt
+│   ├── VideoPlayer.kt
+│   ├── VideoResultsScreen.kt
+│   ├── LiveSessionResultsScreen.kt
+│   ├── LoadingScreen.kt
+│   └── theme/
+│
+├── pose/
+│   └── PoseEngine.kt
+│
+├── logic/
+│   ├── PoseEvaluator.kt
+│   ├── DefaultPoseEvaluator.kt
+│   └── FeedbackAnalyzer.kt
+│
+└── video/
+  └── VideoProcessor.kt
 ```
-
-#### ModelWarmer.kt
-```kotlin
-object ModelWarmer {
-    fun getInstance(context: Context): ModelWarmer
-    fun startWarmup()
-    val warmupState: StateFlow<WarmupState>
-    val prewarmedEngine: PoseEngine?
-}
-```
-
-### Data Models
-- **PoseResult**: Contains 33 landmarks with confidence scores and angle calculations
-- **FeedbackMessage**: Exercise evaluation results with severity (ERROR, WARNING, SUCCESS)
-- **ExerciseSessionSummary**: Performance metrics, rep counts, and session statistics
 
 ## Project Architecture
 
 ### System Components
 
-The application follows a modular architecture with clear separation of concerns:
+Below is a high-level file tree of the main app modules for quick navigation:
 
 ```
 app/src/main/java/com/example/posecoach/
-├── MainActivity.kt             # Application entry point with model warming
-├── ModelWarmer.kt              # Background ML model initialization system
+├── MainActivity.kt
+├── ModelWarmer.kt
 │
-├── data/                       # Data layer and models
-│   ├── PoseLandmark.kt         # Single pose landmark (x, y, z, visibility)
-│   ├── PoseLandmarkIndex.kt    # Constants for 33 MediaPipe landmark indices
-│   ├── PoseResult.kt           # Complete pose detection result container
-│   ├── FeedbackMessage.kt      # Exercise evaluation feedback with severity
-│   ├── CameraState.kt          # Camera configuration state management
-│   ├── ExerciseSessionSummary.kt # Session statistics and performance data
-│   └── VideoAnalysisResult.kt  # Video processing analysis results
+├── data/
+│   ├── PoseLandmark.kt
+│   ├── PoseLandmarkIndex.kt
+│   ├── PoseResult.kt
+│   ├── FeedbackMessage.kt
+│   ├── CameraState.kt
+│   ├── ExerciseSessionSummary.kt
+│   └── VideoAnalysisResult.kt
 │
-├── ui/                         # User interface layer (Jetpack Compose)
-│   ├── PoseCoachApp.kt         # Main navigation and app structure
-│   ├── StartScreen.kt          # Application welcome and mode selection
-│   ├── CameraScreen.kt         # Live camera preview with pose overlay
-│   ├── CameraViewModel.kt      # Camera state management and data flow
-│   ├── VideoAnalysisViewModel.kt # Video processing state management
-│   ├── PoseOverlay.kt          # 3D skeleton visualization component
-│   ├── TutorialDialog.kt       # Exercise tutorial modal dialogs
-│   ├── ExerciseSelectionScreen.kt # Exercise type selection interface
-│   ├── VideoUploadScreen.kt    # Video analysis upload interface
-│   ├── VideoPlayer.kt          # Video playback component
-│   ├── VideoResultsScreen.kt   # Analysis results display
-│   ├── LiveSessionResultsScreen.kt # Live session results
-│   ├── LoadingScreen.kt        # Model warm-up loading screen
-│   └── theme/                  # Material Design theme configuration
+├── ui/
+│   ├── PoseCoachApp.kt
+│   ├── StartScreen.kt
+│   ├── CameraScreen.kt
+│   ├── CameraViewModel.kt
+│   ├── VideoAnalysisViewModel.kt
+│   ├── PoseOverlay.kt
+│   ├── TutorialDialog.kt
+│   ├── ExerciseSelectionScreen.kt
+│   ├── VideoUploadScreen.kt
+│   ├── VideoPlayer.kt
+│   ├── VideoResultsScreen.kt
+│   ├── LiveSessionResultsScreen.kt
+│   ├── LoadingScreen.kt
+│   └── theme/
 │
-├── pose/                       # ML integration layer (MediaPipe)
-│   └── PoseEngine.kt           # MediaPipe pose detection engine
+├── pose/
+│   └── PoseEngine.kt
 │
-├── logic/                      # Business logic layer
-│   ├── PoseEvaluator.kt        # Exercise evaluation interface
-│   ├── DefaultPoseEvaluator.kt # Form analysis implementation
-│   └── FeedbackAnalyzer.kt     # Feedback generation algorithms
+├── logic/
+│   ├── PoseEvaluator.kt
+│   ├── DefaultPoseEvaluator.kt
+│   └── FeedbackAnalyzer.kt
 │
-└── video/                      # Video processing pipeline
-    └── VideoProcessor.kt       # Video file analysis and processing
+└── video/
+  └── VideoProcessor.kt
 ```
 
 ### Component Responsibilities
@@ -1102,29 +1101,6 @@ app/src/main/java/com/example/posecoach/
 - Exercise evaluation metrics and scoring
 - Session performance statistics
 - Temporal movement analysis data
-
-### Dependencies
-```gradle
-implementation "com.google.mediapipe:tasks-vision:0.20230731"
-implementation "androidx.camera:camera-core:1.1.0"
-implementation "androidx.compose:compose-bom:2024.02.00"
-```
-
-## Performance Debugging
-
-The application includes comprehensive performance monitoring tools:
-
-### Frame Timing Analysis
-- Real-time FPS measurement
-- Per-component timing breakdown  
-- Bottleneck identification
-
-### ML Inference Profiling
-- Delegate performance comparison
-- Model loading time tracking
-- Memory usage monitoring
-
-See [PERFORMANCE_DEBUGGING_GUIDE.md](PERFORMANCE_DEBUGGING_GUIDE.md) for detailed analysis procedures.
 
 ---
 
