@@ -78,7 +78,6 @@ fun CameraScreen(
     val exerciseElapsedSeconds by viewModel.exerciseElapsedSeconds.collectAsState()
 
     val isPlank = currentExercise == "plank"
-    var infoExerciseId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(sessionResult) {
         if (sessionResult != null) navToSessionResults()
@@ -114,11 +113,6 @@ fun CameraScreen(
                 onResetRepCount = { viewModel.resetRepCount() },
                 onStartSession = { viewModel.startSessionCountdown(null) },
                 onFinishSession = { viewModel.finishSession() },
-                onExerciseSelected = {
-                    viewModel.setExercise(it)
-                    infoExerciseId = it
-                },
-                onTargetRepsChange = { viewModel.setTargetReps(it) },
                 onBackToHome = {
                     if (sessionState == SessionState.ACTIVE) viewModel.finishSessionAndGoHome()
                     else navBackToStart()
@@ -144,21 +138,6 @@ fun CameraScreen(
 
             if (sessionState == SessionState.COUNTDOWN) {
                 CountdownOverlay(countdownValue)
-            }
-
-            if (sessionState == SessionState.IDLE) {
-                infoExerciseId?.let { id ->
-                    exercises.find { it.id == id }?.let { exercise ->
-                        ExerciseInfoOverlay(
-                            exercise = exercise,
-                            onCancel = { infoExerciseId = null },
-                            onConfirmStart = {
-                                infoExerciseId = null
-                                viewModel.startSessionCountdown(it)
-                            }
-                        )
-                    }
-                }
             }
 
             cameraError?.let { ErrorOverlay(it) }

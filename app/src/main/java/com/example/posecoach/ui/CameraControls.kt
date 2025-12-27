@@ -37,8 +37,6 @@ fun CameraControls(
     onResetRepCount: () -> Unit,
     onStartSession: () -> Unit,
     onFinishSession: () -> Unit,
-    onExerciseSelected: (String) -> Unit,
-    onTargetRepsChange: (Int) -> Unit,
     onBackToHome: () -> Unit,
     showReps: Boolean,
     modifier: Modifier = Modifier
@@ -46,28 +44,6 @@ fun CameraControls(
     LogCompositions("CameraControls")
     
     Box(modifier = modifier) {
-
-        if (sessionState == SessionState.IDLE) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 16.dp, bottom = 90.dp, end = 16.dp)
-            ) {
-                ExerciseSelector(
-                    currentExercise = currentExercise,
-                    onExerciseSelected = onExerciseSelected,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                TargetRepsSelector(
-                    targetReps = targetReps,
-                    onTargetRepsChange = onTargetRepsChange,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
 
         if (sessionState == SessionState.ACTIVE) {
             if (showReps) {
@@ -230,127 +206,6 @@ fun CameraControls(
                     contentDescription = "Switch Camera",
                     tint = Color.White
                 )
-            }
-        }
-    }
-}
-
-@Composable
-fun ExerciseSelector(
-    currentExercise: String,
-    onExerciseSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LogCompositions("ExerciseSelector")
-    
-    Column(
-        modifier = modifier
-            .background(Color.Black.copy(alpha = 0.5f))
-            .padding(12.dp)
-    ) {
-        Text(
-            text = "Choose exercise",
-            color = Color.White,
-            style = MaterialTheme.typography.subtitle1,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        exercises.forEach { exercise ->
-            val selected = exercise.id == currentExercise
-
-            Card(
-                backgroundColor = if (selected) Color(0xFF0B3C91) else Color(0x330B3C91),
-                shape = RoundedCornerShape(12.dp),
-                elevation = if (selected) 6.dp else 0.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .clickable { onExerciseSelected(exercise.id) }
-            ) {
-                Row(
-                    modifier = Modifier.padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    // Exercise Logo
-                    Image(
-                        painter = painterResource(exercise.logoRes),
-                        contentDescription = exercise.title,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .padding(end = 12.dp)
-                    )
-
-                    Column {
-                        Text(
-                            text = exercise.title,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        if (selected) {
-                            Text(
-                                text = "Tap to view instructions",
-                                color = Color.White.copy(alpha = 0.85f),
-                                style = MaterialTheme.typography.caption
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun TargetRepsSelector(
-    targetReps: Int,
-    onTargetRepsChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LogCompositions("TargetRepsSelector")
-    
-    val options = (1..30).toList()
-
-    Column(
-        modifier = modifier
-            .background(Color.Black.copy(alpha = 0.5f))
-            .padding(8.dp)
-    ) {
-        Text(
-            text = "Target reps",
-            color = Color.White,
-            style = MaterialTheme.typography.subtitle2,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-        ) {
-            options.forEach { value ->
-                val selected = value == targetReps
-
-                Surface(
-                    color = if (selected) Color(0xFF4CAF50) else Color.Transparent,
-                    shape = RoundedCornerShape(50),
-                    border = BorderStroke(1.dp, Color.White),
-                    modifier = Modifier
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
-                        .clickable { onTargetRepsChange(value) }
-                ) {
-                    Text(
-                        text = value.toString(),
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        fontSize = 14.sp,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
             }
         }
     }
