@@ -10,7 +10,7 @@
 
 ### Supported Exercises
 - 🏋️ **Push-ups** - Elbow angle and body alignment analysis
-- 🦵 **Squats** - Knee angle, depth, and posture evaluation  
+- 🦵 **Squats** - Knee angle, depth, and posture evaluation
 - 🧘 **Planks** - Core stability and body alignment monitoring
 
 ### Key Features
@@ -18,7 +18,45 @@
 - Instant form feedback with color-coded guidance
 - Automatic rep counting
 - Session performance tracking
+- Video analysis mode for pre-recorded workouts
 - GPU/CPU optimization for various Android devices
+
+## Application Flow Diagram
+
+The PoseCoach app provides two main user flows for exercise form analysis:
+
+```mermaid
+graph TD
+    Start[Start Screen] --> |Let's Begin| ExerciseSelection[Exercise Selection Screen]
+    Start --> |Analyze Video| VideoUpload[Video Upload Screen]
+    Start --> |Exit App| Exit[Exit Application]
+    
+    ExerciseSelection --> |Select Exercise| ExerciseConfig[Exercise Configuration]
+    ExerciseConfig --> |Start Session| CameraSession[Camera Session Screen]
+    ExerciseSelection --> |Back Arrow| Start
+    
+    CameraSession --> |Finish Session| LiveResults[Live Session Results]
+    CameraSession --> |Home Button| Start
+    
+    LiveResults --> |New Exercise| ExerciseSelection
+    LiveResults --> |Home| Start
+    LiveResults --> |Back Arrow| Start
+    
+    VideoUpload --> |Select & Analyze| VideoProcessing[Video Processing]
+    VideoUpload --> |Back Arrow| Start
+    
+    VideoProcessing --> VideoResults[Video Results Screen]
+    VideoResults --> |Back Arrow| Start
+    
+    style Start fill:#1976D2,color:#fff
+    style ExerciseSelection fill:#42A5F5,color:#fff
+    style CameraSession fill:#4CAF50,color:#fff
+    style LiveResults fill:#66BB6A,color:#fff
+    style VideoUpload fill:#FF9800,color:#fff
+    style VideoResults fill:#FFB74D,color:#fff
+```
+
+For detailed screen-by-screen breakdown and button reference, see [POSECOACH_APP_FLOWS.md](POSECOACH_APP_FLOWS.md).
 
 ## Introduction
 
@@ -233,10 +271,28 @@ The Lite model uniquely satisfies all critical requirements while maximizing per
 ## Implementation Details
 
 ### Performance Optimizations
-1. **Model Pre-warming**: Background ML model initialization eliminates 2+ second startup freeze
-2. **Frame Processing Pipeline**: Optimized YUV→RGB conversion and bitmap rotation
+
+#### Startup Performance Optimization
+
+**Problem Solved**: The app originally experienced a 2.2+ second freeze during startup, causing 34 dropped frames and poor user experience with "Slow Looper" warnings.
+
+**Solution Implemented**:
+1. **ModelWarmer Singleton**: Background ML model initialization during app launch eliminates main thread blocking
+2. **Custom Loading Screen**: Professional branded loading screen provides visual feedback during initialization (API 24+ compatible)
+3. **Cached Delegate Preference**: Saves GPU/CPU preference to SharedPreferences, skipping auto-detection on subsequent launches (~200ms savings)
+4. **Pre-warmed Engine Reuse**: CameraViewModel uses already-initialized PoseEngine instance (0ms delay vs. 2+ second initialization)
+
+**Performance Impact**:
+- **Before**: 2200ms main thread freeze → 34 dropped frames → frozen white screen
+- **After**: 0ms main thread freeze → smooth loading screen → responsive UI throughout
+- **Camera Screen**: Instant opening using pre-warmed engine vs. 2+ second delay
+- **User Experience**: Professional loading animation instead of frozen application
+
+#### Frame Processing Pipeline
+1. **Optimized YUV→RGB Conversion**: Efficient bitmap processing with 75% JPEG quality
+2. **Bitmap Rotation Handling**: Matrix-based rotation with proper orientation correction
 3. **Delegate Selection**: Automatic GPU/CPU fallback based on device capabilities
-4. **Memory Management**: Efficient bitmap handling and resource cleanup
+4. **Memory Management**: Efficient bitmap handling and resource cleanup (41% reduction to 85MB peak)
 
 ### Supported Exercises
 - **Push-ups**: Elbow angle analysis, body alignment detection
@@ -344,13 +400,18 @@ app/src/main/java/com/example/posecoach/
 │
 ├── ui/                         # User interface layer (Jetpack Compose)
 │   ├── PoseCoachApp.kt         # Main navigation and app structure
+│   ├── StartScreen.kt          # Application welcome and mode selection
 │   ├── CameraScreen.kt         # Live camera preview with pose overlay
 │   ├── CameraViewModel.kt      # Camera state management and data flow
+│   ├── VideoAnalysisViewModel.kt # Video processing state management
 │   ├── PoseOverlay.kt          # 3D skeleton visualization component
+│   ├── TutorialDialog.kt       # Exercise tutorial modal dialogs
 │   ├── ExerciseSelectionScreen.kt # Exercise type selection interface
 │   ├── VideoUploadScreen.kt    # Video analysis upload interface
+│   ├── VideoPlayer.kt          # Video playback component
 │   ├── VideoResultsScreen.kt   # Analysis results display
-│   ├── StartScreen.kt          # Application welcome and mode selection
+│   ├── LiveSessionResultsScreen.kt # Live session results
+│   ├── LoadingScreen.kt        # Model warm-up loading screen
 │   └── theme/                  # Material Design theme configuration
 │
 ├── pose/                       # ML integration layer (MediaPipe)
@@ -431,16 +492,8 @@ app/src/main/java/com/example/posecoach/
 - Session performance statistics
 - Temporal movement analysis data
 
-## Installation and Setup
-
-### Prerequisites
-- Android Studio Arctic Fox or newer
-- Android SDK API 24+
-- Physical device recommended (GPU acceleration)
-
-### Build Instructions
 ```bash
-git clone <repository-url>
+git clone https://github.com/RanIvgi/PoseCoach-Android.git
 cd PoseCoach-Android
 ./gradlew assembleDebug
 ```
@@ -591,8 +644,13 @@ The research successfully demonstrates that smartphone-based real-time exercise 
 - **Push-ups**: Form analysis with shoulder, elbow, and body alignment tracking
 - **Squats**: Knee angle, hip depth, and posture evaluation
 - **Planks**: Core stability and body alignment monitoring with time tracking
-- **Lunges**: Leg positioning and balance assessment
-- **Bicep Curls**: Elbow position and range of motion analysis
+
+#### 3. Video Analysis Mode
+- **Upload & Analyze**: Process pre-recorded workout videos from device storage
+- **Frame-by-Frame Analysis**: Detailed pose detection on each video frame with progress tracking
+- **Comprehensive Results**: Complete form analysis with video playback controls
+- **Supported Formats**: Standard video formats via Android MediaPlayer
+- **Visual Feedback**: Pose skeleton overlay on analyzed video frames
 
 #### 3. Exercise Configuration
 - **Target Reps**: Set goal repetitions for rep-based exercises
