@@ -26,8 +26,8 @@ class VideoProcessor(private val context: Context) {
      * Extract frames from a video at regular intervals.
      * 
      * @param videoUri The URI of the video file
-     * @param frameIntervalMs Interval between frames in milliseconds (default: 500ms = 2 FPS)
-     * @param maxFrames Maximum number of frames to extract (default: 60)
+     * @param frameIntervalMs Interval between frames in milliseconds (default: 1000ms = 1 FPS)
+     * @param maxFrames Maximum number of frames to extract (default: 120)
      * @param progressCallback Callback for progress updates (0.0 to 1.0)
      * @return List of extracted frames as Bitmaps
      */

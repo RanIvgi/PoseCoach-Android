@@ -34,9 +34,9 @@ import com.example.posecoach.ui.theme.PoseCoachTheme
  * 3. Once ready → Navigate to main app
  * 4. User grants camera permission
  * 5. CameraScreen uses pre-warmed PoseEngine (instant, no freeze)
- * 6. PoseEngine (Student 2) detects poses from camera frames
- * 7. DefaultPoseEvaluator (Student 3) evaluates form and generates feedback
- * 8. CameraScreen (Student 1) displays skeleton overlay and feedback
+ * 6. PoseEngine detects poses from camera frames
+ * 7. DefaultPoseEvaluator evaluates form and generates feedback
+ * 8. CameraScreen displays skeleton overlay and feedback
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

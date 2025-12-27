@@ -1,7 +1,7 @@
 package com.example.posecoach.data
 
 /**
- * Feedback message from Student 3's evaluation logic to Student 1's UI.
+ * Feedback message from evaluation logic to the UI.
  * This is what gets displayed to the user during their workout.
  * 
  * @property text The feedback message (e.g., "Bend knees more", "Good form!")
@@ -17,7 +17,7 @@ data class FeedbackMessage(
 
 /**
  * Severity levels for feedback messages.
- * Student 1 can use this to color-code the feedback in the UI.
+ * Used to color-code the feedback in the UI.
  */
 enum class FeedbackSeverity {
     /**

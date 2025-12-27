@@ -3,6 +3,15 @@ package com.example.posecoach.logic
 import com.example.posecoach.data.FeedbackMessage
 import com.example.posecoach.data.FeedbackSeverity
 
+/**
+ * Analyzes and summarizes feedback messages from an exercise session.
+ * 
+ * This object is responsible for:
+ * - Aggregating raw feedback messages into a coherent summary.
+ * - Detecting patterns in feedback (e.g., consistent form errors).
+ * - Applying scoring penalties based on the frequency and severity of errors.
+ * - Generating the final list of feedback messages for the session result.
+ */
 object FeedbackAnalyzer {
 
     fun analyze(

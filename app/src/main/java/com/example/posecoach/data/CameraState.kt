@@ -4,7 +4,7 @@ import androidx.camera.core.CameraSelector
 
 /**
  * Represents the current camera configuration.
- * Used by Student 1's UI to control which camera is active.
+ * Used by the UI to control which camera is active.
  */
 sealed class CameraState {
     /**
