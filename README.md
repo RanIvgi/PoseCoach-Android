@@ -1,6 +1,26 @@
+<div align="center">
+  <img src="app/src/main/res/drawable/logo.png" alt="PoseCoach Logo" width="200"/>
+</div>
+
 # PoseCoach - Real-Time Exercise Form Analysis Using Computer Vision
 
-A research implementation of real-time workout form analysis using Google MediaPipe Pose Landmarker model. This project investigates the application of computer vision and machine learning techniques for automated fitness performance evaluation on mobile devices.
+## Overview
+
+**PoseCoach** is an Android mobile application that provides real-time exercise form analysis using the **Google MediaPipe Pose Landmarker** model. The app delivers instant feedback on your workout technique through advanced computer vision and machine learning, helping you improve form and prevent injuries.
+
+### Supported Exercises
+- 🏋️ **Push-ups** - Elbow angle and body alignment analysis
+- 🦵 **Squats** - Knee angle, depth, and posture evaluation  
+- 🧘 **Planks** - Core stability and body alignment monitoring
+- 🚶 **Lunges** - Leg positioning and balance assessment
+- 💪 **Bicep Curls** - Elbow position and range of motion analysis
+
+### Key Features
+- Real-time pose detection at 25-30 FPS
+- Instant form feedback with color-coded guidance
+- Automatic rep counting
+- Session performance tracking
+- GPU/CPU optimization for various Android devices
 
 ## Introduction
 
@@ -925,11 +945,43 @@ Or download the APK from releases and install directly on your Android device.
 
 ### App Tutorial - Step by Step
 
-#### Step 1: Opening the App
-![Home Screen](images/home_screen.png)
+#### Step 1: Launch the App
+![App Icon](app/src/main/res/instruction_images/choose_app.png)
 
-**What you see when you open the app:**
-- PoseCoach logo at the top
+**What to do:**
+- **Tap on the PoseCoach app icon** on your Android device home screen
+- Wait for the app to load
+
+![App Loading](app/src/main/res/instruction_images/reload.png)
+
+**What you see:**
+- Loading screen with PoseCoach logo
+- The app is initializing the MediaPipe model in the background
+- Wait a few seconds for the app to fully load
+- Once loaded, you'll see the welcome screen
+
+---
+
+#### Step 2: Welcome Screen - Choose Your Mode
+![Start Screen](app/src/main/res/instruction_images/choose_picture_way.png)
+
+**What you see:**
+- PoseCoach logo and title at the top
+- Background image
+- Two mode options:
+  - **"Let's Begin - Live Video Analysis"** button
+  - **"Upload Video for Analysis"** button (if available)
+
+**What to 4o:**
+- **Tap "Let's Begin - Live Video Analysis"** → Takes you to exercise selection for real-time camera tracking
+- **Tap "Upload Video for Analysis"** → Allows you to analyze a pre-recorded video (alternative mode)
+
+---
+
+#### Step 3: Select Your Exercise
+![Home Screen](app/src/main/res/instruction_images/choose_exercise.png)
+
+**What you see after choosing Live Video Analysis:**
 - "Select Exercise" heading
 - Five exercise cards displayed vertically:
   - 🏋️ Push-ups
@@ -944,10 +996,27 @@ Or download the APK from releases and install directly on your Android device.
 
 ---
 
-#### Step 2: Exercise Configuration
-![Exercise Selection](images/exercise_selection.png)
+#### Step 3a: Interactive Exercise Explanation (Optional)
+![Exercise Explanation](app/src/main/res/instruction_images/exercise_explation.png)
 
-**What happens after tapping an exercise:**
+**What you see:**
+- After selecting an exercise, you may see an interactive video or animation
+- Demonstrates proper form and technique for the selected exercise
+- Shows key points to focus on during the movement
+
+![OK Button](app/src/main/res/instruction_images/ok_exercise_explanation.png)
+
+**What to do:**
+- **Watch the demonstration** to understand the correct form
+- **Tap "OK" or "Got It"** → Proceeds to exercise configuration screen
+- **Tap "Skip"** (if available) → Go directly to configuration
+
+---
+
+#### Step 4: Exercise Configuration
+![Exercise Selection](app/src/main/res/instruction_images/reps.png)
+
+**What happens after tapping an exercise:****
 - You see the exercise configuration screen
 - Exercise name is displayed at the top
 - You see input fields for settings
@@ -975,8 +1044,8 @@ Or download the APK from releases and install directly on your Android device.
 
 ---
 
-#### Step 3: Camera Screen - Before Starting
-![Camera Setup](images/camera_setup.png)
+#### Step 5: Camera Screen - Before Starting
+![Camera Setup](app/src/main/res/instruction_images/understand_instructions.png)
 
 **What you see when entering the camera screen:**
 - Live camera feed showing yourself
@@ -1016,8 +1085,8 @@ Or download the APK from releases and install directly on your Android device.
 
 ---
 
-#### Step 4: Countdown Phase
-![Countdown](images/countdown.png)
+#### Step 6: Countdown Phase
+![Countdown](app/src/main/res/instruction_images/start_exercise_botton.png)
 
 **What happens after pressing Play:**
 - Screen darkens with a semi-transparent overlay
@@ -1036,8 +1105,8 @@ Or download the APK from releases and install directly on your Android device.
 
 ---
 
-#### Step 5: Active Exercise Session
-![Active Session](images/active_session.png)
+#### Step 7: Active Exercise Session
+![Active Session](app/src/main/res/instruction_images/free.png)
 
 **What you see during the exercise:**
 
@@ -1102,8 +1171,7 @@ Or download the APK from releases and install directly on your Android device.
 
 ---
 
-#### Step 6: Session Results
-![Session Results](images/session_results.png)
+#### Step 8: Session Results
 
 **What you see after finishing:**
 - Results screen replaces the camera view
@@ -1139,7 +1207,11 @@ Or download the APK from releases and install directly on your Android device.
 ### Navigation Flow Summary
 
 ```
-[Home Screen] 
+[App Icon]
+    ↓ Tap to launch app
+[Welcome Screen - Start Screen]
+    ↓ Tap "Let's Begin - Live Video Analysis"
+[Select Exercise Screen] 
     ↓ Tap exercise card
 [Exercise Configuration]
     ↓ Tap "Start Exercise"
