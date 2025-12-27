@@ -78,7 +78,7 @@ fun PoseCoachApp() {
                     },
                     onStartNewExercise = {
                         cameraViewModel.resetSession()
-                        navController.navigate("camera") {
+                        navController.navigate("exercise_selection") {
                             popUpTo("live_session_results") { inclusive = true }
                         }
                     }
