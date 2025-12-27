@@ -4,6 +4,64 @@
 
 # PoseCoach - Real-Time Exercise Form Analysis Using Computer Vision
 
+## Table of Contents
+- [Overview](#overview)
+  - [Supported Exercises](#supported-exercises)
+  - [Key Features](#key-features)
+- [Application Flow Diagram](#application-flow-diagram)
+- [Introduction](#introduction)
+  - [Research Problem](#research-problem)
+  - [Research Hypothesis](#research-hypothesis)
+- [Solution Methodology](#solution-methodology)
+  - [Approach Overview](#approach-overview)
+  - [Algorithm Design](#algorithm-design)
+  - [Architecture](#architecture)
+- [Model Performance Analysis](#model-performance-analysis---real-world-testing)
+  - [Test Configuration](#test-configuration)
+  - [MediaPipe Model Variants](#mediapipe-pose-landmarker-model-variants)
+  - [Performance Comparison Results](#performance-comparison-results)
+  - [Model Selection: Why We Chose LITE](#model-selection-why-we-chose-lite)
+  - [Real-World Application Performance](#real-world-application-performance)
+  - [Technical Specifications](#technical-specifications---mediapipe-pose-landmarker-lite)
+  - [Conclusion - Model Selection](#conclusion---model-selection)
+- [Implementation Details](#implementation-details)
+  - [Performance Optimizations](#performance-optimizations)
+  - [Supported Exercises](#supported-exercises-1)
+- [Technical Stack](#technical-stack)
+- [Code Structure](#code-structure)
+  - [Core Components](#core-components)
+  - [Data Models](#data-models)
+- [Project Architecture](#project-architecture)
+  - [System Components](#system-components)
+  - [Component Responsibilities](#component-responsibilities)
+  - [Dependencies](#dependencies)
+- [Performance Debugging](#performance-debugging)
+  - [Frame Timing Analysis](#frame-timing-analysis)
+  - [ML Inference Profiling](#ml-inference-profiling)
+- [Research Results and Statistical Analysis](#research-results-and-statistical-analysis)
+  - [Hypothesis Validation](#hypothesis-validation)
+  - [Performance Convergence Analysis](#performance-convergence-analysis)
+  - [Exercise Evaluation Accuracy Analysis](#exercise-evaluation-accuracy-analysis)
+  - [Key Findings](#key-findings)
+  - [Research Contributions and Implications](#research-contributions-and-implications)
+  - [Limitations and Future Research Directions](#limitations-and-future-research-directions)
+  - [Statistical Significance and Validation](#statistical-significance-and-validation)
+- [Installation and Execution Instructions](#installation-and-execution-instructions)
+  - [System Requirements](#system-requirements)
+- [App Features](#app-features)
+  - [Core Features](#core-features)
+  - [Visual Features](#visual-features)
+- [How to Use the App](#how-to-use-the-app)
+  - [Getting Started](#getting-started)
+  - [App Tutorial - Step by Step](#app-tutorial---step-by-step)
+  - [Path A: Live Video Analysis](#path-a-live-video-analysis)
+  - [Path B: Analyze Video](#path-b-analyze-video)
+  - [Navigation Flow Summary](#navigation-flow-summary)
+  - [Quick Reference - All Buttons](#quick-reference---all-buttons)
+  - [Tips for Best Results](#tips-for-best-results)
+
+---
+
 ## Overview
 
 **PoseCoach** is an Android mobile application that provides real-time exercise form analysis using the **Google MediaPipe Pose Landmarker** model. The app delivers instant feedback on your workout technique through advanced computer vision and machine learning, helping you improve form and prevent injuries.
@@ -14,12 +72,11 @@
 - 🧘 **Planks** - Core stability and body alignment monitoring
 
 ### Key Features
-- Real-time pose detection at 25-30 FPS
+- Real-time pose detection
 - Instant form feedback with color-coded guidance
 - Automatic rep counting
 - Session performance tracking
 - Video analysis mode for pre-recorded workouts
-- GPU/CPU optimization for various Android devices
 
 ## Application Flow Diagram
 
