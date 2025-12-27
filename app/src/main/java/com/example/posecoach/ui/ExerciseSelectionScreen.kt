@@ -69,7 +69,16 @@ fun ExerciseSelectionScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onBackToStart) {
+                    IconButton(onClick = {
+                        if (selectedExercise != null) {
+                            // If exercise is selected, go back to exercise list
+                            selectedExercise = null
+                            understood = false
+                        } else {
+                            // If on exercise list, go back to start page
+                            onBackToStart()
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",

@@ -848,8 +848,61 @@ The research successfully demonstrates that smartphone-based real-time exercise 
 - **Hardware**: Physical device recommended (GPU acceleration)
 - **Permissions**: Camera access required
 
-### Installation Procedure
+## App Features
 
+### Core Features
+
+#### 1. Real-Time Exercise Tracking
+- **Live Pose Detection**: MediaPipe Pose Landmarker analyzes your form in real-time
+- **Skeleton Overlay**: Visual representation of detected body landmarks
+- **Instant Feedback**: Color-coded guidance (green = correct, yellow = warning, red = incorrect)
+- **Rep Counter**: Automatic repetition counting for supported exercises
+- **FPS Monitor**: Real-time performance metrics display
+
+#### 2. Supported Exercises
+- **Push-ups**: Form analysis with shoulder, elbow, and body alignment tracking
+- **Squats**: Knee angle, hip depth, and posture evaluation
+- **Planks**: Core stability and body alignment monitoring with time tracking
+- **Lunges**: Leg positioning and balance assessment
+- **Bicep Curls**: Elbow position and range of motion analysis
+
+#### 3. Exercise Configuration
+- **Target Reps**: Set goal repetitions for rep-based exercises
+- **Timed Sessions**: Duration-based tracking for planks
+- **Free Practice**: Count-up mode without target goals
+- **Custom Settings**: Adjust difficulty and feedback sensitivity
+
+#### 4. Session Management
+- **Countdown Timer**: 3-second preparation countdown before starting
+- **Session Controls**: Play, pause, and stop functionality
+- **Rep Reset**: Reset counter during active sessions
+- **Progress Tracking**: Track completed reps and remaining targets
+
+#### 5. Performance Optimization
+- **GPU/CPU Toggle**: Switch between GPU and CPU processing
+- **Camera Controls**: Front/back camera switching
+- **Automatic Delegate Selection**: Optimal processor selection based on device
+- **Efficient Processing**: Maintains 25-30 FPS on supported devices
+
+#### 6. Session Results
+- **Exercise Summary**: Complete workout statistics
+- **Rep Completion**: Total reps or time completed
+- **Session Duration**: Total workout time
+- **Form Feedback**: Summary of performance and areas for improvement
+
+### Visual Features
+
+- **Clean UI**: Modern Material Design interface
+- **Dark Camera Overlay**: Optimal visibility for skeleton and feedback
+- **Color-Coded Feedback**: Intuitive visual cues for form correction
+- **Responsive Layout**: Adapts to different screen sizes and orientations
+- **Performance Indicators**: FPS and processing mode display
+
+## How to Use the App
+
+### Getting Started
+
+#### Step 1: Installation
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -862,15 +915,325 @@ cd PoseCoach-Android
 ./gradlew installDebug
 ```
 
-### Execution Instructions
+Or download the APK from releases and install directly on your Android device.
 
-1. **Launch application** on Android device
-2. **Grant camera permission** when prompted
-3. **Position device** 2-3 meters from subject
-4. **Ensure adequate lighting** for pose detection
-5. **Select exercise type** from available options
-6. **Begin exercise** - real-time feedback will display
-7. **View results** including accuracy metrics and rep counts
+#### Step 2: Initial Setup
+1. Launch the PoseCoach app
+2. Grant camera permission when prompted
+3. Ensure good lighting in your workout area
+4. Position your phone 2-3 meters away with full body in view
+
+### App Tutorial - Step by Step
+
+#### Step 1: Opening the App
+![Home Screen](images/home_screen.png)
+
+**What you see when you open the app:**
+- PoseCoach logo at the top
+- "Select Exercise" heading
+- Five exercise cards displayed vertically:
+  - 🏋️ Push-ups
+  - 🦵 Squats
+  - 🧘 Plank
+  - 🚶 Lunges
+  - 💪 Bicep Curls
+
+**What you can do:**
+- **Tap on any exercise card** → Opens the exercise configuration screen for that exercise
+- Each card shows the exercise name and emoji icon
+
+---
+
+#### Step 2: Exercise Configuration
+![Exercise Selection](images/exercise_selection.png)
+
+**What happens after tapping an exercise:**
+- You see the exercise configuration screen
+- Exercise name is displayed at the top
+- You see input fields for settings
+
+**What you see on this screen:**
+
+**For Rep-Based Exercises (Push-ups, Squats, Lunges, Bicep Curls):**
+- Text field labeled "Target Reps"
+- Default value: 10 reps
+- You can:
+  - **Type a number** → Sets how many reps you want to do
+  - **Enter 0** → Enables free count mode (no target, just counts up)
+  - **Tap "Start Exercise" button** → Takes you to the camera screen
+
+**For Time-Based Exercises (Plank):**
+- Text field labeled "Target Duration (seconds)"
+- Default value: 30 seconds
+- You can:
+  - **Type a number** → Sets how long you want to hold the plank
+  - **Enter 0** → Enables stopwatch mode (no target, just counts up)
+  - **Tap "Start Exercise" button** → Takes you to the camera screen
+
+**Navigation:**
+- **Back arrow** (top left) → Returns to home screen
+
+---
+
+#### Step 3: Camera Screen - Before Starting
+![Camera Setup](images/camera_setup.png)
+
+**What you see when entering the camera screen:**
+- Live camera feed showing yourself
+- The camera is in IDLE state (not yet tracking)
+- Large **Play button** in the center of the screen
+- Control buttons at the bottom right corner
+- Performance indicators at the top right
+
+**Screen Elements:**
+
+**Top Right Corner:**
+- **FPS Display**: Shows current frame rate (e.g., "FPS: 28.5")
+- **GPU/CPU Indicator**: Shows which processor is being used
+  - Green "GPU" = Using GPU acceleration
+  - Cyan "CPU" = Using CPU processing
+
+**Bottom Right Corner (4 buttons):**
+1. **Camera Switch button** 🔄 (white circular button with camera icon)
+   - **Tap this** → Switches between front and back camera
+   
+2. **GPU/CPU Toggle button** 🧠 (white circular button with chip icon)
+   - **Tap this** → Switches between GPU and CPU processing mode
+   - Use if performance is laggy
+   
+3. Additional control buttons appear when session is active
+
+**Center of Screen:**
+- **Large Play button** ▶️ (blue circular button, 72dp size)
+   - **Tap this** → Starts the 3-second countdown
+
+**What to do before starting:**
+1. Position your phone 2-3 meters away on a stable surface
+2. Make sure your full body is visible in the camera
+3. Ensure good lighting in the room
+4. Stand in the middle of the camera frame
+5. When ready, tap the Play button
+
+---
+
+#### Step 4: Countdown Phase
+![Countdown](images/countdown.png)
+
+**What happens after pressing Play:**
+- Screen darkens with a semi-transparent overlay
+- You see three lines of text:
+  1. **"Exercise about to start"** (large bold text at top)
+  2. **"Please position yourself in the middle of the camera"** (medium text in middle)
+  3. **Large countdown number** (120sp size) showing: **3... 2... 1...**
+- The countdown number pulses/scales with animation
+
+**What you should do:**
+- Use these 3 seconds to:
+  - Get into starting position
+  - Center yourself in the frame
+  - Prepare to begin the exercise
+- After countdown reaches 0, the exercise automatically begins
+
+---
+
+#### Step 5: Active Exercise Session
+![Active Session](images/active_session.png)
+
+**What you see during the exercise:**
+
+**Screen Changes:**
+- Camera feed shows your live video
+- **Skeleton overlay** appears on your body (white lines connecting detected joints)
+- Multiple UI elements appear showing your progress
+
+**Top Left Corner:**
+- **Rep Counter** (for Push-ups, Squats, Lunges, Bicep Curls):
+  - If you set target reps: Shows "X left" (e.g., "7 left")
+  - If free count mode: Shows "Reps: X" (e.g., "Reps: 5")
+- **Nothing shown for Planks** (uses timer only)
+
+**Top Center:**
+- **Timer Display** (for all exercises):
+  - Small semi-transparent box with time
+  - For Plank: Shows "Time left: MM:SS" or "Time: MM:SS"
+  - Format: Minutes:Seconds (e.g., "01:30")
+
+**Top Right Corner:**
+- **FPS Counter**: Shows current performance
+- **GPU/CPU Indicator**: Shows processing mode
+
+**Center Bottom:**
+- **Feedback Card** (appears dynamically):
+  - Colored card with exercise feedback
+  - Colors mean:
+    - 🟢 **Green**: "Great form!" or "Perfect!"
+    - 🟡 **Yellow**: "Keep your back straight" or "Lower down more"
+    - 🔴 **Red**: "Incorrect form" or "Bend your knees more"
+  - Messages change in real-time based on your form
+
+**Bottom Right Corner (buttons appear when active):**
+1. **Stop button** ⏹️ (white circular button, red icon)
+   - **Tap this** → Immediately ends the session and shows results
+   
+2. **Reset button** 🔄 (white circular button)
+   - **Tap this** → Resets rep counter to 0 without ending session
+   - Only visible during active session
+   
+3. **Camera Switch button** 🔄 (still available)
+   
+4. **GPU/CPU Toggle button** 🧠 (still available)
+
+**What happens automatically:**
+- App detects your body position with skeleton overlay
+- Counts reps automatically when you complete proper form
+- Gives real-time feedback on your form
+- Timer counts up or down based on your settings
+- Session ends automatically when:
+  - You reach target reps (if set)
+  - You reach target time (if set)
+  - You press Stop button
+
+**How rep counting works:**
+- **Push-ups**: Counts when you go down and come back up with proper form
+- **Squats**: Counts when you squat down past threshold and stand back up
+- **Lunges**: Counts when you lunge down and return to standing
+- **Bicep Curls**: Counts when you curl up and lower down with proper elbow position
+- **Plank**: No rep counting, only time tracking
+
+---
+
+#### Step 6: Session Results
+![Session Results](images/session_results.png)
+
+**What you see after finishing:**
+- Results screen replaces the camera view
+- Summary of your workout performance
+
+**Screen Elements:**
+
+**Center of Screen:**
+- **Exercise Name**: Shows which exercise you completed (e.g., "Push-ups")
+- **Performance Stats**:
+  - **Reps Completed**: Number of reps you did (e.g., "15 reps") 
+    - OR for Plank: **Time Completed** (e.g., "1:30")
+  - **Session Duration**: Total time for the workout (e.g., "2:45")
+  - **Performance Feedback**: Text summary like "Good job!" or "Try to maintain better form next time"
+
+**Bottom of Screen (2 buttons):**
+1. **"Do Another Set" button** (primary blue button)
+   - **Tap this** → Returns to camera screen with same exercise and settings
+   - Lets you do another set immediately
+   
+2. **"Back to Home" button** (secondary button)
+   - **Tap this** → Returns to home screen with exercise list
+   - Lets you select a different exercise or exit
+
+**What you can do:**
+- Review your performance
+- Choose to do another set of the same exercise
+- Go back to home to select a different exercise
+- Take a screenshot of your results (use phone screenshot feature)
+
+---
+
+### Navigation Flow Summary
+
+```
+[Home Screen] 
+    ↓ Tap exercise card
+[Exercise Configuration]
+    ↓ Tap "Start Exercise"
+[Camera Screen - Idle]
+    ↓ Tap Play button
+[3-Second Countdown]
+    ↓ Automatic after countdown
+[Active Exercise Session]
+    ↓ Complete target or tap Stop
+[Session Results]
+    ↓ Tap "Do Another Set" → Back to Camera Screen - Idle
+    ↓ Tap "Back to Home" → Back to Home Screen
+```
+
+### Quick Reference - All Buttons
+
+| Button | Location | What It Does |
+|--------|----------|--------------|
+| **Exercise Card** | Home Screen | Opens configuration for that exercise |
+| **Start Exercise** | Configuration Screen | Goes to camera screen |
+| **Play ▶️** | Camera Center (Idle) | Starts 3-second countdown, then begins session |
+| **Stop ⏹️** | Bottom Right (Active) | Ends session and shows results |
+| **Reset 🔄** | Bottom Right (Active) | Resets rep counter to zero |
+| **Camera Switch 🔄** | Bottom Right (Always) | Toggles front/back camera |
+| **GPU/CPU Toggle 🧠** | Bottom Right (Always) | Switches processor mode |
+| **Do Another Set** | Results Screen | Restarts same exercise |
+| **Back to Home** | Results Screen | Returns to exercise selection |
+| **Back Arrow ←** | Configuration Screen | Returns to home screen |
+
+### Tips for Best Results
+
+#### Camera Positioning
+✅ **Do:**
+- Place phone at waist height on a stable surface
+- Ensure full body is visible in frame
+- Use landscape mode for wider view
+- Position camera 2-3 meters away
+
+❌ **Don't:**
+- Hold phone in hand while exercising
+- Position too close (body parts cut off)
+- Exercise with backlight (window behind you)
+- Use in very dark environments
+
+#### Exercise Performance
+✅ **Do:**
+- Start with lower rep targets to learn
+- Pay attention to feedback messages
+- Maintain steady, controlled movements
+- Wear contrasting clothing for better detection
+
+❌ **Don't:**
+- Move too quickly (affects tracking)
+- Ignore form feedback
+- Exercise in cluttered background
+- Wear camouflage or patterned clothing
+
+#### Performance Optimization
+- **High-end devices**: Use GPU mode for best performance
+- **Mid-range devices**: Try both GPU and CPU, use whichever is smoother
+- **Older devices**: Use CPU mode if GPU causes lag
+- **Monitor FPS**: Aim for 25-30 FPS (green indicator)
+
+### Troubleshooting
+
+#### Low FPS or Lag
+- Switch to CPU mode using the toggle button
+- Close other running apps
+- Ensure good lighting (reduces processing load)
+- Restart the app
+
+#### Pose Not Detected
+- Improve room lighting
+- Adjust camera distance (2-3 meters optimal)
+- Ensure full body is visible in frame
+- Remove background clutter
+- Wear solid-colored clothing
+
+#### Inaccurate Rep Counting
+- Slow down movement speed
+- Complete full range of motion
+- Follow form feedback corrections
+- Ensure consistent movement pattern
+
+#### Camera Permission Issues
+- Go to Android Settings > Apps > PoseCoach > Permissions
+- Enable Camera permission
+- Restart the app
+
+#### App Crashes
+- Verify Android version (API 24+ required)
+- Clear app cache: Settings > Apps > PoseCoach > Storage > Clear Cache
+- Reinstall the app
+- Check device compatibility
 
 ### Performance Verification
 
@@ -879,10 +1242,5 @@ cd PoseCoach-Android
 - GPU/CPU Status: Automatic selection based on device
 - Pose Detection: Real-time skeleton overlay
 - Memory Usage: <85MB peak consumption
-
-**Troubleshooting Common Issues:**
-- Low FPS: Switch to CPU delegate via toggle button
-- No pose detection: Improve lighting, adjust distance
-- App crashes: Verify device API level compatibility
 
 For research replication and detailed technical documentation, refer to implementation files and performance debugging guides included in the repository.
