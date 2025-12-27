@@ -143,6 +143,9 @@ class CameraViewModel : ViewModel() {
         // Store the duration for plank exercises
         if (exercise == "plank") {
             _exerciseRemainingSeconds.value = durationSeconds
+            _targetDurationSeconds = durationSeconds
+        } else {
+            _targetDurationSeconds = null
         }
     }
 
@@ -307,8 +310,15 @@ class CameraViewModel : ViewModel() {
             _sessionState.value = SessionState.ACTIVE
 
             _exerciseElapsedSeconds.value = 0
-            _exerciseRemainingSeconds.value = durationSeconds
-            _targetDurationSeconds = durationSeconds
+            
+            // Only update target duration if a new one is provided, otherwise keep the one set in setExercise
+            if (durationSeconds != null) {
+                _targetDurationSeconds = durationSeconds
+                _exerciseRemainingSeconds.value = durationSeconds
+            } else {
+                // If no duration provided to startSession, ensure we use the existing target for countdown if it exists
+                _exerciseRemainingSeconds.value = _targetDurationSeconds
+            }
 
             while (_sessionState.value == SessionState.ACTIVE) {
                 delay(1000)
@@ -354,7 +364,9 @@ class CameraViewModel : ViewModel() {
         val summarizedFeedback = FeedbackAnalyzer.analyze(
             sessionFeedbackHistory,
             _currentExercise.value,
-            _repCount.value
+            _repCount.value,
+            goodFormDuration,
+            _targetDurationSeconds?.times(1000L)
         )
 
         val current = ExerciseSessionSummary(
@@ -364,7 +376,8 @@ class CameraViewModel : ViewModel() {
             durationMillis = durationMillis,
             feedbackMessages = summarizedFeedback,
             formBreakCount = formBreakCount,
-            goodFormDurationMillis = goodFormDuration
+            goodFormDurationMillis = goodFormDuration,
+            targetDurationMillis = _targetDurationSeconds?.times(1000L)
         )
 
         val updatedWorkoutSessions = _workoutSessions.value + current

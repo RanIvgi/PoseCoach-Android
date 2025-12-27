@@ -259,10 +259,11 @@ fun LiveSessionResultsScreen(
                                     // Plank specific stats
                                     val currentDuration = currentSessionForType?.durationMillis ?: sessionResult.durationMillis
                                     val goodFormDuration = currentSessionForType?.goodFormDurationMillis ?: sessionResult.goodFormDurationMillis
+                                    val targetDuration = currentSessionForType?.targetDurationMillis ?: sessionResult.targetDurationMillis
                                     
                                     // Show Target Time if it was set
-                                    if (sessionResult.targetDurationMillis != null && sessionResult.targetDurationMillis > 0) {
-                                        StatRow("Target Time", formatDuration(sessionResult.targetDurationMillis))
+                                    if (targetDuration != null && targetDuration > 0) {
+                                        StatRow("Target Time", formatDuration(targetDuration))
                                     }
                                     
                                     StatRow("Total Duration", formatDuration(currentDuration))
@@ -613,7 +614,12 @@ private fun FeedbackCard(feedback: FeedbackMessage) {
             
             // Show point deduction for warnings and errors
             if (feedback.severity == FeedbackSeverity.WARNING || feedback.severity == FeedbackSeverity.ERROR) {
-                val points = if (feedback.severity == FeedbackSeverity.WARNING) "-5" else "-10"
+                val points = if (feedback.explicitPointDeduction != null) {
+                    "${feedback.explicitPointDeduction}"
+                } else {
+                    if (feedback.severity == FeedbackSeverity.WARNING) "-5" else "-10"
+                }
+                
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "$points pts",

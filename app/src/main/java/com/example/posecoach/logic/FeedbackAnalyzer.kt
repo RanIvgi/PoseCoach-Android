@@ -8,10 +8,27 @@ object FeedbackAnalyzer {
     fun analyze(
         rawFeedback: List<FeedbackMessage>,
         exerciseType: String,
-        totalReps: Int
+        totalReps: Int,
+        goodFormDurationMillis: Long = 0,
+        targetDurationMillis: Long? = null
     ): List<FeedbackMessage> {
         val summarizedFeedback = mutableListOf<FeedbackMessage>()
         val feedbackTexts = rawFeedback.map { it.text }
+
+        // 0. Analyze Plank Time (if applicable)
+        if (exerciseType.lowercase().contains("plank") && targetDurationMillis != null && targetDurationMillis > 0) {
+            val timeOutOfPositionMillis = targetDurationMillis - goodFormDurationMillis
+            if (timeOutOfPositionMillis > 1000) { // Ignore small differences (< 1s)
+                val secondsLost = timeOutOfPositionMillis / 1000
+                val pointsLost = ((timeOutOfPositionMillis.toDouble() / targetDurationMillis.toDouble()) * 100.0).toInt()
+                
+                summarizedFeedback.add(FeedbackMessage(
+                    text = "Time out of position: ${secondsLost}s",
+                    severity = FeedbackSeverity.WARNING,
+                    explicitPointDeduction = -pointsLost
+                ))
+            }
+        }
 
         // 1. Analyze Depth (Squat & Pushup)
         // "Good depth!" is emitted continuously but de-duplicated in history, so roughly 1 per good rep.
@@ -35,7 +52,8 @@ object FeedbackAnalyzer {
         // We check for specific error strings emitted by DefaultPoseEvaluator
         analyzeError(feedbackTexts, "Knees over toes! Push hips back.", "Knees consistently extended past toes. Try sitting back more.", summarizedFeedback)
         analyzeError(feedbackTexts, "Keep your chest up and back straight.", "Tendency to lean forward. Keep chest lifted.", summarizedFeedback)
-        analyzeError(feedbackTexts, "Hips sagging! Engage your core and keep body straight.", "Core stability issue: Hips were sagging. Engage your abs.", summarizedFeedback)
+        // Updated string to match DefaultPoseEvaluator
+        analyzeError(feedbackTexts, "Hips sagging! Engage your core and lift hips.", "Core stability issue: Hips were sagging. Engage your abs.", summarizedFeedback)
         analyzeError(feedbackTexts, "Hips too high! Lower them to form a straight line.", "Hips were too high. Try to keep a straight body line.", summarizedFeedback)
 
         // 3. Analyze Positive Form (Absence of errors)
@@ -44,7 +62,7 @@ object FeedbackAnalyzer {
             analyzePositive(feedbackTexts, "Keep your chest up and back straight.", "Good posture! Back stayed straight.", summarizedFeedback)
             
             if (exerciseType.lowercase().contains("plank") || exerciseType.lowercase().contains("pushup") || exerciseType.lowercase().contains("push-up")) {
-                 analyzePositive(feedbackTexts, "Hips sagging! Engage your core and keep body straight.", "Core engaged well! No hip sagging.", summarizedFeedback)
+                 analyzePositive(feedbackTexts, "Hips sagging! Engage your core and lift hips.", "Core engaged well! No hip sagging.", summarizedFeedback)
                  analyzePositive(feedbackTexts, "Hips too high! Lower them to form a straight line.", "Good body alignment! Hips stayed in line.", summarizedFeedback)
             }
         }
