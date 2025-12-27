@@ -946,13 +946,13 @@ Or download the APK from releases and install directly on your Android device.
 ### App Tutorial - Step by Step
 
 #### Step 1: Launch the App
-![App Icon](app/src/main/res/instruction_images/choose_app.png)
+<img src="app/src/main/res/instruction_images/choose_app.png" alt="App Icon" width="400"/>
 
 **What to do:**
 - **Tap on the PoseCoach app icon** on your Android device home screen
 - Wait for the app to load
 
-![App Loading](app/src/main/res/instruction_images/reload.png)
+<img src="app/src/main/res/instruction_images/reload.png" alt="App Loading" width="400"/>
 
 **What you see:**
 - Loading screen with PoseCoach logo
@@ -963,7 +963,7 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 2: Welcome Screen - Choose Your Mode
-![Start Screen](app/src/main/res/instruction_images/choose_picture_way.png)
+<img src="app/src/main/res/instruction_images/choose_picture_way.png" alt="Start Screen" width="400"/>
 
 **What you see:**
 - PoseCoach logo and title at the top
@@ -979,7 +979,7 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 3: Select Your Exercise
-![Home Screen](app/src/main/res/instruction_images/choose_exercise.png)
+<img src="app/src/main/res/instruction_images/choose_exercise.png" alt="Home Screen" width="400"/>
 
 **What you see after choosing Live Video Analysis:**
 - "Select Exercise" heading
@@ -997,14 +997,14 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 3a: Interactive Exercise Explanation (Optional)
-![Exercise Explanation](app/src/main/res/instruction_images/exercise_explation.png)
+<img src="app/src/main/res/instruction_images/exercise_explation.png" alt="Exercise Explanation" width="400"/>
 
 **What you see:**
 - After selecting an exercise, you may see an interactive video or animation
 - Demonstrates proper form and technique for the selected exercise
 - Shows key points to focus on during the movement
 
-![OK Button](app/src/main/res/instruction_images/ok_exercise_explanation.png)
+<img src="app/src/main/res/instruction_images/ok_exercise_explanation.png" alt="OK Button" width="400"/>
 
 **What to do:**
 - **Watch the demonstration** to understand the correct form
@@ -1014,7 +1014,7 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 4: Exercise Configuration
-![Exercise Selection](app/src/main/res/instruction_images/reps.png)
+<img src="app/src/main/res/instruction_images/reps.png" alt="Exercise Selection" width="400"/>
 
 **What happens after tapping an exercise:****
 - You see the exercise configuration screen
@@ -1045,7 +1045,7 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 5: Camera Screen - Before Starting
-![Camera Setup](app/src/main/res/instruction_images/understand_instructions.png)
+<img src="app/src/main/res/instruction_images/understand_instructions.png" alt="Camera Setup" width="400"/>
 
 **What you see when entering the camera screen:**
 - Live camera feed showing yourself
@@ -1086,7 +1086,7 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 6: Countdown Phase
-![Countdown](app/src/main/res/instruction_images/start_exercise_botton.png)
+<img src="app/src/main/res/instruction_images/start_exercise_botton.png" alt="Countdown" width="400"/>
 
 **What happens after pressing Play:**
 - Screen darkens with a semi-transparent overlay
@@ -1106,7 +1106,7 @@ Or download the APK from releases and install directly on your Android device.
 ---
 
 #### Step 7: Active Exercise Session
-![Active Session](app/src/main/res/instruction_images/free.png)
+<img src="app/src/main/res/instruction_images/free.png" alt="Active Session" width="400"/>
 
 **What you see during the exercise:**
 
