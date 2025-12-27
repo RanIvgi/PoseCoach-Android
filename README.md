@@ -93,7 +93,8 @@ graph TD
     ExerciseSelection --> |Back Arrow| Start
     ExerciseSelection --> |i| Tutorial
 
-    Tutorial ---> |Got it!/x|
+    Tutorial ---> |Got it!| ExerciseSelection
+    Tutorial ---> |x| ExerciseSelection
     
     CameraSession --> |Finish Session| LiveResults[Live Session Results]
     
@@ -105,7 +106,8 @@ graph TD
     VideoUpload --> |Back Arrow| Start
     
     VideoProcessing --> VideoResults[Video Results Screen]
-    VideoResults --> |Back Arrow/Done| Start
+    VideoResults --> |Back Arrow| Start
+    VideoResults --> |Done| Start
     
     style Start fill:#1976D2,color:#fff
     style ExerciseSelection fill:#42A5F5,color:#fff
