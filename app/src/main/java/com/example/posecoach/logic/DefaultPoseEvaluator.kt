@@ -47,6 +47,7 @@ class DefaultPoseEvaluator : PoseEvaluator {
     private var plankHoldStartTime: Long = 0L // When user achieved good form
     private var plankTotalGoodFormTimeMs: Long = 0L // Total time with good form
     private var plankFormBreakCount: Int = 0 // How many times form was broken
+    private var plankEntryTime: Long = 0L // When user first entered good form (for entry grace period)
     
     // Session tracking
     private var sessionStartTime: Long = 0L
@@ -524,12 +525,20 @@ class DefaultPoseEvaluator : PoseEvaluator {
         when (plankState) {
             PlankState.NOT_IN_POSITION -> {
                 if (isFormGood) {
-                    // Transitioning to good form
-                    plankState = PlankState.HOLDING
-                    plankHoldStartTime = currentTime
-                    currentFeedback = FeedbackMessage("Good form! Hold this position.", FeedbackSeverity.INFO)
+                    if (plankEntryTime == 0L) {
+                        plankEntryTime = currentTime
+                    } else if (currentTime - plankEntryTime >= AngleThresholds.PLANK_GOOD_FORM_GRACE_PERIOD_MS) {
+                        // Transitioning to good form after grace period
+                        plankState = PlankState.HOLDING
+                        plankHoldStartTime = currentTime
+                        currentFeedback = FeedbackMessage("Good form! Hold this position.", FeedbackSeverity.INFO)
+                    } else {
+                        // Waiting for grace period
+                        currentFeedback = FeedbackMessage("Stabilizing...", FeedbackSeverity.INFO)
+                    }
                 } else {
-                    // Still not in position
+                    // Not in position and form bad
+                    plankEntryTime = 0L // Reset entry timer
                     if (currentFeedback == null) {
                         currentFeedback = FeedbackMessage(
                             "Get into plank position: body straight, elbows under shoulders.",
@@ -541,19 +550,13 @@ class DefaultPoseEvaluator : PoseEvaluator {
             PlankState.HOLDING -> {
                 if (isFormGood) {
                     // Continue holding with good form
-                    val holdDurationMs = currentTime - plankHoldStartTime
-                    
-                    // Only start counting after grace period (avoid counting brief touches)
-                    if (holdDurationMs >= AngleThresholds.PLANK_GOOD_FORM_GRACE_PERIOD_MS) {
-                        plankTotalGoodFormTimeMs += (currentTime - plankHoldStartTime)
-                        plankHoldStartTime = currentTime // Reset for next accumulation
-                    }
+                    // Accumulate time continuously
+                    val timeSinceLastUpdate = currentTime - plankHoldStartTime
+                    plankTotalGoodFormTimeMs += timeSinceLastUpdate
+                    plankHoldStartTime = currentTime // Advance the anchor
                     
                     if (currentFeedback == null) {
-                        // Calculate total accumulated time including current hold
-                        val totalTimeMs = plankTotalGoodFormTimeMs + holdDurationMs
-                        val totalTimeSec = TimeUnit.MILLISECONDS.toSeconds(totalTimeMs)
-                        
+                        val totalTimeSec = TimeUnit.MILLISECONDS.toSeconds(plankTotalGoodFormTimeMs)
                         currentFeedback = FeedbackMessage(
                             "Holding: ${totalTimeSec}s. Keep it steady!",
                             FeedbackSeverity.INFO
@@ -563,23 +566,25 @@ class DefaultPoseEvaluator : PoseEvaluator {
                     // Form broke while holding
                     plankState = PlankState.FORM_BROKEN
                     plankFormBreakCount++
-                    
-                    // Add accumulated time from this hold (if it was long enough)
-                    val holdDurationMs = currentTime - plankHoldStartTime
-                    if (holdDurationMs >= AngleThresholds.PLANK_GOOD_FORM_GRACE_PERIOD_MS) {
-                        plankTotalGoodFormTimeMs += holdDurationMs
-                    }
+                    plankEntryTime = 0L // Reset entry timer
                     
                     // currentFeedback already set by form validation above
                 }
             }
             PlankState.FORM_BROKEN -> {
                 if (isFormGood) {
-                    // Recovered form, start holding again
-                    plankState = PlankState.HOLDING
-                    plankHoldStartTime = currentTime
-                    currentFeedback = FeedbackMessage("Form recovered! Keep holding.", FeedbackSeverity.INFO)
+                    if (plankEntryTime == 0L) {
+                        plankEntryTime = currentTime
+                    } else if (currentTime - plankEntryTime >= AngleThresholds.PLANK_GOOD_FORM_GRACE_PERIOD_MS) {
+                        // Recovered form, start holding again
+                        plankState = PlankState.HOLDING
+                        plankHoldStartTime = currentTime
+                        currentFeedback = FeedbackMessage("Form recovered! Keep holding.", FeedbackSeverity.INFO)
+                    } else {
+                         currentFeedback = FeedbackMessage("Stabilizing...", FeedbackSeverity.INFO)
+                    }
                 } else {
+                    plankEntryTime = 0L
                     // Still broken, currentFeedback already set by form validation
                 }
             }
@@ -630,6 +635,7 @@ class DefaultPoseEvaluator : PoseEvaluator {
         plankHoldStartTime = 0L
         plankTotalGoodFormTimeMs = 0L
         plankFormBreakCount = 0
+        plankEntryTime = 0L
         
         // Reset session tracking
         sessionStartTime = 0L
@@ -709,15 +715,9 @@ class DefaultPoseEvaluator : PoseEvaluator {
             }
             "plank" -> {
                 // Add any remaining hold time if still in HOLDING state
-                var totalGoodFormTime = plankTotalGoodFormTimeMs
-                if (plankState == PlankState.HOLDING) {
-                    val currentHoldDuration = System.currentTimeMillis() - plankHoldStartTime
-                    if (currentHoldDuration >= AngleThresholds.PLANK_GOOD_FORM_GRACE_PERIOD_MS) {
-                        totalGoodFormTime += currentHoldDuration
-                    }
-                }
+                // No need to add pending time here because we now accumulate continuously in HOLDING state
                 
-                val totalGoodFormSeconds = TimeUnit.MILLISECONDS.toSeconds(totalGoodFormTime)
+                val totalGoodFormSeconds = TimeUnit.MILLISECONDS.toSeconds(plankTotalGoodFormTimeMs)
                 
                 summary.append("Plank Session Summary:\n")
                 summary.append("Total Good Form Time: ${totalGoodFormSeconds}s\n")

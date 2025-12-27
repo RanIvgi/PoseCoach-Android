@@ -366,7 +366,8 @@ class CameraViewModel : ViewModel() {
             _currentExercise.value,
             _repCount.value,
             goodFormDuration,
-            _targetDurationSeconds?.times(1000L)
+            _targetDurationSeconds?.times(1000L),
+            formBreakCount
         )
 
         val current = ExerciseSessionSummary(

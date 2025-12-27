@@ -367,6 +367,67 @@ fun LiveSessionResultsScreen(
                     val warningMessages = uniqueFeedback.filter { it.severity == FeedbackSeverity.WARNING }
                     val infoMessages = uniqueFeedback.filter { it.severity == FeedbackSeverity.INFO }
 
+                    // Feedback List
+                    if (selectedFeedbackTabIndex == 2) { // "All" Tab
+                        // NEW: Plank Average Time Out of Position Calculation
+                        if (isPlank) {
+                            val plankSessions = historyForType
+                            var totalDurationAll = 0L
+                            var totalGoodDurationAll = 0L
+
+                            plankSessions.forEach { session ->
+                                // Use target duration if available, otherwise actual duration
+                                val sessionTarget = session.targetDurationMillis
+                                val duration = if (sessionTarget != null && sessionTarget > 0) sessionTarget else session.durationMillis
+                                
+                                // Cap good form at duration to avoid negative results
+                                val goodForm = session.goodFormDurationMillis.coerceAtMost(duration)
+                                
+                                totalDurationAll += duration
+                                totalGoodDurationAll += goodForm
+                            }
+
+                            if (totalDurationAll > 0) {
+                                val totalTimeOutOfPosition = (totalDurationAll - totalGoodDurationAll).coerceAtLeast(0)
+                                val percentOutOfPosition = (totalTimeOutOfPosition.toFloat() / totalDurationAll.toFloat()) * 100
+                                
+                                item {
+                                    Card(
+                                        backgroundColor = Color.White.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(16.dp),
+                                        elevation = 0.dp,
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+                                            Text(
+                                                text = "Plank Consistency (All Sessions)",
+                                                color = Color.White,
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = "Avg Time Out of Position: ${percentOutOfPosition.toInt()}%",
+                                                color = Color.White,
+                                                fontSize = 14.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            
+                                            val totalTimeSec = String.format("%.1f", totalDurationAll / 1000f)
+                                            val goodFormSec = String.format("%.1f", totalGoodDurationAll / 1000f)
+                                            
+                                            Text(
+                                                text = "Total Time: ${totalTimeSec}s | Good Form: ${goodFormSec}s",
+                                                color = Color.White.copy(alpha = 0.7f),
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (uniqueFeedback.isEmpty()) {
                             item {
                             Text(

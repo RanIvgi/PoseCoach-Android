@@ -72,7 +72,8 @@ data class LiveSessionResult(
             for (msg in uniqueMessages) {
                 // Skip specific messages that shouldn't deduct points
                 if (msg.text.contains("Camera positioning needs adjustment") || 
-                    msg.text.contains("Time out of position")) {
+                    msg.text.contains("Time out of position") ||
+                    msg.text.contains("Form broken")) {
                     continue
                 }
 

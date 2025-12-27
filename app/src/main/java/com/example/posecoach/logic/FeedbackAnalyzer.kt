@@ -10,23 +10,37 @@ object FeedbackAnalyzer {
         exerciseType: String,
         totalReps: Int,
         goodFormDurationMillis: Long = 0,
-        targetDurationMillis: Long? = null
+        targetDurationMillis: Long? = null,
+        formBreakCount: Int = 0
     ): List<FeedbackMessage> {
         val summarizedFeedback = mutableListOf<FeedbackMessage>()
         val feedbackTexts = rawFeedback.map { it.text }
 
         // 0. Analyze Plank Time (if applicable)
-        if (exerciseType.lowercase().contains("plank") && targetDurationMillis != null && targetDurationMillis > 0) {
-            val timeOutOfPositionMillis = targetDurationMillis - goodFormDurationMillis
-            if (timeOutOfPositionMillis > 1000) { // Ignore small differences (< 1s)
-                val secondsLost = timeOutOfPositionMillis / 1000
-                val pointsLost = ((timeOutOfPositionMillis.toDouble() / targetDurationMillis.toDouble()) * 100.0).toInt()
-                
-                summarizedFeedback.add(FeedbackMessage(
-                    text = "Time out of position: ${secondsLost}s",
-                    severity = FeedbackSeverity.WARNING,
-                    explicitPointDeduction = -pointsLost
-                ))
+        if (exerciseType.lowercase().contains("plank")) {
+            if (targetDurationMillis != null && targetDurationMillis > 0) {
+                val timeOutOfPositionMillis = targetDurationMillis - goodFormDurationMillis
+                if (timeOutOfPositionMillis > 1000) { // Ignore small differences (< 1s)
+                    val secondsLost = timeOutOfPositionMillis / 1000
+                    val pointsLost = ((timeOutOfPositionMillis.toDouble() / targetDurationMillis.toDouble()) * 100.0).toInt()
+                    
+                    summarizedFeedback.add(FeedbackMessage(
+                        text = "Time out of position: ${secondsLost}s",
+                        severity = FeedbackSeverity.WARNING,
+                        explicitPointDeduction = -pointsLost
+                    ))
+                }
+            }
+            
+            // Explicitly report form breaks if they occurred
+            if (formBreakCount > 0) {
+                summarizedFeedback.add(
+                    FeedbackMessage(
+                        text = "Form broken $formBreakCount times (hips sagged/piked)",
+                        severity = FeedbackSeverity.WARNING,
+                        explicitPointDeduction = -(formBreakCount * 5)
+                    )
+                )
             }
         }
 
