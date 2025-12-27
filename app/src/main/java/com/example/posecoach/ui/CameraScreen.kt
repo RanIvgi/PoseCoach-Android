@@ -71,6 +71,7 @@ fun CameraScreen(
     val useGpu by viewModel.useGpuDelegate.collectAsState()
     val cameraError by viewModel.cameraError.collectAsState()
     val repCount by viewModel.repCount.collectAsState()
+    val repsRemaining by viewModel.repsRemaining.collectAsState()
     val sessionState by viewModel.sessionState.collectAsState()
     val countdownValue by viewModel.countdownValue.collectAsState()
     val sessionResult by viewModel.sessionResult.collectAsState()
@@ -105,6 +106,7 @@ fun CameraScreen(
                 fps = fps,
                 useGpu = useGpu,
                 repCount = if (isPlank) 0 else repCount,
+                repsRemaining = if (isPlank) 0 else repsRemaining,
                 sessionState = sessionState,
                 currentExercise = currentExercise,
                 targetReps = targetReps,

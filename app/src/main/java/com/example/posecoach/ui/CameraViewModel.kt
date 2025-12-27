@@ -19,8 +19,11 @@ import com.example.posecoach.pose.PoseEngine
 import com.example.posecoach.data.ExerciseSessionSummary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
@@ -70,6 +73,24 @@ class CameraViewModel : ViewModel() {
 
     private val _repCount = MutableStateFlow(0)
     val repCount: StateFlow<Int> = _repCount.asStateFlow()
+
+    // Computed property for countdown display (reps remaining)
+    val repsRemaining: StateFlow<Int> = combine(
+        _repCount,
+        _targetReps
+    ) { completed, target ->
+        // For counted mode (target > 0), show remaining reps
+        // For free mode (target = 0 or negative), show completed reps
+        if (target > 0) {
+            (target - completed).coerceAtLeast(0)
+        } else {
+            completed
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = _targetReps.value
+    )
 
     private val _sessionState = MutableStateFlow(SessionState.IDLE)
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()

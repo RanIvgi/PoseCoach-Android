@@ -29,6 +29,7 @@ fun CameraControls(
     fps: Float,
     useGpu: Boolean,
     repCount: Int,
+    repsRemaining: Int,
     sessionState: SessionState,
     currentExercise: String,
     targetReps: Int,
@@ -47,8 +48,15 @@ fun CameraControls(
 
         if (sessionState == SessionState.ACTIVE) {
             if (showReps) {
+                // Show countdown if target reps are set, otherwise show count-up
+                val displayText = if (targetReps > 0) {
+                    "$repsRemaining left"
+                } else {
+                    "Reps: $repCount"
+                }
+                
                 Text(
-                    text = "Reps: $repCount",
+                    text = displayText,
                     color = Color.White,
                     style = MaterialTheme.typography.h5,
                     modifier = Modifier
