@@ -66,26 +66,28 @@ data class LiveSessionResult(
 
             // 2. Deductions from Feedback
             // We iterate through the unique feedback messages to avoid double penalizing for the same recurring issue.
-            // If the user got "knees over toes" twice, we only deduct points once.
             val uniqueMessages = feedbackMessages.distinctBy { it.text }
             
             for (msg in uniqueMessages) {
-                // Skip specific messages that shouldn't deduct points
-                if (msg.text.contains("Camera positioning needs adjustment") || 
-                    msg.text.contains("Time out of position") ||
-                    msg.text.contains("Form broken")) {
-                    continue
-                }
-
-                when (msg.severity) {
-                    FeedbackSeverity.WARNING -> score -= 5.0 // Deduct 5 points for warnings
-                    FeedbackSeverity.ERROR -> score -= 10.0  // Deduct 10 points for errors
-                    FeedbackSeverity.INFO -> { /* No change */ }
+                // If the message has an explicit point deduction, use it.
+                if (msg.explicitPointDeduction != null) {
+                    score += msg.explicitPointDeduction.toDouble()
+                } else {
+                    // Otherwise, use default deductions based on severity
+                    when (msg.severity) {
+                        FeedbackSeverity.WARNING -> score -= 5.0 // Deduct 5 points for warnings
+                        FeedbackSeverity.ERROR -> score -= 10.0  // Deduct 10 points for errors
+                        FeedbackSeverity.INFO -> { /* No change */ }
+                    }
                 }
             }
 
             // 3. Deductions from Form Breaks (specifically for Plank)
-            if (exerciseType.lowercase().contains("plank")) {
+            // NOTE: If using summarized feedback, form breaks are already included as a message with explicit deduction.
+            // We only apply this if we are NOT using summarized feedback (i.e. no explicit deduction message found).
+            // To be safe, we check if we already deducted for form breaks via messages.
+            val formBreakMessageExists = uniqueMessages.any { it.text.contains("Form broken") }
+            if (exerciseType.lowercase().contains("plank") && !formBreakMessageExists) {
                 score -= (formBreakCount * 5.0)
             }
 

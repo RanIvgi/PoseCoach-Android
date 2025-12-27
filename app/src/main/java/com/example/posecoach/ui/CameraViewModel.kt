@@ -349,17 +349,6 @@ class CameraViewModel : ViewModel() {
         val formBreakCount = poseEvaluator.getFormBreakCount()
         val goodFormDuration = poseEvaluator.getGoodFormDuration()
 
-        val overallScore = LiveSessionResult.calculateScore(
-            sessionFeedbackHistory,
-            _repCount.value,
-            _targetReps.value,
-            _currentExercise.value,
-            durationMillis,
-            _targetDurationSeconds?.times(1000L),
-            formBreakCount,
-            goodFormDuration
-        )
-
         // Analyze feedback to generate summary
         val summarizedFeedback = FeedbackAnalyzer.analyze(
             sessionFeedbackHistory,
@@ -368,6 +357,17 @@ class CameraViewModel : ViewModel() {
             goodFormDuration,
             _targetDurationSeconds?.times(1000L),
             formBreakCount
+        )
+
+        val overallScore = LiveSessionResult.calculateScore(
+            summarizedFeedback,
+            _repCount.value,
+            _targetReps.value,
+            _currentExercise.value,
+            durationMillis,
+            _targetDurationSeconds?.times(1000L),
+            formBreakCount,
+            goodFormDuration
         )
 
         val current = ExerciseSessionSummary(
