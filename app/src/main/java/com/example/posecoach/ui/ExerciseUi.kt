@@ -26,7 +26,10 @@ data class ExerciseUi(
     val title: String,
     val description: String,
     val instructions: List<String>,
-    val logoRes: Int
+    val logoRes: Int,
+    val formGuideRes: Int,
+    val videoRes: Int?,
+    val keyFormPoints: List<String>
 )
 
 val exercises = listOf(
@@ -41,7 +44,16 @@ val exercises = listOf(
             "Bend your knees until thighs are parallel to the ground.",
             "Push through heels to stand back up."
         ),
-        logoRes = R.drawable.squat_logo
+        logoRes = R.drawable.squat_logo,
+        formGuideRes = R.drawable.squat_form_guide,
+        videoRes = R.raw.squat_tutorial,
+        keyFormPoints = listOf(
+            "Feet shoulder-width apart, toes slightly outward",
+            "Keep chest up and core engaged throughout",
+            "Knees track over toes, don't cave inward",
+            "Lower until thighs are parallel to ground",
+            "Push through heels to return to start"
+        )
     ),
     ExerciseUi(
         id = "pushup",
@@ -54,7 +66,16 @@ val exercises = listOf(
             "Keep elbows tucked at about 45 degrees.",
             "Push back up while keeping core engaged."
         ),
-        logoRes = R.drawable.pushup_logo
+        logoRes = R.drawable.pushup_logo,
+        formGuideRes = R.drawable.pushup_form_guide,
+        videoRes = R.raw.pushup_tutorial,
+        keyFormPoints = listOf(
+            "Hands slightly wider than shoulder-width",
+            "Body forms a straight line (no sagging hips)",
+            "Elbows at 45° angle, not flared out",
+            "Lower chest to nearly touch the floor",
+            "Keep core tight throughout the movement"
+        )
     ),
     ExerciseUi(
         id = "plank",
@@ -67,7 +88,16 @@ val exercises = listOf(
             "Look down to keep neck neutral.",
             "Hold as long as you can with proper form."
         ),
-        logoRes = R.drawable.plank_logo
+        logoRes = R.drawable.plank_logo,
+        formGuideRes = R.drawable.plank_form_guide,
+        videoRes = null,
+        keyFormPoints = listOf(
+            "Elbows directly under shoulders",
+            "Body in a straight line from head to heels",
+            "Core engaged, don't let hips sag or pike up",
+            "Neck neutral, gaze down at the floor",
+            "Squeeze glutes to maintain proper alignment"
+        )
     )
 )
 
