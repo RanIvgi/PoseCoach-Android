@@ -99,7 +99,11 @@ interface PoseEvaluator {
      * Get the number of times form was broken (e.g. for Plank).
      */
     fun getFormBreakCount(): Int
-    
+    /**
+     * Get the total duration (in milliseconds) that the user held good form.
+     * Currently used for Plank exercises.
+     */
+    fun getGoodFormDuration(): Long    
     /**
      * Get exercise-specific metrics (e.g., max depth, average speed).
      * Student 3 can return custom metrics here for display.

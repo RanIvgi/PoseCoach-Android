@@ -6,5 +6,6 @@ data class ExerciseSessionSummary(
     val reps: Int,
     val durationMillis: Long,
     val feedbackMessages: List<FeedbackMessage> = emptyList(),
-    val formBreakCount: Int = 0
+    val formBreakCount: Int = 0,
+    val goodFormDurationMillis: Long = 0
 )

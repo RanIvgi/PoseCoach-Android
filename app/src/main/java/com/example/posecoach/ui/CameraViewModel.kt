@@ -337,6 +337,7 @@ class CameraViewModel : ViewModel() {
         // Use the exercise-aware summary version (the one you are already using later)
         val formSummary = poseEvaluator.getEvaluationSummary(_currentExercise.value)
         val formBreakCount = poseEvaluator.getFormBreakCount()
+        val goodFormDuration = poseEvaluator.getGoodFormDuration()
 
         val overallScore = LiveSessionResult.calculateScore(
             sessionFeedbackHistory,
@@ -345,7 +346,8 @@ class CameraViewModel : ViewModel() {
             _currentExercise.value,
             durationMillis,
             _targetDurationSeconds?.times(1000L),
-            formBreakCount
+            formBreakCount,
+            goodFormDuration
         )
 
         // Analyze feedback to generate summary
@@ -361,7 +363,8 @@ class CameraViewModel : ViewModel() {
             reps = _repCount.value,
             durationMillis = durationMillis,
             feedbackMessages = summarizedFeedback,
-            formBreakCount = formBreakCount
+            formBreakCount = formBreakCount,
+            goodFormDurationMillis = goodFormDuration
         )
 
         val updatedWorkoutSessions = _workoutSessions.value + current
@@ -403,7 +406,9 @@ class CameraViewModel : ViewModel() {
             commonFeedbackMessages = commonFeedback,
             allFeedbackMessages = allFeedback,
             sessionHistory = updatedWorkoutSessions,
-            formBreakCount = formBreakCount
+            formBreakCount = formBreakCount,
+            goodFormDurationMillis = goodFormDuration,
+            targetDurationMillis = _targetDurationSeconds?.times(1000L)
         )
 
         _sessionResult.value = sessionResult
