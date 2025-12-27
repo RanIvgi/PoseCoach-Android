@@ -42,9 +42,11 @@ fun PoseCoachApp() {
                         popUpTo("exercise_selection") { inclusive = true }
                     }
                 },
-                onStartSession = { exerciseId, durationSeconds ->
+                onStartSession = { exerciseId, durationSeconds, targetReps ->
                     // Set the exercise in the camera view model
                     cameraViewModel.setExercise(exerciseId, durationSeconds)
+                    // Set target reps if provided
+                    targetReps?.let { cameraViewModel.setTargetReps(it) }
                     navController.navigate("camera")
                 }
             )

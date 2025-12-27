@@ -29,7 +29,7 @@ import androidx.compose.ui.zIndex
 @Composable
 fun ExerciseSelectionScreen(
     onBackToStart: () -> Unit,
-    onStartSession: (exerciseId: String, durationSeconds: Int?) -> Unit
+    onStartSession: (exerciseId: String, durationSeconds: Int?, targetReps: Int?) -> Unit
 ) {
     var selectedExercise by remember { mutableStateOf<ExerciseUi?>(null) }
     var understood by remember { mutableStateOf(false) }
@@ -38,6 +38,16 @@ fun ExerciseSelectionScreen(
     var plankTimed by remember { mutableStateOf(true) }
     var plankDurationSeconds by remember { mutableStateOf(60) }
     var showDurationPicker by remember { mutableStateOf(false) }
+    
+    // Squat-specific state
+    var squatCountedMode by remember { mutableStateOf(true) }
+    var squatTargetReps by remember { mutableStateOf(10) }
+    var showSquatRepPicker by remember { mutableStateOf(false) }
+    
+    // Push-up-specific state
+    var pushupCountedMode by remember { mutableStateOf(true) }
+    var pushupTargetReps by remember { mutableStateOf(10) }
+    var showPushupRepPicker by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -88,14 +98,26 @@ fun ExerciseSelectionScreen(
                         ExerciseCard(
                             exercise = exercise,
                             onClick = {
-                                selectedExercise = exercise
-                                understood = false
-                                // Reset plank settings when selecting
-                                if (exercise.id == "plank") {
+                            selectedExercise = exercise
+                            understood = false
+                            // Reset exercise-specific settings when selecting
+                            when (exercise.id) {
+                                "plank" -> {
                                     plankTimed = true
                                     plankDurationSeconds = 60
                                     showDurationPicker = false
                                 }
+                                "squat" -> {
+                                    squatCountedMode = true
+                                    squatTargetReps = 10
+                                    showSquatRepPicker = false
+                                }
+                                "pushup" -> {
+                                    pushupCountedMode = true
+                                    pushupTargetReps = 10
+                                    showPushupRepPicker = false
+                                }
+                            }
                             }
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -115,6 +137,24 @@ fun ExerciseSelectionScreen(
                         onPlankDurationChange = { plankDurationSeconds = it },
                         showDurationPicker = showDurationPicker,
                         onShowDurationPickerChange = { showDurationPicker = it },
+                        squatCountedMode = squatCountedMode,
+                        onSquatCountedModeChange = {
+                            squatCountedMode = it
+                            if (!it) showSquatRepPicker = false
+                        },
+                        squatTargetReps = squatTargetReps,
+                        onSquatTargetRepsChange = { squatTargetReps = it },
+                        showSquatRepPicker = showSquatRepPicker,
+                        onShowSquatRepPickerChange = { showSquatRepPicker = it },
+                        pushupCountedMode = pushupCountedMode,
+                        onPushupCountedModeChange = {
+                            pushupCountedMode = it
+                            if (!it) showPushupRepPicker = false
+                        },
+                        pushupTargetReps = pushupTargetReps,
+                        onPushupTargetRepsChange = { pushupTargetReps = it },
+                        showPushupRepPicker = showPushupRepPicker,
+                        onShowPushupRepPickerChange = { showPushupRepPicker = it },
                         onBack = { 
                             selectedExercise = null
                             understood = false
@@ -125,7 +165,14 @@ fun ExerciseSelectionScreen(
                                 selectedExercise!!.id == "plank" && !plankTimed -> null
                                 else -> null
                             }
-                            onStartSession(selectedExercise!!.id, duration)
+                            val targetReps = when {
+                                selectedExercise!!.id == "squat" && squatCountedMode -> squatTargetReps
+                                selectedExercise!!.id == "pushup" && pushupCountedMode -> pushupTargetReps
+                                selectedExercise!!.id == "squat" && !squatCountedMode -> null
+                                selectedExercise!!.id == "pushup" && !pushupCountedMode -> null
+                                else -> null
+                            }
+                            onStartSession(selectedExercise!!.id, duration, targetReps)
                         }
                     )
                 }
@@ -186,6 +233,18 @@ fun ExerciseDetailsView(
     onPlankDurationChange: (Int) -> Unit,
     showDurationPicker: Boolean,
     onShowDurationPickerChange: (Boolean) -> Unit,
+    squatCountedMode: Boolean,
+    onSquatCountedModeChange: (Boolean) -> Unit,
+    squatTargetReps: Int,
+    onSquatTargetRepsChange: (Int) -> Unit,
+    showSquatRepPicker: Boolean,
+    onShowSquatRepPickerChange: (Boolean) -> Unit,
+    pushupCountedMode: Boolean,
+    onPushupCountedModeChange: (Boolean) -> Unit,
+    pushupTargetReps: Int,
+    onPushupTargetRepsChange: (Int) -> Unit,
+    showPushupRepPicker: Boolean,
+    onShowPushupRepPickerChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onStartSession: () -> Unit
 ) {
@@ -345,6 +404,172 @@ fun ExerciseDetailsView(
                     }
                 }
                 
+                // Squat-specific settings
+                if (exercise.id == "squat") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "Squat Mode:",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colors.primary
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { onSquatCountedModeChange(true) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = if (squatCountedMode) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Count Reps")
+                        }
+                        
+                        Button(
+                            onClick = { onSquatCountedModeChange(false) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = if (!squatCountedMode) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Free")
+                        }
+                    }
+                    
+                    if (squatCountedMode) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Text(
+                            text = "Target Reps:",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onSurface,
+                            fontWeight = FontWeight.Medium
+                        )
+                        
+                        Spacer(modifier = Modifier.height(6.dp))
+                        
+                        OutlinedButton(
+                            onClick = { onShowSquatRepPickerChange(!showSquatRepPicker) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                backgroundColor = MaterialTheme.colors.surface,
+                                contentColor = MaterialTheme.colors.primary
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colors.primary)
+                        ) {
+                            Text(
+                                text = "Selected: $squatTargetReps reps",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        
+                        if (showSquatRepPicker) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            RepCountScrollTapPicker(
+                                valueReps = squatTargetReps,
+                                onValueChange = {
+                                    onSquatTargetRepsChange(it)
+                                    onShowSquatRepPickerChange(false)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp)
+                            )
+                        }
+                    }
+                }
+                
+                // Push-up-specific settings
+                if (exercise.id == "pushup") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "Push-up Mode:",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colors.primary
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { onPushupCountedModeChange(true) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = if (pushupCountedMode) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Count Reps")
+                        }
+                        
+                        Button(
+                            onClick = { onPushupCountedModeChange(false) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = if (!pushupCountedMode) MaterialTheme.colors.primary else MaterialTheme.colors.primary.copy(alpha = 0.6f),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Free")
+                        }
+                    }
+                    
+                    if (pushupCountedMode) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        Text(
+                            text = "Target Reps:",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colors.onSurface,
+                            fontWeight = FontWeight.Medium
+                        )
+                        
+                        Spacer(modifier = Modifier.height(6.dp))
+                        
+                        OutlinedButton(
+                            onClick = { onShowPushupRepPickerChange(!showPushupRepPicker) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                backgroundColor = MaterialTheme.colors.surface,
+                                contentColor = MaterialTheme.colors.primary
+                            ),
+                            border = BorderStroke(1.dp, MaterialTheme.colors.primary)
+                        ) {
+                            Text(
+                                text = "Selected: $pushupTargetReps reps",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        
+                        if (showPushupRepPicker) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            RepCountScrollTapPicker(
+                                valueReps = pushupTargetReps,
+                                onValueChange = {
+                                    onPushupTargetRepsChange(it)
+                                    onShowPushupRepPickerChange(false)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp)
+                            )
+                        }
+                    }
+                }
+                
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 // Confirmation checkbox with red highlight when needed
@@ -442,4 +667,59 @@ private fun formatMmSs(totalSeconds: Int): String {
     val m = totalSeconds / 60
     val s = totalSeconds % 60
     return "%02d:%02d".format(m, s)
+}
+
+@Composable
+fun RepCountScrollTapPicker(
+    valueReps: Int,
+    onValueChange: (Int) -> Unit,
+    minReps: Int = 1,
+    maxReps: Int = 30,
+    modifier: Modifier = Modifier,
+) {
+    val options = remember(minReps, maxReps) {
+        (minReps..maxReps).toList()
+    }
+
+    val state = rememberLazyListState()
+
+    LaunchedEffect(options, valueReps) {
+        val idx = options.indexOf(valueReps).takeIf { it >= 0 } ?: 0
+        state.scrollToItem(idx.coerceAtLeast(0))
+    }
+
+    LazyColumn(
+        state = state,
+        modifier = modifier
+            .background(MaterialTheme.colors.surface, shape = RoundedCornerShape(12.dp))
+            .padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        itemsIndexed(options) { _, reps ->
+            val selected = reps == valueReps
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onValueChange(reps) }
+                    .padding(vertical = 10.dp, horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "$reps ${if (reps == 1) "rep" else "reps"}",
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (selected) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (selected) {
+                    Text(
+                        text = "✓",
+                        color = MaterialTheme.colors.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
 }
