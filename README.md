@@ -948,259 +948,112 @@ Or download the APK from releases and install directly on your Android device.
 #### Step 1: Launch the App
 <img src="app/src/main/res/instruction_images/choose_app.png" alt="App Icon" width="200"/>
 
-**What to do:**
-- **Tap on the PoseCoach app icon** on your Android device home screen
+- Tap on the PoseCoach app icon on your Android device home screen
 - Wait for the app to load
 
 <img src="app/src/main/res/instruction_images/reload.png" alt="App Loading" width="200"/>
-
-**What you see:**
-- Loading screen with PoseCoach logo
-- The app is initializing the MediaPipe model in the background
-- Wait a few seconds for the app to fully load
-- Once loaded, you'll see the welcome screen
 
 ---
 
 #### Step 2: Welcome Screen - Choose Your Mode
 <img src="app/src/main/res/instruction_images/choose_picture_way.png" alt="Start Screen" width="200"/>
 
-**What you see:**
-- PoseCoach logo and title at the top
-- Background image
-- Two mode options:
-  - **"Let's Begin - Live Video Analysis"** button
-  - **"Upload Video for Analysis"** button (if available)
-
-**What to 4o:**
-- **Tap "Let's Begin - Live Video Analysis"** → Takes you to exercise selection for real-time camera tracking
-- **Tap "Upload Video for Analysis"** → Allows you to analyze a pre-recorded video (alternative mode)
+- **Tap "Let's Begin - Live Video Analysis"** to start real-time camera tracking
+- Or **tap "Upload Video for Analysis"** to analyze a pre-recorded video (if available)
 
 ---
 
 #### Step 3: Select Your Exercise
 <img src="app/src/main/res/instruction_images/choose_exercise.png" alt="Home Screen" width="200"/>
 
-**What you see after choosing Live Video Analysis:**
-- "Select Exercise" heading
-- Five exercise cards displayed vertically:
+- **Tap on any exercise card** to select:
   - 🏋️ Push-ups
   - 🦵 Squats
   - 🧘 Plank
-  - 🚶 Lunges
-  - 💪 Bicep Curls
+- **Tap the "i" icon** on any exercise card to view instructions and proper form demonstration
 
-**What you can do:**
-- **Tap on any exercise card** → Opens the exercise configuration screen for that exercise
-- Each card shows the exercise name and emoji icon
-
+---
 ---
 
 #### Step 3a: Interactive Exercise Explanation (Optional)
 <img src="app/src/main/res/instruction_images/exercise_explation.png" alt="Exercise Explanation" width="200"/>
 
-**What you see:**
-- After selecting an exercise, you may see an interactive video or animation
-- Demonstrates proper form and technique for the selected exercise
-- Shows key points to focus on during the movement
-
 <img src="app/src/main/res/instruction_images/ok_exercise_explanation.png" alt="OK Button" width="200"/>
 
-**What to do:**
-- **Watch the demonstration** to understand the correct form
-- **Tap "OK" or "Got It"** → Proceeds to exercise configuration screen
-- **Tap "Skip"** (if available) → Go directly to configuration
+- Watch the demonstration video to understand proper form
+- **Tap "Got it!"** to proceed to exercise configuration
 
 ---
 
 #### Step 4: Exercise Configuration
 <img src="app/src/main/res/instruction_images/reps.png" alt="Exercise Selection" width="200"/>
 
-**What happens after tapping an exercise:**
-- You see the exercise configuration screen
-- Exercise name is displayed at the top
-- You see input fields for settings
+**Choose your exercise mode:**
 
-**What you see on this screen:**
+**Option 1: Free Mode with Timer**
+<img src="app/src/main/res/instruction_images/free.png" alt="Free Mode" width="200"/>
 
-**For Rep-Based Exercises (Push-ups, Squats, Lunges, Bicep Curls):**
-- Text field labeled "Target Reps"
-- Default value: 10 reps
-- You can:
-  - **Type a number** → Sets how many reps you want to do
-  - **Enter 0** → Enables free count mode (no target, just counts up)
-  - **Tap "Start Exercise" button** → Takes you to the camera screen
+- Set timer to unlimited mode
+- Exercise without a target rep count
+- **Press exit button** to end the exercise when you're done
 
-**For Time-Based Exercises (Plank):**
-- Text field labeled "Target Duration (seconds)"
-- Default value: 30 seconds
-- You can:
-  - **Type a number** → Sets how long you want to hold the plank
-  - **Enter 0** → Enables stopwatch mode (no target, just counts up)
-  - **Tap "Start Exercise" button** → Takes you to the camera screen
+**Option 2: Set Target Reps**
+- Use the **scrollable option** to select the number of reps you want to complete
+- The app will track your progress toward your target
 
-**Navigation:**
-- **Back arrow** (top left) → Returns to home screen
-
----
-
-#### Step 5: Camera Screen - Before Starting
+**Camera Setup:**
 <img src="app/src/main/res/instruction_images/understand_instructions.png" alt="Camera Setup" width="200"/>
 
-**What you see when entering the camera screen:**
-- Live camera feed showing yourself
-- The camera is in IDLE state (not yet tracking)
-- Large **Play button** in the center of the screen
-- Control buttons at the bottom right corner
-- Performance indicators at the top right
-
-**Screen Elements:**
-
-**Top Right Corner:**
-- **FPS Display**: Shows current frame rate (e.g., "FPS: 28.5")
-- **GPU/CPU Indicator**: Shows which processor is being used
-  - Green "GPU" = Using GPU acceleration
-  - Cyan "CPU" = Using CPU processing
-
-**Bottom Right Corner (4 buttons):**
-1. **Camera Switch button** 🔄 (white circular button with camera icon)
-   - **Tap this** → Switches between front and back camera
-   
-2. **GPU/CPU Toggle button** 🧠 (white circular button with chip icon)
-   - **Tap this** → Switches between GPU and CPU processing mode
-   - Use if performance is laggy
-   
-3. Additional control buttons appear when session is active
-
-**Center of Screen:**
-- **Large Play button** ▶️ (blue circular button, 72dp size)
-   - **Tap this** → Starts the 3-second countdown
-
-**What to do before starting:**
 1. Position your phone 2-3 meters away on a stable surface
 2. Make sure your full body is visible in the camera
 3. Ensure good lighting in the room
 4. Stand in the middle of the camera frame
-5. When ready, tap the Play button
+
+**Controls available:**
+- **Camera Switch button** 🔄 - Tap to switch between front and back camera
+- **GPU/CPU Toggle button** 🧠 - Tap to switch processor mode (use if performance is laggy)
+
+**To start the exercise:**
+1. **Mark the checkbox** "I understand the instruction"
+2. **Tap "Start Session" button** to begin
+
+🏋️ **Exercise safe is exercise must have**
+
+**Navigation:**
+- **Tap back arrow** (top left) to return to exercise selection
 
 ---
 
-#### Step 6: Countdown Phase
-<img src="app/src/main/res/instruction_images/start_exercise_botton.png" alt="Countdown" width="200"/>
+#### Step 5: Active Exercise Session
 
-**What happens after pressing Play:**
-- Screen darkens with a semi-transparent overlay
-- You see three lines of text:
-  1. **"Exercise about to start"** (large bold text at top)
-  2. **"Please position yourself in the middle of the camera"** (medium text in middle)
-  3. **Large countdown number** (120sp size) showing: **3... 2... 1...**
-- The countdown number pulses/scales with animation
+**During the exercise:**
+- Watch the skeleton overlay on your body to see pose detection
+- Follow the color-coded feedback messages:
+  - 🟢 **Green**: "Great form!" or "Perfect!"
+  - 🟡 **Yellow**: "Keep your back straight" or "Lower down more"
+  - 🔴 **Red**: "Incorrect form" or "Bend your knees more"
+- Monitor your rep counter (top left) and timer (top center)
 
-**What you should do:**
-- Use these 3 seconds to:
-  - Get into starting position
-  - Center yourself in the frame
-  - Prepare to begin the exercise
-- After countdown reaches 0, the exercise automatically begins
+**Controls during session:**
+- **Stop button** ⏹️ - Tap to end session and see results
+- **Reset button** 🔄 - Tap to reset rep counter to 0
+- **Camera Switch** 🔄 - Still available
+- **GPU/CPU Toggle** 🧠 - Still available
 
----
-
-#### Step 7: Active Exercise Session
-<img src="app/src/main/res/instruction_images/free.png" alt="Active Session" width="200"/>
-
-**What you see during the exercise:**
-
-**Screen Changes:**
-- Camera feed shows your live video
-- **Skeleton overlay** appears on your body (white lines connecting detected joints)
-- Multiple UI elements appear showing your progress
-
-**Top Left Corner:**
-- **Rep Counter** (for Push-ups, Squats, Lunges, Bicep Curls):
-  - If you set target reps: Shows "X left" (e.g., "7 left")
-  - If free count mode: Shows "Reps: X" (e.g., "Reps: 5")
-- **Nothing shown for Planks** (uses timer only)
-
-**Top Center:**
-- **Timer Display** (for all exercises):
-  - Small semi-transparent box with time
-  - For Plank: Shows "Time left: MM:SS" or "Time: MM:SS"
-  - Format: Minutes:Seconds (e.g., "01:30")
-
-**Top Right Corner:**
-- **FPS Counter**: Shows current performance
-- **GPU/CPU Indicator**: Shows processing mode
-
-**Center Bottom:**
-- **Feedback Card** (appears dynamically):
-  - Colored card with exercise feedback
-  - Colors mean:
-    - 🟢 **Green**: "Great form!" or "Perfect!"
-    - 🟡 **Yellow**: "Keep your back straight" or "Lower down more"
-    - 🔴 **Red**: "Incorrect form" or "Bend your knees more"
-  - Messages change in real-time based on your form
-
-**Bottom Right Corner (buttons appear when active):**
-1. **Stop button** ⏹️ (white circular button, red icon)
-   - **Tap this** → Immediately ends the session and shows results
-   
-2. **Reset button** 🔄 (white circular button)
-   - **Tap this** → Resets rep counter to 0 without ending session
-   - Only visible during active session
-   
-3. **Camera Switch button** 🔄 (still available)
-   
-4. **GPU/CPU Toggle button** 🧠 (still available)
-
-**What happens automatically:**
-- App detects your body position with skeleton overlay
-- Counts reps automatically when you complete proper form
-- Gives real-time feedback on your form
-- Timer counts up or down based on your settings
-- Session ends automatically when:
-  - You reach target reps (if set)
-  - You reach target time (if set)
-  - You press Stop button
-
-**How rep counting works:**
-- **Push-ups**: Counts when you go down and come back up with proper form
-- **Squats**: Counts when you squat down past threshold and stand back up
-- **Lunges**: Counts when you lunge down and return to standing
-- **Bicep Curls**: Counts when you curl up and lower down with proper elbow position
-- **Plank**: No rep counting, only time tracking
+**Session ends automatically when:**
+- You reach target reps (if set)
+- You reach target time (if set)
+- Or you press Stop button
 
 ---
 
-#### Step 8: Session Results
+#### Step 6: Session Results
 
-**What you see after finishing:**
-- Results screen replaces the camera view
-- Summary of your workout performance
-
-**Screen Elements:**
-
-**Center of Screen:**
-- **Exercise Name**: Shows which exercise you completed (e.g., "Push-ups")
-- **Performance Stats**:
-  - **Reps Completed**: Number of reps you did (e.g., "15 reps") 
-    - OR for Plank: **Time Completed** (e.g., "1:30")
-  - **Session Duration**: Total time for the workout (e.g., "2:45")
-  - **Performance Feedback**: Text summary like "Good job!" or "Try to maintain better form next time"
-
-**Bottom of Screen (2 buttons):**
-1. **"Do Another Set" button** (primary blue button)
-   - **Tap this** → Returns to camera screen with same exercise and settings
-   - Lets you do another set immediately
-   
-2. **"Back to Home" button** (secondary button)
-   - **Tap this** → Returns to home screen with exercise list
-   - Lets you select a different exercise or exit
-
-**What you can do:**
-- Review your performance
-- Choose to do another set of the same exercise
-- Go back to home to select a different exercise
-- Take a screenshot of your results (use phone screenshot feature)
+**After completing your exercise:**
+- Review your performance stats (reps completed, session duration, feedback)
+- **Tap "Do Another Set"** to restart same exercise immediately
+- **Tap "Back to Home"** to return to exercise selection
+- Take a screenshot to save your results (optional)
 
 ---
 
