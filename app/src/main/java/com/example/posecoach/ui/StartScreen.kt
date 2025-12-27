@@ -4,7 +4,9 @@ import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
@@ -67,8 +69,10 @@ fun StartScreen(
                     .padding(24.dp)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
@@ -192,7 +196,7 @@ fun StartScreen(
                         onClick = { activity?.finish() },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
+                            .height(52.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
                             backgroundColor = Color(0xFFEF5350),
@@ -206,7 +210,7 @@ fun StartScreen(
                         Text(
                             text = "Exit App",
                             style = MaterialTheme.typography.button,
-                            fontSize = 18.sp
+                            fontSize = 20.sp
                         )
                     }
                 }
