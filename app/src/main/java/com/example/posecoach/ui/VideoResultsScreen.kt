@@ -46,7 +46,8 @@ fun VideoResultsScreen(
     val overallScore = analysisResult.overallScore
 
     Surface(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colors.background
     ) {
         Box(
             modifier = Modifier

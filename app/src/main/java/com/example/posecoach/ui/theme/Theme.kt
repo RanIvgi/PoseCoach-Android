@@ -8,55 +8,65 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 /**
- * App-wide Blue Theme for PoseCoach.
+ * Modern Health App Theme for PoseCoach
  *
- * The app uses a blue primary color for most UI elements (buttons, app bar, etc.).
- * Success / error / warning colors are handled separately in components
- * like the feedback overlay, so they stay green / red / yellow.
+ * Clean, modern design with blue/teal accents.
+ * Optimized for fitness and health applications.
  */
 
-// Main blue brand colors
-private val BluePrimary = Color(0xFF2196F3)        // Blue 500
-private val BluePrimaryVariant = Color(0xFF1976D2) // Blue 700
-private val BlueSecondary = Color(0xFF03A9F4)      // Light Blue 400
+// Primary Colors
+private val HealthBlue = Color(0xFF1D4ED8)
+private val HealthBlueDark = Color(0xFF163FAE)
+private val HealthTeal = Color(0xFF06B6D4)
+private val HealthMint = Color(0xFF10B981)
+
+// Backgrounds & Surfaces
+private val BgLight = Color(0xFFF7F9FC)
+private val SurfaceLight = Color(0xFFFFFFFF)
+private val SurfaceTinted = Color(0xFFF1F5FF)
+private val BorderLight = Color(0xFFE6EAF2)
+
+// Text Colors
+private val TextStrong = Color(0xFF0F172A)
+private val TextMid = Color(0xFF334155)
+private val TextMuted = Color(0xFF64748B)
+
+// Status Colors
+private val Danger = Color(0xFFEF4444)
+private val Warning = Color(0xFFF59E0B)
 
 // Light mode color palette
 private val LightColorPalette = lightColors(
-    primary = BluePrimary,
-    primaryVariant = BluePrimaryVariant,
-    secondary = BlueSecondary,
-
-    background = Color(0xFFE3F2FD),   // very light blue background
-    surface = Color(0xFFF5F9FF),      // light blue surface for cards, etc.
-    error = Color(0xFFB00020),
-
+    primary = HealthBlue,
+    primaryVariant = HealthBlueDark,
+    secondary = HealthTeal,
+    background = BgLight,
+    surface = SurfaceLight,
+    error = Danger,
     onPrimary = Color.White,
-    onSecondary = Color.Black,
-    onBackground = Color.Black,
-    onSurface = Color.Black,
+    onSecondary = Color.White,
+    onBackground = TextStrong,
+    onSurface = TextStrong,
     onError = Color.White
 )
 
 // Dark mode color palette
 private val DarkColorPalette = darkColors(
-    primary = BluePrimary,
-    primaryVariant = BluePrimaryVariant,
-    secondary = BlueSecondary,
-
-    background = Color(0xFF0D1B2A),   // deep navy blue
-    surface = Color(0xFF1B263B),      // dark blue/gray for cards
-    error = Color(0xFFCF6679),
-
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onBackground = Color.White,
-    onSurface = Color.White,
-    onError = Color.Black
+    primary = Color(0xFF6EA8FF),
+    primaryVariant = Color(0xFF4B89E8),
+    secondary = Color(0xFF4CD7EA),
+    background = Color(0xFF0B1220),
+    surface = Color(0xFF0F172A),
+    error = Color(0xFFFF6B6B),
+    onPrimary = Color(0xFF071226),
+    onSecondary = Color(0xFF041317),
+    onBackground = Color(0xFFE7EDF8),
+    onSurface = Color(0xFFE7EDF8),
+    onError = Color(0xFF1B0B0B)
 )
 
 /**
  * Main theme wrapper for the entire app.
- * It chooses between the light and dark blue palettes based on system settings.
  */
 @Composable
 fun PoseCoachTheme(

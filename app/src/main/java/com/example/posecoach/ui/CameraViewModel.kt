@@ -182,8 +182,10 @@ class CameraViewModel : ViewModel() {
                                 if (newRepCount != _repCount.value) {
                                     _repCount.value = newRepCount
                                     
-                                    // Auto-finish when target reps reached (except for plank which is time-based)
+                                    // Auto-finish when target reps reached
+                                    // Only if: 1) Not plank (time-based), 2) Target reps is set (not Free mode)
                                     if (_currentExercise.value != "plank" && 
+                                        _targetReps.value > 0 &&
                                         newRepCount >= _targetReps.value) {
                                         finishSession()
                                     }
