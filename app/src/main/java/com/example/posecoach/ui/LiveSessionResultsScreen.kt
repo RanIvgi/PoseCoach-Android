@@ -95,6 +95,33 @@ fun LiveSessionResultsScreen(
     val typeDuration = if (historyForType.isNotEmpty()) historyForType.sumOf { it.durationMillis } else sessionResult.durationMillis
     val typeExercisesCount = if (historyForType.isNotEmpty()) historyForType.size else 1
     
+    // Calculate score for the selected type
+    val typeScore = remember(historyForType, selectedExerciseType) {
+        if (historyForType.isNotEmpty()) {
+            val totalReps = historyForType.sumOf { it.reps }
+            val totalDuration = historyForType.sumOf { it.durationMillis }
+            val totalGoodFormDuration = historyForType.sumOf { it.goodFormDurationMillis }
+            val totalFormBreaks = historyForType.sumOf { it.formBreakCount }
+            val allFeedbackForType = historyForType.flatMap { it.feedbackMessages }
+            
+            val targetDuration = historyForType.firstNotNullOfOrNull { it.targetDurationMillis }
+            val targetReps = if (selectedExerciseType == sessionResult.exerciseName) sessionResult.targetReps else 0
+
+            LiveSessionResult.calculateScore(
+                feedbackMessages = allFeedbackForType,
+                completedReps = totalReps,
+                targetReps = targetReps,
+                exerciseType = selectedExerciseType,
+                durationMillis = totalDuration,
+                targetDurationMillis = targetDuration,
+                formBreakCount = totalFormBreaks,
+                goodFormDurationMillis = totalGoodFormDuration
+            )
+        } else {
+            sessionResult.overallScore
+        }
+    }
+    
     // Plank specific stats
     val isPlank = selectedExerciseType.lowercase().contains("plank")
     val currentFormBreaks = currentSessionForType?.formBreakCount ?: sessionResult.formBreakCount
@@ -209,14 +236,14 @@ fun LiveSessionResultsScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "Overall Form Score",
+                                    text = "Current Form Score",
                                     color = Color.White,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "${sessionResult.overallScore}%",
+                                    text = "${typeScore}%",
                                     color = Color.White,
                                     fontSize = 48.sp,
                                     fontWeight = FontWeight.Bold
@@ -224,8 +251,8 @@ fun LiveSessionResultsScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = when {
-                                        sessionResult.overallScore >= 80 -> "Excellent Form!"
-                                        sessionResult.overallScore >= 60 -> "Good Form - Minor improvements needed"
+                                        typeScore >= 80 -> "Excellent Form!"
+                                        typeScore >= 60 -> "Good Form - Minor improvements needed"
                                         else -> "Form needs improvement"
                                     },
                                     color = Color.White.copy(alpha = 0.9f),
