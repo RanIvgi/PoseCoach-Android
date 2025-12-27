@@ -255,48 +255,6 @@ The Lite model uniquely satisfies all critical requirements while maximizing per
 - **Min SDK**: API 24 (Android 7.0)
 - **Target SDK**: API 34 (Android 14)
 
-## Experimental Design and Analysis
-
-### Research Methodology
-
-We conducted systematic experiments to optimize system parameters and validate performance across multiple dimensions. All experiments were performed on standardized test datasets with controlled variables.
-
-### Dataset and Evaluation Metrics
-
-**Test Dataset Composition:**
-- 500 exercise videos (Push-ups: 200, Squats: 200, Planks: 100)
-- Multiple subjects: 15 participants (ages 20-45)
-- Various environments: Indoor/outdoor, different lighting conditions
-- Device diversity: 5 different Android devices (API 24-34)
-
-**Evaluation Metrics:**
-- **Accuracy**: Correct form classifications / Total classifications
-- **Precision**: True positives / (True positives + False positives)
-- **Recall**: True positives / (True positives + False negatives)
-- **F1-Score**: Harmonic mean of precision and recall
-- **FPS**: Frames processed per second
-- **Latency**: End-to-end processing time per frame
-
-### Experiment 1: Parameter Optimization Studies
-
-#### Confidence Threshold Analysis
-We conducted extensive testing to determine optimal confidence thresholds for pose detection:
-
-**Experiment 1: Pose Detection Confidence**
-- Tested values: 0.3, 0.5, 0.7, 0.9
-- Metric: False positive/negative rates on 100 test videos
-- **Result**: 0.5 provided optimal balance (95% accuracy)
-
-**Experiment 2: Pose Presence Confidence** 
-- Tested values: 0.3, 0.5, 0.7
-- Metric: Stability of pose tracking
-- **Result**: 0.5 minimized tracking interruptions
-
-**Experiment 3: Tracking Confidence**
-- Tested values: 0.4, 0.5, 0.6, 0.8
-- Metric: Temporal consistency across frames
-- **Result**: 0.5 achieved best temporal stability
-
 #### Frame Processing Optimization
 
 **Processing Pipeline Comparison:**
