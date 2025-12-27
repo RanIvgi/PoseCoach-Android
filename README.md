@@ -821,14 +821,35 @@ Or download the APK from releases and install directly on your Android device.
 
 #### Step 8A: Session Results
 
-<img src="instruction_images/feedback.png" alt="Exercise Feedback" width="200"/>
+<img src="instruction_images/new_exercise_photo.png" alt="New Exercise Options" width="200"/>
 
-**After completing your exercise:**
-- Review your performance stats (reps completed, session duration, feedback)
-- Get personalized feedback with warnings and improvement comments
-- **Tap "New Exercise"** to restart same exercise immediately
-- **Tap "Home"** to return to exercise selection
-- Take a screenshot to save your results (optional)
+**After completing your exercise, you have two options:**
+- **Tap "New Exercise"** to continue with another workout - this will take you back to exercise selection
+- **Tap "Home"** to return to the main screen
+
+---
+
+<img src="instruction_images/overall_form_break.png" alt="Overall Form Breaks" width="200"/>
+
+**View Your Performance:**
+- Review your performance stats:
+  - **Reps completed** (for Push-ups/Squats) or **Duration** (for Plank)
+  - **Session duration** 
+  - **Percentage score** - Get a score from 0-100% showing your overall form quality for this exercise
+  - (For more details about how the scoring system works, please reference the "Performance Scoring Methodology" section)
+
+**Special for Plank:**
+- Displays **"Form Breaks"** count - shows how many times you broke from proper plank position
+- Helps track consistency and endurance over time
+
+---
+
+<img src="instruction_images/common_result.png" alt="Result Options" width="150"/> <img src="instruction_images/result_options.png" alt="Common Results" width="150"/>
+
+**Feedback Tabs:**
+- **Current**: Shows feedback from your most recent session with color-coded comments (Green/Yellow/Red)
+- **Common**: Shows recurring issues across all sessions of this exercise (only visible if you've done the same exercise multiple times)
+- **All**: Shows complete feedback history for this exercise
 
 ---
 
