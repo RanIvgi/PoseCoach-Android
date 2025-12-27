@@ -109,19 +109,37 @@ fun CameraControls(
 
         // Play button in center when IDLE
         if (sessionState == SessionState.IDLE) {
-            FloatingActionButton(
-                onClick = onStartSession,
-                backgroundColor = MaterialTheme.colors.primary,
+            Column(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(72.dp)
+                    .padding(horizontal = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Start Session",
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
+                Text(
+                    text = "Place camera on a stable surface\nPress start when you are ready to get in position",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .background(Color(0xFF1976D2).copy(alpha = 0.85f), RoundedCornerShape(12.dp))
+                        .padding(16.dp)
                 )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                FloatingActionButton(
+                    onClick = onStartSession,
+                    backgroundColor = MaterialTheme.colors.primary,
+                    modifier = Modifier.size(72.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Start Session",
+                        tint = Color.White,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
             }
         }
 

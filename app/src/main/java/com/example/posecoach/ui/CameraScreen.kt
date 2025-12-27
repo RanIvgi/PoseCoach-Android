@@ -184,7 +184,7 @@ fun TimerOverlayTop(
             fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .padding(top = topPad)
-                .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(corner))
+                .background(Color(0xFF1976D2).copy(alpha = 0.85f), RoundedCornerShape(corner))
                 .padding(horizontal = hPad, vertical = vPad)
         )
     }
@@ -229,7 +229,7 @@ fun PlankTimerOverlay(
         Column(
             modifier = Modifier
                 .padding(top = topPad)
-                .background(Color.Black.copy(alpha = 0.50f), RoundedCornerShape(corner))
+                .background(Color(0xFF1976D2).copy(alpha = 0.85f), RoundedCornerShape(corner))
                 .padding(horizontal = hPad, vertical = vPad),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
