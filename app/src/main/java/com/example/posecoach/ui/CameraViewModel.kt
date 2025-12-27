@@ -44,6 +44,12 @@ class CameraViewModel : ViewModel() {
     private val poseEvaluator: PoseEvaluator = DefaultPoseEvaluator()
     private val cameraExecutor = Executors.newSingleThreadExecutor()
 
+    // Store references for camera switching
+    private var currentContext: android.content.Context? = null
+    private var currentLifecycleOwner: androidx.lifecycle.LifecycleOwner? = null
+    private var currentCameraProvider: ProcessCameraProvider? = null
+    private var currentPreviewView: PreviewView? = null
+
     private val _poseResult = MutableStateFlow<PoseResult?>(null)
     val poseResult: StateFlow<PoseResult?> = _poseResult.asStateFlow()
 
@@ -127,6 +133,11 @@ class CameraViewModel : ViewModel() {
         cameraProvider: ProcessCameraProvider,
         previewView: PreviewView
     ) {
+        // Store references for camera switching
+        currentContext = context
+        currentLifecycleOwner = lifecycleOwner
+        currentCameraProvider = cameraProvider
+        currentPreviewView = previewView
         if (!::poseEngine.isInitialized) {
             // PERFORMANCE FIX: Use pre-warmed PoseEngine instead of creating new one
             // This eliminates the 2+ second freeze that would occur on first camera use
@@ -228,6 +239,14 @@ class CameraViewModel : ViewModel() {
 
     fun switchCamera(context: android.content.Context, lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
         _cameraState.value = _cameraState.value.toggle()
+        
+        // Rebind camera with new camera selector
+        val provider = currentCameraProvider
+        val previewView = currentPreviewView
+        
+        if (provider != null && previewView != null) {
+            bindCamera(context, lifecycleOwner, provider, previewView)
+        }
     }
 
     fun toggleDelegate(context: android.content.Context, lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
