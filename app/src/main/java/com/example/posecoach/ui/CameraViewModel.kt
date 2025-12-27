@@ -178,6 +178,12 @@ class CameraViewModel : ViewModel() {
                                 val newRepCount = poseEvaluator.getRepCount()
                                 if (newRepCount != _repCount.value) {
                                     _repCount.value = newRepCount
+                                    
+                                    // Auto-finish when target reps reached (except for plank which is time-based)
+                                    if (_currentExercise.value != "plank" && 
+                                        newRepCount >= _targetReps.value) {
+                                        finishSession()
+                                    }
                                 }
                             }
                         }
