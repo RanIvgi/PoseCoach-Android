@@ -81,9 +81,9 @@ Choose exercise type and configure workout parameters.
 
 #### **Exercise Selection Cards**
 Three exercise types available:
-1. **Plank** - Core stability exercise
+1. **Push-up** - Upper body strength
 2. **Squat** - Lower body strength
-3. **Push-up** - Upper body strength
+3. **Plank** - Core stability exercise
 
 Each card includes:
 - Exercise logo/icon
@@ -251,9 +251,9 @@ Upload and configure video for offline analysis.
 
 #### **Exercise Selection Cards**
 Same three exercise types as live session:
-- **Plank** card
-- **Squat** card
 - **Push-up** card
+- **Squat** card
+- **Plank** card
 
 Selection indicated by:
 - Border highlight
