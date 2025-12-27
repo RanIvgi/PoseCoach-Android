@@ -28,8 +28,8 @@ object FeedbackAnalyzer {
                     
                     summarizedFeedback.add(FeedbackMessage(
                         text = "Time out of position: ${secondsLost}s",
-                        severity = FeedbackSeverity.WARNING
-                        // No explicitPointDeduction
+                        severity = FeedbackSeverity.WARNING,
+                        explicitPointDeduction = 0
                     ))
                 }
             }
@@ -48,19 +48,43 @@ object FeedbackAnalyzer {
 
         // 1. Analyze Depth (Squat & Pushup)
         // "Good depth!" is emitted continuously but de-duplicated in history, so roughly 1 per good rep.
-        // "Go deeper on the next rep!" is emitted once per bad rep.
+        // "Lower your chest more on the next rep!" (Pushup) or "Go deeper on the next rep!" (Squat) is emitted once per bad rep.
         val goodDepthCount = feedbackTexts.count { it == "Good depth!" }
-        val badDepthCount = feedbackTexts.count { it == "Go deeper on the next rep!" }
+        val badDepthCount = feedbackTexts.count { it == "Go deeper on the next rep!" || it == "Lower your chest more on the next rep!" }
         
         // Logic: If we have reps, check depth consistency
         if (totalReps > 0) {
             if (badDepthCount == 0 && goodDepthCount > 0) {
                 summarizedFeedback.add(FeedbackMessage("Perfect! You went down deep enough on all reps.", FeedbackSeverity.INFO))
             } else if (badDepthCount > 0 && goodDepthCount > 0) {
-                summarizedFeedback.add(FeedbackMessage("Inconsistent depth. You hit good depth on some reps, but missed others.", FeedbackSeverity.WARNING))
+                if (badDepthCount > 1) {
+                    summarizedFeedback.add(FeedbackMessage(
+                        text = "Multiple occurrences: Inconsistent depth. You missed proper depth on several reps. (-10 pts)", 
+                        severity = FeedbackSeverity.ERROR,
+                        explicitPointDeduction = -10
+                    ))
+                } else {
+                    summarizedFeedback.add(FeedbackMessage(
+                        text = "Inconsistent depth. You hit good depth on some reps, but missed others. (-5 pts)", 
+                        severity = FeedbackSeverity.WARNING,
+                        explicitPointDeduction = -5
+                    ))
+                }
                 summarizedFeedback.add(FeedbackMessage("Good job hitting proper depth on $goodDepthCount reps.", FeedbackSeverity.INFO))
             } else if (badDepthCount > 0 && goodDepthCount == 0) {
-                summarizedFeedback.add(FeedbackMessage("Depth was insufficient. Try to go lower on every rep.", FeedbackSeverity.WARNING))
+                if (badDepthCount > 1) {
+                    summarizedFeedback.add(FeedbackMessage(
+                        text = "Multiple occurrences: Depth was insufficient on all reps. (-10 pts)", 
+                        severity = FeedbackSeverity.ERROR,
+                        explicitPointDeduction = -10
+                    ))
+                } else {
+                    summarizedFeedback.add(FeedbackMessage(
+                        text = "Depth was insufficient. Try to go lower on every rep. (-5 pts)", 
+                        severity = FeedbackSeverity.WARNING,
+                        explicitPointDeduction = -5
+                    ))
+                }
             }
         }
 
@@ -68,8 +92,12 @@ object FeedbackAnalyzer {
         // We check for specific error strings emitted by DefaultPoseEvaluator
         analyzeError(feedbackTexts, "Knees over toes! Push hips back.", "Knees consistently extended past toes. Try sitting back more.", summarizedFeedback)
         analyzeError(feedbackTexts, "Keep your chest up and back straight.", "Tendency to lean forward. Keep chest lifted.", summarizedFeedback)
-        // Updated string to match DefaultPoseEvaluator
+        
+        // Updated string to match DefaultPoseEvaluator for Pushups
+        analyzeError(feedbackTexts, "Hips sagging! Engage your core and keep body straight.", "Core stability issue: Hips were sagging. Engage your abs.", summarizedFeedback)
+        // Also check for the old string just in case (or for other exercises if reused)
         analyzeError(feedbackTexts, "Hips sagging! Engage your core and lift hips.", "Core stability issue: Hips were sagging. Engage your abs.", summarizedFeedback)
+        
         analyzeError(feedbackTexts, "Hips too high! Lower them to form a straight line.", "Hips were too high. Try to keep a straight body line.", summarizedFeedback)
 
         // 3. Analyze Positive Form (Absence of errors)
@@ -78,6 +106,7 @@ object FeedbackAnalyzer {
             analyzePositive(feedbackTexts, "Keep your chest up and back straight.", "Good posture! Back stayed straight.", summarizedFeedback)
             
             if (exerciseType.lowercase().contains("plank") || exerciseType.lowercase().contains("pushup") || exerciseType.lowercase().contains("push-up")) {
+                 analyzePositive(feedbackTexts, "Hips sagging! Engage your core and keep body straight.", "Core engaged well! No hip sagging.", summarizedFeedback)
                  analyzePositive(feedbackTexts, "Hips sagging! Engage your core and lift hips.", "Core engaged well! No hip sagging.", summarizedFeedback)
                  analyzePositive(feedbackTexts, "Hips too high! Lower them to form a straight line.", "Good body alignment! Hips stayed in line.", summarizedFeedback)
             }
@@ -86,7 +115,11 @@ object FeedbackAnalyzer {
         // 4. Camera/Detection Issues
         val cameraIssues = feedbackTexts.count { it.contains("Adjust camera") || it.contains("No pose detected") }
         if (cameraIssues > 5) { 
-             summarizedFeedback.add(FeedbackMessage("Camera positioning needs adjustment for better detection.", FeedbackSeverity.WARNING))
+             summarizedFeedback.add(FeedbackMessage(
+                 text = "Camera positioning needs adjustment for better detection. (-5 pts)", 
+                 severity = FeedbackSeverity.WARNING,
+                 explicitPointDeduction = -5
+             ))
         }
 
         // 4. If no specific feedback was generated but reps were done
@@ -104,12 +137,20 @@ object FeedbackAnalyzer {
         outputList: MutableList<FeedbackMessage>
     ) {
         val count = allTexts.count { it == rawErrorText }
-        if (count > 2) { // If it happened more than a few times (considering de-duplication)
-            outputList.add(FeedbackMessage(summaryText, FeedbackSeverity.WARNING))
-        } else if (count > 0) {
-             // Optional: Report occasional errors? 
-             // For now, let's only report if it's somewhat frequent or at least happened once clearly
-             outputList.add(FeedbackMessage("Occasional issue: $rawErrorText", FeedbackSeverity.WARNING))
+        if (count > 1) { 
+            // More than once -> ERROR (-10 pts)
+            outputList.add(FeedbackMessage(
+                text = "Multiple occurrences: $summaryText (-10 pts)", 
+                severity = FeedbackSeverity.ERROR,
+                explicitPointDeduction = -10
+            ))
+        } else if (count == 1) {
+             // Once -> WARNING (-5 pts)
+             outputList.add(FeedbackMessage(
+                text = "Occasional issue: $summaryText (-5 pts)", 
+                severity = FeedbackSeverity.WARNING,
+                explicitPointDeduction = -5
+            ))
         }
     }
 
