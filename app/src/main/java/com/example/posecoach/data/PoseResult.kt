@@ -2,7 +2,7 @@ package com.example.posecoach.data
 
 /**
  * Complete result from pose detection for a single frame.
- * This is passed from Student 2's PoseEngine to Student 3's evaluation logic.
+ * This is passed from PoseEngine to the evaluation logic.
  * 
  * @property landmarks List of 33 pose landmarks (or empty if no pose detected)
  * @property timestamp Frame timestamp in milliseconds

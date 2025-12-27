@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
 
 class PoseCoachViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val poseEngine = PoseEngine(app)          // Student 2
-    private val evaluator: PoseEvaluator = DefaultPoseEvaluator() // Student 3
+    private val poseEngine = PoseEngine(app)
+    private val evaluator: PoseEvaluator = DefaultPoseEvaluator()
 
     // Camera front/back state
     private val _cameraState = MutableStateFlow<CameraState>(CameraState.Front)

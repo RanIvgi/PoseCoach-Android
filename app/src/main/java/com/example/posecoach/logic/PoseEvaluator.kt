@@ -4,14 +4,14 @@ import com.example.posecoach.data.FeedbackMessage
 import com.example.posecoach.data.PoseResult
 
 /**
- * Interface for Student 3 - Pose Evaluation Logic.
+ * Interface for Pose Evaluation Logic.
  * 
  * This interface defines how pose evaluation should work.
- * Student 3 will implement this interface to provide real-time feedback
+ * Implementations of this interface provide real-time feedback
  * on exercise form by analyzing joint angles and body positioning.
  * 
- * The evaluator receives PoseResult from Student 2's PoseEngine
- * and returns FeedbackMessage to Student 1's UI.
+ * The evaluator receives PoseResult from the PoseEngine
+ * and returns FeedbackMessage to the UI.
  */
 interface PoseEvaluator {
     
@@ -89,7 +89,6 @@ interface PoseEvaluator {
     
     /**
      * Get current rep count if tracking is enabled.
-     * Student 3 can implement rep counting logic here.
      * 
      * @return Number of reps completed.
      */
