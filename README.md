@@ -164,7 +164,7 @@ For experienced users who want to start quickly:
 #### Step 2: Welcome Screen - Choose Your Mode
 <img src="instruction_images/choose_picture_way.png" alt="Start Screen" width="200"/>
 
-- **Tap "Let's Begin - Live Video Analysis"** to start real-time camera tracking → Continue to Step 3A
+- **Tap "Let's Begin"** to start real-time camera tracking → Continue to Step 3A
 - **Tap "Analyze Video"** to analyze a pre-recorded video → Continue to Step 3B
 
 ---
@@ -210,22 +210,15 @@ For experienced users who want to start quickly:
 - Use the **scrollable option** to select the number of reps you want to complete
 - The app will track your progress toward your target
 
-**Camera Setup Instructions:**
 
-<img src="instruction_images/understand_instructions.png" alt="Camera Instructions" width="200"/>
+**Confirm Understanding of Setup Instructions:**
 
-1. Position your phone 2-3 meters away on a stable surface
-2. Make sure your full body is visible in the camera
-3. Ensure good lighting in the room
-4. Stand in the middle of the camera frame
+<img src="instruction_images/understand_instructions.png" alt="I Understand Instructions Checkbox" width="200"/>
 
-**Controls available:**
-- **Camera Switch button** 🔄 - Tap to switch between front and back camera
-- **GPU/CPU Toggle button** 🧠 - Tap to switch processor mode (use if performance is laggy)
 
-**To proceed:**
-1. **Mark the checkbox** "I understand the instruction"
-2. **Tap "Start Session" button** to continue to camera setup
+Once you have read and understood these instructions:
+- **Mark the checkbox** "I understand the instruction"
+- **Tap "Start Session"** to continue to camera setup
 
 🏋️ **Exercise safe is exercise must have**
 
@@ -235,9 +228,10 @@ For experienced users who want to start quickly:
 
 <img src="instruction_images/set_camera.jpg" alt="Camera Setup" width="200"/>
 
-**Once on camera screen:**
-1. Ensure you're positioned correctly in the camera frame
-2. **Tap the Play button** ▶️ to start the exercise
+**Once on the camera screen:**
+1. Stand so your entire body is clearly visible within the camera frame—head to feet, centered, and not cut off.
+2. Adjust your position if needed to ensure good lighting and no major obstructions.
+3. When ready, **tap the Play button** ▶️ to begin your exercise session.
 
 **Controls available:**
 - **Camera Switch button** 🔄 - Tap to switch between front and back camera
@@ -331,7 +325,7 @@ For experienced users who want to start quickly:
   - **Reps completed** (for Push-ups/Squats) or **Duration** (for Plank)
   - **Session duration** 
   - **Percentage score** - Get a score from 0-100% showing your overall form quality for this exercise
-  - (For more details about how the scoring system works, please reference the "Performance Scoring Methodology" section)
+  - (For more details about how the scoring system works, please reference the [Performance Scoring Methodology](#performance-convergence-analysis) section)
 
 **Special for Plank:**
 - Displays **"Form Breaks"** count - shows how many times you broke from proper plank position
