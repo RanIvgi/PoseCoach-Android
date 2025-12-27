@@ -11,22 +11,22 @@ PoseCoach provides two main user flows for exercise form analysis:
 
 ```mermaid
 graph TD
-    Start[Start Screen] --> |"Let's Begin"| ExerciseSelection[Exercise Selection Screen]
-    Start --> |"Analyze Video"| VideoUpload[Video Upload Screen]
-    Start --> |"Exit App"| Exit[Exit Application]
+    Start[Start Screen] --> |Let's Begin| ExerciseSelection[Exercise Selection Screen]
+    Start --> |Analyze Video| VideoUpload[Video Upload Screen]
+    Start --> |Exit App| Exit[Exit Application]
     
-    ExerciseSelection --> |Select Exercise<br/>Configure Settings| ExerciseConfig[Exercise Configuration]
-    ExerciseConfig --> |"Start Session"<br/>after checkbox| CameraSession[Camera Session Screen]
+    ExerciseSelection --> |Select Exercise| ExerciseConfig[Exercise Configuration]
+    ExerciseConfig --> |Start Session| CameraSession[Camera Session Screen]
     ExerciseSelection --> |Back Arrow| Start
     
-    CameraSession --> |"Finish Session"| LiveResults[Live Session Results]
-    CameraSession --> |Home Button<br/>during session| Start
+    CameraSession --> |Finish Session| LiveResults[Live Session Results]
+    CameraSession --> |Home Button| Start
     
-    LiveResults --> |"New Exercise"| ExerciseSelection
-    LiveResults --> |"Home"| Start
+    LiveResults --> |New Exercise| ExerciseSelection
+    LiveResults --> |Home| Start
     LiveResults --> |Back Arrow| Start
     
-    VideoUpload --> |Select Video<br/>Select Exercise<br/>"Analyze"| VideoProcessing[Video Processing]
+    VideoUpload --> |Select & Analyze| VideoProcessing[Video Processing]
     VideoUpload --> |Back Arrow| Start
     
     VideoProcessing --> VideoResults[Video Results Screen]
