@@ -70,6 +70,12 @@ data class LiveSessionResult(
             val uniqueMessages = feedbackMessages.distinctBy { it.text }
             
             for (msg in uniqueMessages) {
+                // Skip specific messages that shouldn't deduct points
+                if (msg.text.contains("Camera positioning needs adjustment") || 
+                    msg.text.contains("Time out of position")) {
+                    continue
+                }
+
                 when (msg.severity) {
                     FeedbackSeverity.WARNING -> score -= 5.0 // Deduct 5 points for warnings
                     FeedbackSeverity.ERROR -> score -= 10.0  // Deduct 10 points for errors

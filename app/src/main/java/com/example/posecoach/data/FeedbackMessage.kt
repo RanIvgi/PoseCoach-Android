@@ -11,7 +11,8 @@ package com.example.posecoach.data
 data class FeedbackMessage(
     val text: String,
     val severity: FeedbackSeverity = FeedbackSeverity.INFO,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val explicitPointDeduction: Int? = null
 )
 
 /**
