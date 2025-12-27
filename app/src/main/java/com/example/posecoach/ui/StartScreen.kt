@@ -185,7 +185,7 @@ fun StartScreen(
                         Text(
                             text = "Analyze Video",
                             style = MaterialTheme.typography.button,
-                            fontSize = 20.sp
+                            fontSize = 16.sp
                         )
                     }
 
