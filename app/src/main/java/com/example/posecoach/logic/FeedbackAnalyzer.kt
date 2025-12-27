@@ -75,7 +75,7 @@ object FeedbackAnalyzer {
         } else if (count > 0) {
              // Optional: Report occasional errors? 
              // For now, let's only report if it's somewhat frequent or at least happened once clearly
-             outputList.add(FeedbackMessage("Occasional issue: $rawErrorText", FeedbackSeverity.INFO))
+             outputList.add(FeedbackMessage("Occasional issue: $rawErrorText", FeedbackSeverity.WARNING))
         }
     }
 
