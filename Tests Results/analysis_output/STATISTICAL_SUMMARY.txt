@@ -1,0 +1,140 @@
+================================================================================
+MEDIAPIPE MODEL PERFORMANCE - STATISTICAL SUMMARY
+================================================================================
+
+Generated: 2025-12-27 17:33:08
+Total Tests Analyzed: 9
+Device: HEAVY
+
+================================================================================
+
+LITE MODEL STATISTICS:
+----------------------------------------
+  Tests Performed: 3
+
+  FPS Metrics:
+    Real FPS (avg):     14.86 ± 3.14
+    Real FPS (min):     11.52
+    Real FPS (max):     17.75
+    Reported FPS (avg): 29.96
+
+  Processing Time:
+    Inference (avg):    17.44 ms
+    Inference (min):    0.06 ms
+    Inference (max):    51.31 ms
+
+  Detection Quality:
+    Success Rate:       100.00%
+    Confidence:         99.89%
+    Visibility:         87.26%
+
+  Frame Analysis:
+    Total Frames:       949
+    Avg Frames/Test:    316.3
+    Frames with Pose:   949
+    Frames without:     0
+
+FULL MODEL STATISTICS:
+----------------------------------------
+  Tests Performed: 3
+
+  FPS Metrics:
+    Real FPS (avg):     10.62 ± 0.65
+    Real FPS (min):     9.95
+    Real FPS (max):     11.25
+    Reported FPS (avg): 30.00
+
+  Processing Time:
+    Inference (avg):    17.77 ms
+    Inference (min):    0.08 ms
+    Inference (max):    45.95 ms
+
+  Detection Quality:
+    Success Rate:       100.00%
+    Confidence:         99.93%
+    Visibility:         88.93%
+
+  Frame Analysis:
+    Total Frames:       648
+    Avg Frames/Test:    216.0
+    Frames with Pose:   648
+    Frames without:     0
+
+HEAVY MODEL STATISTICS:
+----------------------------------------
+  Tests Performed: 3
+
+  FPS Metrics:
+    Real FPS (avg):     2.84 ± 0.25
+    Real FPS (min):     2.56
+    Real FPS (max):     3.05
+    Reported FPS (avg): 29.96
+
+  Processing Time:
+    Inference (avg):    18.34 ms
+    Inference (min):    0.73 ms
+    Inference (max):    43.17 ms
+
+  Detection Quality:
+    Success Rate:       100.00%
+    Confidence:         99.99%
+    Visibility:         83.59%
+
+  Frame Analysis:
+    Total Frames:       183
+    Avg Frames/Test:    61.0
+    Frames with Pose:   183
+    Frames without:     0
+
+================================================================================
+COMPARATIVE ANALYSIS
+================================================================================
+
+  Highest Real FPS:       LITE
+  Highest Confidence:     HEAVY
+  Highest Visibility:     FULL
+
+  Correlation (FPS vs Confidence): r = -0.777, p = 0.0137
+  Correlation (FPS vs Visibility): r = 0.362, p = 0.3385
+
+================================================================================
+PER-EXERCISE BREAKDOWN
+================================================================================
+
+PLANK:
+----------------------------------------
+  LITE  :  11.52 FPS, 99.95% conf, 79.40% vis
+  FULL  :  11.25 FPS, 99.94% conf, 80.32% vis
+  HEAVY :   3.05 FPS, 99.99% conf, 75.39% vis
+
+PUSHUP:
+----------------------------------------
+  LITE  :  15.30 FPS, 99.93% conf, 85.89% vis
+  FULL  :   9.95 FPS, 99.99% conf, 89.06% vis
+  HEAVY :   2.56 FPS, 100.00% conf, 82.76% vis
+
+SQUAT:
+----------------------------------------
+  LITE  :  17.75 FPS, 99.79% conf, 96.50% vis
+  FULL  :  10.67 FPS, 99.88% conf, 97.40% vis
+  HEAVY :   2.90 FPS, 99.98% conf, 92.61% vis
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+  LITE Model:
+    ✓ Best for: Real-time applications requiring maximum FPS
+    ✓ Trade-off: 14.9 FPS with acceptable accuracy
+
+  FULL Model (RECOMMENDED):
+    ⭐ Best for: Balanced performance and accuracy
+    ⭐ Delivers: 10.6 FPS with 99.93% confidence
+    ⭐ Optimal for most real-time pose coaching applications
+
+  HEAVY Model:
+    ❌ NOT RECOMMENDED: Severe frame dropping (2.8 FPS)
+    ❌ Only 0.06% accuracy gain over FULL
+    ❌ Unusable for real-time user experience
+
+================================================================================
