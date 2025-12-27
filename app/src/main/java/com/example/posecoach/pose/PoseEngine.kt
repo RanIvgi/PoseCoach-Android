@@ -11,6 +11,7 @@ import android.os.Build
 import android.util.Log
 import androidx.camera.core.ImageProxy
 import com.example.posecoach.data.PoseLandmark
+import com.example.posecoach.data.PoseModel
 import com.example.posecoach.data.PoseResult
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.MPImage
@@ -75,6 +76,10 @@ class PoseEngine(private val context: Context) {
     private val _useGpuDelegate = MutableStateFlow(Companion.isRealDevice())
     val useGpuDelegate: StateFlow<Boolean> = _useGpuDelegate.asStateFlow()
     
+    // Model selection (Lite, Full, Heavy)
+    private val _currentModel = MutableStateFlow(PoseModel.FULL)
+    val currentModel: StateFlow<PoseModel> = _currentModel.asStateFlow()
+    
     private var lastFrameTime = 0L
     private val frameTimeWindow = mutableListOf<Long>()
     
@@ -97,6 +102,24 @@ class PoseEngine(private val context: Context) {
     }
     
     /**
+     * Switch to a different pose detection model.
+     * Requires re-initialization to take effect.
+     * 
+     * @param model The model to switch to (LITE, FULL, or HEAVY)
+     */
+    fun setModel(model: PoseModel) {
+        if (_currentModel.value != model) {
+            _currentModel.value = model
+            Log.d(TAG, "Model set to: ${model.displayName} (${model.assetPath})")
+        }
+    }
+    
+    /**
+     * Get the current model being used.
+     */
+    fun getCurrentModel(): PoseModel = _currentModel.value
+    
+    /**
      * Initialize MediaPipe Pose Landmarker.
      * Must be called before using detectPose().
      * 
@@ -112,7 +135,7 @@ class PoseEngine(private val context: Context) {
             // Configure MediaPipe base options
             val baseOptions = BaseOptions.builder()
                 .setDelegate(delegate)
-                .setModelAssetPath("pose_landmarker_full.task") // Model in assets folder
+                .setModelAssetPath(_currentModel.value.assetPath) // Use selected model
                 .build()
             
             // Configure Pose Landmarker options
@@ -150,7 +173,7 @@ class PoseEngine(private val context: Context) {
                 try {
                     val cpuBaseOptions = BaseOptions.builder()
                         .setDelegate(Delegate.CPU)
-                        .setModelAssetPath("pose_landmarker_full.task")
+                        .setModelAssetPath(_currentModel.value.assetPath)
                         .build()
                     
                     val cpuOptions = PoseLandmarker.PoseLandmarkerOptions.builder()
@@ -309,7 +332,7 @@ class PoseEngine(private val context: Context) {
             
             val baseOptions = BaseOptions.builder()
                 .setDelegate(delegate)
-                .setModelAssetPath("pose_landmarker_full.task")
+                .setModelAssetPath(_currentModel.value.assetPath)
                 .build()
             
             val options = PoseLandmarker.PoseLandmarkerOptions.builder()
@@ -334,7 +357,7 @@ class PoseEngine(private val context: Context) {
                 try {
                     val cpuBaseOptions = BaseOptions.builder()
                         .setDelegate(Delegate.CPU)
-                        .setModelAssetPath("pose_landmarker_full.task")
+                        .setModelAssetPath(_currentModel.value.assetPath)
                         .build()
                     
                     val cpuOptions = PoseLandmarker.PoseLandmarkerOptions.builder()
