@@ -17,6 +17,9 @@ fun PoseCoachApp() {
     val navController = rememberNavController()
     val videoAnalysisViewModel: VideoAnalysisViewModel = viewModel()
     val cameraViewModel: CameraViewModel = viewModel()
+    
+    // Collect current model from CameraViewModel
+    val currentModel by cameraViewModel.currentModel.collectAsState()
 
     NavHost(
         navController = navController,
@@ -48,6 +51,10 @@ fun PoseCoachApp() {
                     // Set target reps if provided
                     targetReps?.let { cameraViewModel.setTargetReps(it) }
                     navController.navigate("camera")
+                },
+                currentModel = currentModel,
+                onModelSelected = { model ->
+                    cameraViewModel.setModel(model)
                 }
             )
         }

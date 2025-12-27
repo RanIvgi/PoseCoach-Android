@@ -31,6 +31,8 @@ fun LiveSessionResultsScreen(
     navBackToStart: () -> Unit,
     onStartNewExercise: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     // 1. Extract unique exercise types from history
     // If history is empty (legacy/fallback), just use the single result we have
     val exerciseTypes = remember(sessionResult.sessionHistory) {
@@ -419,58 +421,137 @@ fun LiveSessionResultsScreen(
                 }
 
                 // Action buttons (Fixed at bottom)
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
                 ) {
-                    Button(
-                        onClick = onStartNewExercise,
+                    // Export button
+                    OutlinedButton(
+                        onClick = {
+                            try {
+                                // Find the latest JSON file in the performance_tests directory
+                                val logsDir = java.io.File(context.getExternalFilesDir(null), "performance_tests")
+                                
+                                android.util.Log.i("LiveSessionResults", "Looking for performance tests in: ${logsDir.absolutePath}")
+                                android.util.Log.i("LiveSessionResults", "Directory exists: ${logsDir.exists()}")
+                                android.util.Log.i("LiveSessionResults", "Is directory: ${logsDir.isDirectory}")
+                                
+                                if (!logsDir.exists()) {
+                                    android.util.Log.w("LiveSessionResults", "Logs directory does not exist")
+                                    android.widget.Toast.makeText(context, "No performance data directory found", android.widget.Toast.LENGTH_LONG).show()
+                                    return@OutlinedButton
+                                }
+                                
+                                val allFiles = logsDir.listFiles()
+                                android.util.Log.i("LiveSessionResults", "Total files in directory: ${allFiles?.size ?: 0}")
+                                
+                                val jsonFiles = allFiles?.filter { it.extension == "json" }
+                                android.util.Log.i("LiveSessionResults", "JSON files found: ${jsonFiles?.size ?: 0}")
+                                
+                                jsonFiles?.forEach { file ->
+                                    android.util.Log.i("LiveSessionResults", "  - ${file.name} (${file.length()} bytes, modified: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date(file.lastModified()))})")
+                                }
+                                
+                                val latestFile = jsonFiles?.maxByOrNull { it.lastModified() }
+                                
+                                if (latestFile != null && latestFile.exists()) {
+                                    android.util.Log.i("LiveSessionResults", "✓ Using latest file: ${latestFile.name}")
+                                    
+                                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                                        context,
+                                        "${context.packageName}.fileprovider",
+                                        latestFile
+                                    )
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "application/json"
+                                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(android.content.Intent.createChooser(intent, "Share Performance Data"))
+                                } else {
+                                    android.util.Log.w("LiveSessionResults", "✗ No valid JSON files found")
+                                    android.widget.Toast.makeText(context, "No performance data found. Please complete a session first.", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("LiveSessionResults", "Error exporting performance data", e)
+                                android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        },
                         modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
+                            .fillMaxWidth()
+                            .height(48.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF4CAF50)
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
+                            imageVector = Icons.Default.Share,
                             contentDescription = null,
                             tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "New Exercise",
+                            text = "Export Performance Data",
                             color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = 14.sp
                         )
                     }
                     
-                    Button(
-                        onClick = navBackToStart,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF0B3C91)
-                        )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Home",
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Button(
+                            onClick = onStartNewExercise,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color(0xFF4CAF50)
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "New Exercise",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        
+                        Button(
+                            onClick = navBackToStart,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color(0xFF0B3C91)
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Home",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }

@@ -17,6 +17,7 @@ import com.example.posecoach.logic.PoseEvaluator
 import com.example.posecoach.logic.FeedbackAnalyzer
 import com.example.posecoach.pose.PoseEngine
 import com.example.posecoach.data.ExerciseSessionSummary
+import com.example.posecoach.data.PerformanceLogger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,6 +47,7 @@ class CameraViewModel : ViewModel() {
     private lateinit var poseEngine: PoseEngine
     private val poseEvaluator: PoseEvaluator = DefaultPoseEvaluator()
     private val cameraExecutor = Executors.newSingleThreadExecutor()
+    private var performanceLogger: PerformanceLogger? = null
 
     // Store references for camera switching
     private var currentContext: android.content.Context? = null
@@ -67,6 +69,9 @@ class CameraViewModel : ViewModel() {
 
     private val _useGpuDelegate = MutableStateFlow(false)
     val useGpuDelegate: StateFlow<Boolean> = _useGpuDelegate.asStateFlow()
+    
+    private val _currentModel = MutableStateFlow(com.example.posecoach.data.PoseModel.FULL)
+    val currentModel: StateFlow<com.example.posecoach.data.PoseModel> = _currentModel.asStateFlow()
 
     private val _cameraError = MutableStateFlow<String?>(null)
     val cameraError: StateFlow<String?> = _cameraError.asStateFlow()
@@ -181,6 +186,15 @@ class CameraViewModel : ViewModel() {
                     if (_sessionState.value == SessionState.ACTIVE) {
                         _poseResult.value = result
                         result?.let {
+                            // Log frame metrics
+                            performanceLogger?.logFrameMetrics(
+                                inferenceMs = result.inferenceTimeMs,
+                                bitmapConversionMs = 0f,
+                                rotationMs = 0f,
+                                totalMs = result.inferenceTimeMs,
+                                poseDetected = result.landmarks.isNotEmpty()
+                            )
+                            
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                                 val feedbackMsg = if (SKIP_POSE_EVALUATION) {
                                     null
@@ -289,6 +303,29 @@ class CameraViewModel : ViewModel() {
             poseEngine.initialize()
         }
     }
+    
+    /**
+     * Change the pose detection model and reinitialize the engine.
+     * This should be called before starting a session.
+     */
+    fun setModel(model: com.example.posecoach.data.PoseModel) {
+        if (_currentModel.value != model) {
+            _currentModel.value = model
+            
+            // If PoseEngine is already initialized, update its model and reinitialize
+            if (::poseEngine.isInitialized) {
+                android.util.Log.i("CameraViewModel", "Changing model to: ${model.displayName}")
+                poseEngine.setModel(model)
+                val success = poseEngine.reinitialize()
+                
+                if (success) {
+                    android.util.Log.i("CameraViewModel", "✓ Model changed successfully to: ${model.displayName}")
+                } else {
+                    android.util.Log.e("CameraViewModel", "✗ Failed to reinitialize with new model: ${model.displayName}")
+                }
+            }
+        }
+    }
 
     fun startSessionCountdown(durationSeconds: Int?) {
         if (_sessionState.value != SessionState.IDLE) return
@@ -305,6 +342,21 @@ class CameraViewModel : ViewModel() {
             sessionStartTimeMillis = System.currentTimeMillis()
             sessionFeedbackHistory.clear()
             _sessionState.value = SessionState.ACTIVE
+            
+            // Start performance logging
+            val ctx = currentContext
+            if (ctx != null) {
+                performanceLogger = PerformanceLogger(ctx)
+                performanceLogger?.startLogging(
+                    testNumber = 1, // TODO: Track test numbers across sessions
+                    exerciseType = _currentExercise.value,
+                    modelType = _currentModel.value,
+                    delegate = if (_useGpuDelegate.value) "GPU" else "CPU"
+                )
+                android.util.Log.i("CameraViewModel", "✓ PerformanceLogger initialized and started")
+            } else {
+                android.util.Log.e("CameraViewModel", "✗ Cannot start PerformanceLogger: currentContext is null")
+            }
 
             _exerciseElapsedSeconds.value = 0
             _exerciseRemainingSeconds.value = durationSeconds
@@ -333,6 +385,19 @@ class CameraViewModel : ViewModel() {
 
         val now = System.currentTimeMillis()
         val durationMillis = sessionStartTimeMillis?.let { start -> now - start } ?: 0L
+        
+        // Finalize and save performance log
+        performanceLogger?.let { logger ->
+            logger.stopLogging()
+            val filePath = logger.exportToJson()
+            
+            if (filePath != null) {
+                android.util.Log.i("CameraViewModel", "✓ Performance metrics exported to: $filePath")
+            } else {
+                android.util.Log.e("CameraViewModel", "✗ Failed to export performance metrics")
+            }
+            performanceLogger = null
+        }
 
         // Use the exercise-aware summary version (the one you are already using later)
         val formSummary = poseEvaluator.getEvaluationSummary(_currentExercise.value)
@@ -424,6 +489,7 @@ class CameraViewModel : ViewModel() {
         sessionStartTimeMillis = null
         sessionFeedbackHistory.clear()
         _navigateHomeAfterSummary.value = false
+        performanceLogger = null
 
         _exerciseRemainingSeconds.value = null
         _exerciseElapsedSeconds.value = 0

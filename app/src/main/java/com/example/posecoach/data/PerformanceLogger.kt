@@ -134,6 +134,16 @@ class PerformanceLogger(private val context: Context) {
     fun generateMetrics(): PerformanceMetrics {
         val duration = ((System.currentTimeMillis() - sessionStartTime) / 1000).toInt()
         
+        // Helper function to safely calculate average
+        fun List<Float>.safeAverage(): Float = if (isEmpty()) 0f else average().toFloat()
+        
+        // Safely calculate detection rate
+        val detectionRate = if (frameCount > 0) {
+            (framesWithPose.toFloat() / frameCount.toFloat() * 100f)
+        } else {
+            0f
+        }
+        
         return PerformanceMetrics(
             testNumber = testNumber,
             deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}",
@@ -145,26 +155,26 @@ class PerformanceLogger(private val context: Context) {
             durationSeconds = duration,
             
             // FPS metrics
-            fpsAverage = fpsValues.average().toFloat(),
+            fpsAverage = fpsValues.safeAverage(),
             fpsMin = fpsValues.minOrNull() ?: 0f,
             fpsMax = fpsValues.maxOrNull() ?: 0f,
             fpsStdDev = calculateStdDev(fpsValues),
             frameCount = frameCount,
             
             // Processing time metrics
-            inferenceTimeAvgMs = inferenceTimes.average().toFloat(),
+            inferenceTimeAvgMs = inferenceTimes.safeAverage(),
             inferenceTimeMinMs = inferenceTimes.minOrNull() ?: 0f,
             inferenceTimeMaxMs = inferenceTimes.maxOrNull() ?: 0f,
-            bitmapConversionAvgMs = bitmapConversionTimes.average().toFloat(),
-            rotationAvgMs = rotationTimes.average().toFloat(),
-            totalProcessingAvgMs = totalProcessingTimes.average().toFloat(),
+            bitmapConversionAvgMs = bitmapConversionTimes.safeAverage(),
+            rotationAvgMs = rotationTimes.safeAverage(),
+            totalProcessingAvgMs = totalProcessingTimes.safeAverage(),
             
             // Detection metrics
             framesWithPose = framesWithPose,
             framesWithoutPose = framesWithoutPose,
-            detectionSuccessRate = (framesWithPose.toFloat() / frameCount.toFloat() * 100f),
-            avgLandmarkConfidence = landmarkConfidences.average().toFloat(),
-            avgVisibilityScore = visibilityScores.average().toFloat(),
+            detectionSuccessRate = detectionRate,
+            avgLandmarkConfidence = landmarkConfidences.safeAverage(),
+            avgVisibilityScore = visibilityScores.safeAverage(),
             
             // Device metrics
             batteryStart = batteryStart,

@@ -15,7 +15,8 @@ data class PoseResult(
     val timestamp: Long = System.currentTimeMillis(),
     val imageWidth: Int = 0,
     val imageHeight: Int = 0,
-    val isFrontCamera: Boolean = true
+    val isFrontCamera: Boolean = true,
+    val inferenceTimeMs: Float = 0f
 ) {
     /**
      * Check if a valid pose was detected.

@@ -31,11 +31,14 @@ import androidx.compose.ui.zIndex
 @Composable
 fun ExerciseSelectionScreen(
     onBackToStart: () -> Unit,
-    onStartSession: (exerciseId: String, durationSeconds: Int?, targetReps: Int?) -> Unit
+    onStartSession: (exerciseId: String, durationSeconds: Int?, targetReps: Int?) -> Unit,
+    currentModel: com.example.posecoach.data.PoseModel = com.example.posecoach.data.PoseModel.FULL,
+    onModelSelected: (com.example.posecoach.data.PoseModel) -> Unit = {}
 ) {
     var selectedExercise by remember { mutableStateOf<ExerciseUi?>(null) }
     var understood by remember { mutableStateOf(false) }
     var showTutorialDialog by remember { mutableStateOf<ExerciseUi?>(null) }
+    var showModelSelector by remember { mutableStateOf(false) }
     
     // Plank-specific state
     var plankTimed by remember { mutableStateOf(true) }
@@ -161,6 +164,8 @@ fun ExerciseSelectionScreen(
                         onPushupTargetRepsChange = { pushupTargetReps = it },
                         showPushupRepPicker = showPushupRepPicker,
                         onShowPushupRepPickerChange = { showPushupRepPicker = it },
+                        currentModel = currentModel,
+                        onShowModelSelector = { showModelSelector = true },
                         onBack = { 
                             selectedExercise = null
                             understood = false
@@ -189,6 +194,18 @@ fun ExerciseSelectionScreen(
                 ExerciseTutorialDialog(
                     exercise = exercise,
                     onDismiss = { showTutorialDialog = null }
+                )
+            }
+            
+            // Model Selector Dialog
+            if (showModelSelector) {
+                ModelSelectorDialog(
+                    currentModel = currentModel,
+                    onModelSelected = { model ->
+                        onModelSelected(model)
+                        showModelSelector = false
+                    },
+                    onDismiss = { showModelSelector = false }
                 )
             }
         }
@@ -279,6 +296,8 @@ fun ExerciseDetailsView(
     onPushupTargetRepsChange: (Int) -> Unit,
     showPushupRepPicker: Boolean,
     onShowPushupRepPickerChange: (Boolean) -> Unit,
+    currentModel: com.example.posecoach.data.PoseModel,
+    onShowModelSelector: () -> Unit,
     onBack: () -> Unit,
     onStartSession: () -> Unit
 ) {
@@ -601,6 +620,44 @@ fun ExerciseDetailsView(
                                     .height(180.dp)
                             )
                         }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Model Selection
+                Text(
+                    text = "Detection Model:",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colors.primary
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                OutlinedButton(
+                    onClick = onShowModelSelector,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        backgroundColor = MaterialTheme.colors.surface,
+                        contentColor = MaterialTheme.colors.primary
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colors.primary)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Text(
+                            text = currentModel.displayName,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = currentModel.description,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                        )
                     }
                 }
                 

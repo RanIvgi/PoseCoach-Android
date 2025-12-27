@@ -103,7 +103,7 @@ class PoseEngine(private val context: Context) {
     
     /**
      * Switch to a different pose detection model.
-     * Requires re-initialization to take effect.
+     * NOTE: After calling this, you must call reinitialize() to apply the change.
      * 
      * @param model The model to switch to (LITE, FULL, or HEAVY)
      */
@@ -112,6 +112,18 @@ class PoseEngine(private val context: Context) {
             _currentModel.value = model
             Log.d(TAG, "Model set to: ${model.displayName} (${model.assetPath})")
         }
+    }
+    
+    /**
+     * Reinitialize the PoseEngine with the current model settings.
+     * Call this after changing the model or delegate to apply the changes.
+     * 
+     * @return true if reinitialization successful, false otherwise
+     */
+    fun reinitialize(): Boolean {
+        Log.d(TAG, "Reinitializing PoseEngine with model: ${_currentModel.value.displayName}")
+        close()
+        return initialize()
     }
     
     /**
@@ -206,6 +218,9 @@ class PoseEngine(private val context: Context) {
         }
     }
     
+    // Track inference start time for each frame
+    private var currentFrameInferenceStartTime = 0L
+    
     /**
      * Process a camera frame and detect pose landmarks.
      * Call this from CameraX ImageAnalysis.Analyzer.
@@ -220,6 +235,9 @@ class PoseEngine(private val context: Context) {
     fun detectPose(imageProxy: ImageProxy, isFrontCamera: Boolean) {
         val frameStartTime = System.currentTimeMillis()
         val currentTime = frameStartTime
+        
+        // Store the start time for this frame's inference
+        currentFrameInferenceStartTime = System.nanoTime()
         
         try {
             // ============ STEP 1: BITMAP CONVERSION ============
@@ -455,6 +473,14 @@ class PoseEngine(private val context: Context) {
     private fun handlePoseResult(result: PoseLandmarkerResult, image: MPImage) {
         val resultStartTime = if (ENABLE_TIMING_LOGS) System.nanoTime() else 0L
         
+        // Calculate actual inference time from when detectAsync was called
+        val inferenceEndTime = System.nanoTime()
+        val inferenceTimeMs = if (currentFrameInferenceStartTime > 0) {
+            (inferenceEndTime - currentFrameInferenceStartTime) / 1_000_000.0f
+        } else {
+            0f
+        }
+        
         // Extract landmarks from the first (and likely only) detected pose
         val poseLandmarks = result.landmarks().firstOrNull()
         
@@ -476,13 +502,14 @@ class PoseEngine(private val context: Context) {
                 )
             }
             
-            // Create PoseResult
+            // Create PoseResult with inference time
             val poseResult = PoseResult(
                 landmarks = landmarks,
                 timestamp = System.currentTimeMillis(),
                 imageWidth = image.width,
                 imageHeight = image.height,
-                isFrontCamera = true // TODO: Pass this from detectPose
+                isFrontCamera = true, // TODO: Pass this from detectPose
+                inferenceTimeMs = inferenceTimeMs
             )
             
             // Emit result via StateFlow
