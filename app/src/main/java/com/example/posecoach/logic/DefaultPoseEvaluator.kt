@@ -52,6 +52,12 @@ class DefaultPoseEvaluator : PoseEvaluator {
     private var sessionStartTime: Long = 0L
     private var currentExerciseType: String = "squat" // Track which exercise is active
     
+    // Feedback filtering state
+    private var lastStableFeedback: FeedbackMessage? = null
+    private var pendingFeedback: FeedbackMessage? = null
+    private var pendingFeedbackStartTime: Long = 0
+    private val FEEDBACK_DEBOUNCE_MS = 200L // Ignore warnings lasting less than this
+
     override fun evaluate(poseResult: PoseResult, exerciseType: String): FeedbackMessage? {
         // PERFORMANCE OPTIMIZATION: Per-frame logging disabled
         // This log executes on every pose evaluation (30+ FPS during active session).
@@ -65,19 +71,54 @@ class DefaultPoseEvaluator : PoseEvaluator {
         
         // No pose detected
         if (!poseResult.hasPose()) {
-            return FeedbackMessage(
+            // Treat "No pose detected" as a warning that needs debouncing too, 
+            // to avoid flickering when pose is lost for a single frame.
+            return filterFeedback(FeedbackMessage(
                 text = "No pose detected. Step back or adjust camera.",
                 severity = FeedbackSeverity.WARNING
-            )
+            ))
         }
         
         // Route to specific exercise evaluator
-        return when (exerciseType.lowercase()) {
+        val rawFeedback = when (exerciseType.lowercase()) {
             "squat" -> evaluateSquat(poseResult)
             "pushup", "push-up", "push_up" -> evaluatePushup(poseResult)
             "lunge" -> evaluateLunge(poseResult)
             "plank" -> evaluatePlank(poseResult)
             else -> evaluateGeneral(poseResult)
+        }
+
+        return filterFeedback(rawFeedback)
+    }
+
+    private fun filterFeedback(newFeedback: FeedbackMessage?): FeedbackMessage? {
+        val now = System.currentTimeMillis()
+
+        // 1. INFO messages and NULL (cleared) pass through immediately
+        // We assume these are "safe" states or important events (reps)
+        if (newFeedback == null || newFeedback.severity == FeedbackSeverity.INFO) {
+            lastStableFeedback = newFeedback
+            pendingFeedback = null
+            return newFeedback
+        }
+
+        // 2. WARNING/ERROR messages need to persist
+        if (pendingFeedback?.text == newFeedback.text) {
+            // Same warning is persisting
+            if (now - pendingFeedbackStartTime >= FEEDBACK_DEBOUNCE_MS) {
+                // Threshold reached, accept as new stable
+                lastStableFeedback = newFeedback
+                return newFeedback
+            } else {
+                // Threshold not reached, return previous stable state
+                return lastStableFeedback
+            }
+        } else {
+            // New warning detected (different from pending)
+            pendingFeedback = newFeedback
+            pendingFeedbackStartTime = now
+            // Return previous stable state while we wait
+            return lastStableFeedback
         }
     }
     
@@ -566,6 +607,11 @@ class DefaultPoseEvaluator : PoseEvaluator {
         // Reset session tracking
         sessionStartTime = 0L
         currentExerciseType = "squat"
+
+        // Reset feedback filter
+        lastStableFeedback = null
+        pendingFeedback = null
+        pendingFeedbackStartTime = 0L
     }
     
     override fun getRepCount(): Int {

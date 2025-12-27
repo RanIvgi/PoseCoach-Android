@@ -23,12 +23,59 @@ data class LiveSessionResult(
 ) {
     companion object {
         /**
-         * Calculate overall score based on feedback severity.
-         * More INFO messages = higher score
-         * More WARNING/ERROR messages = lower score
+         * Calculate overall score based on reps completion and feedback severity.
+         * Base score = % of target reps completed (max 100)
+         * Deductions = Points subtracted for WARNING/ERROR messages
          */
-        fun calculateScore(feedbackMessages: List<FeedbackMessage>): Int {
-            return ScoreCalculator.calculateScore(feedbackMessages, defaultScore = 50)
+        fun calculateScore(
+            feedbackMessages: List<FeedbackMessage>,
+            completedReps: Int,
+            targetReps: Int,
+            exerciseType: String,
+            durationMillis: Long = 0,
+            targetDurationMillis: Long? = null,
+            formBreakCount: Int = 0
+        ): Int {
+            // 1. Base Score from Reps or Duration
+            var score = if (exerciseType.lowercase().contains("plank")) {
+                // For plank, check if we have a target duration
+                if (targetDurationMillis != null && targetDurationMillis > 0) {
+                    (durationMillis.toDouble() / targetDurationMillis.toDouble()) * 100.0
+                } else {
+                    // No target set? Default to 100 if they did anything.
+                    if (durationMillis > 0) 100.0 else 0.0
+                }
+            } else {
+                if (targetReps > 0) {
+                    (completedReps.toDouble() / targetReps.toDouble()) * 100.0
+                } else {
+                    // No target set? Default to 100 if they did at least one rep.
+                    if (completedReps > 0) 100.0 else 0.0
+                }
+            }
+            
+            // Cap base score at 100 (e.g. if they did bonus reps)
+            if (score > 100.0) score = 100.0
+
+            // 2. Deductions from Feedback
+            // We iterate through the unique feedback messages to avoid double penalizing for the same recurring issue.
+            // If the user got "knees over toes" twice, we only deduct points once.
+            val uniqueMessages = feedbackMessages.distinctBy { it.text }
+            
+            for (msg in uniqueMessages) {
+                when (msg.severity) {
+                    FeedbackSeverity.WARNING -> score -= 5.0 // Deduct 5 points for warnings
+                    FeedbackSeverity.ERROR -> score -= 10.0  // Deduct 10 points for errors
+                    FeedbackSeverity.INFO -> { /* No change */ }
+                }
+            }
+
+            // 3. Deductions from Form Breaks (specifically for Plank)
+            if (exerciseType.lowercase().contains("plank")) {
+                score -= (formBreakCount * 5.0)
+            }
+
+            return score.toInt().coerceIn(0, 100)
         }
     }
 }

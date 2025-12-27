@@ -102,6 +102,9 @@ class CameraViewModel : ViewModel() {
     private val _exerciseRemainingSeconds = MutableStateFlow<Int?>(null)
     val exerciseRemainingSeconds: StateFlow<Int?> = _exerciseRemainingSeconds.asStateFlow()
 
+    // Store the initial target duration for score calculation
+    private var _targetDurationSeconds: Int? = null
+
     private val _exerciseElapsedSeconds = MutableStateFlow(0)
     val exerciseElapsedSeconds: StateFlow<Int> = _exerciseElapsedSeconds.asStateFlow()
 
@@ -282,6 +285,7 @@ class CameraViewModel : ViewModel() {
 
             _exerciseElapsedSeconds.value = 0
             _exerciseRemainingSeconds.value = durationSeconds
+            _targetDurationSeconds = durationSeconds
 
             while (_sessionState.value == SessionState.ACTIVE) {
                 delay(1000)
@@ -309,8 +313,17 @@ class CameraViewModel : ViewModel() {
 
         // Use the exercise-aware summary version (the one you are already using later)
         val formSummary = poseEvaluator.getEvaluationSummary(_currentExercise.value)
+        val formBreakCount = poseEvaluator.getFormBreakCount()
 
-        val overallScore = LiveSessionResult.calculateScore(sessionFeedbackHistory)
+        val overallScore = LiveSessionResult.calculateScore(
+            sessionFeedbackHistory,
+            _repCount.value,
+            _targetReps.value,
+            _currentExercise.value,
+            durationMillis,
+            _targetDurationSeconds?.times(1000L),
+            formBreakCount
+        )
 
         // Analyze feedback to generate summary
         val summarizedFeedback = FeedbackAnalyzer.analyze(
@@ -318,8 +331,6 @@ class CameraViewModel : ViewModel() {
             _currentExercise.value,
             _repCount.value
         )
-
-        val formBreakCount = poseEvaluator.getFormBreakCount()
 
         val current = ExerciseSessionSummary(
             exerciseId = _currentExercise.value,
