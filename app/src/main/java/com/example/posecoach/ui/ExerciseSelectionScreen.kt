@@ -9,11 +9,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,7 @@ fun ExerciseSelectionScreen(
 ) {
     var selectedExercise by remember { mutableStateOf<ExerciseUi?>(null) }
     var understood by remember { mutableStateOf(false) }
+    var showTutorialDialog by remember { mutableStateOf<ExerciseUi?>(null) }
     
     // Plank-specific state
     var plankTimed by remember { mutableStateOf(true) }
@@ -118,6 +121,9 @@ fun ExerciseSelectionScreen(
                                     showPushupRepPicker = false
                                 }
                             }
+                            },
+                            onInfoClick = {
+                                showTutorialDialog = exercise
                             }
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -177,6 +183,14 @@ fun ExerciseSelectionScreen(
                     )
                 }
             }
+            
+            // Tutorial Dialog
+            showTutorialDialog?.let { exercise ->
+                ExerciseTutorialDialog(
+                    exercise = exercise,
+                    onDismiss = { showTutorialDialog = null }
+                )
+            }
         }
     }
 }
@@ -184,18 +198,20 @@ fun ExerciseSelectionScreen(
 @Composable
 fun ExerciseCard(
     exercise: ExerciseUi,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onInfoClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth(),
         backgroundColor = MaterialTheme.colors.surface,
         shape = RoundedCornerShape(12.dp),
         elevation = 4.dp
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
@@ -216,6 +232,24 @@ fun ExerciseCard(
                     text = exercise.description,
                     fontSize = 14.sp,
                     color = MaterialTheme.colors.onSurface
+                )
+            }
+            
+            // Info button
+            IconButton(
+                onClick = onInfoClick,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = MaterialTheme.colors.primary.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "View tutorial for ${exercise.title}",
+                    tint = MaterialTheme.colors.primary,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
