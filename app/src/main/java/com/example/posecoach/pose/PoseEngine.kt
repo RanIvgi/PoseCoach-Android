@@ -502,14 +502,29 @@ class PoseEngine(private val context: Context) {
                 )
             }
             
-            // Create PoseResult with inference time
+            // Calculate average confidence and visibility scores
+            val avgConfidence = if (landmarks.isNotEmpty()) {
+                landmarks.map { it.presence }.average().toFloat()
+            } else {
+                0f
+            }
+            
+            val avgVisibility = if (landmarks.isNotEmpty()) {
+                landmarks.map { it.visibility }.average().toFloat()
+            } else {
+                0f
+            }
+            
+            // Create PoseResult with inference time and confidence metrics
             val poseResult = PoseResult(
                 landmarks = landmarks,
                 timestamp = System.currentTimeMillis(),
                 imageWidth = image.width,
                 imageHeight = image.height,
                 isFrontCamera = true, // TODO: Pass this from detectPose
-                inferenceTimeMs = inferenceTimeMs
+                inferenceTimeMs = inferenceTimeMs,
+                avgLandmarkConfidence = avgConfidence,
+                avgVisibilityScore = avgVisibility
             )
             
             // Emit result via StateFlow

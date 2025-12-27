@@ -100,14 +100,15 @@ data class PerformanceMetrics(
     
     /**
      * Generate filename for this test's export.
+     * Format: test_1_xiaomimi8_full_squat_2025-12-27_14-30-45.json
      */
     fun generateFilename(): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val date = dateFormat.format(Date(timestamp))
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
+        val dateTime = dateFormat.format(Date(timestamp))
         val deviceShort = deviceModel.replace(" ", "").toLowerCase(Locale.US)
         val exerciseLower = exerciseType.toLowerCase(Locale.US)
         val modelLower = modelType.name.toLowerCase(Locale.US)
         
-        return "test_${testNumber}_${deviceShort}_${modelLower}_${exerciseLower}_${date}.json"
+        return "test_${testNumber}_${deviceShort}_${modelLower}_${exerciseLower}_${dateTime}.json"
     }
 }

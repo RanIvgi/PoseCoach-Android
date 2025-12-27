@@ -6,28 +6,28 @@
     "model_type": "LITE",
     "exercise_type": "squat",
     "delegate": "CPU",
-    "timestamp": "2025-12-27T12:27:43Z",
-    "duration_seconds": 14
+    "timestamp": "2025-12-27T12:39:12Z",
+    "duration_seconds": 12
   },
   "performance_metrics": {
-    "fps_average": 0,
-    "fps_min": 0,
-    "fps_max": 0,
-    "fps_stddev": 0,
-    "frame_count": 149,
-    "inference_time_avg_ms": 17.008955001831055,
-    "inference_time_min_ms": 0.26020801067352295,
-    "inference_time_max_ms": 87.78240203857422,
+    "fps_average": 29.92345428466797,
+    "fps_min": 28.680688858032227,
+    "fps_max": 30.549898147583008,
+    "fps_stddev": 0.30504798889160156,
+    "frame_count": 128,
+    "inference_time_avg_ms": 15.839545249938965,
+    "inference_time_min_ms": 0.20682300627231598,
+    "inference_time_max_ms": 37.485313415527344,
     "bitmap_conversion_avg_ms": 0,
     "rotation_avg_ms": 0,
-    "total_processing_avg_ms": 17.008955001831055
+    "total_processing_avg_ms": 15.839545249938965
   },
   "detection_metrics": {
-    "frames_with_pose": 149,
+    "frames_with_pose": 128,
     "frames_without_pose": 0,
     "detection_success_rate": 100,
-    "avg_landmark_confidence": 0,
-    "avg_visibility_score": 0
+    "avg_landmark_confidence": 0.9990126490592957,
+    "avg_visibility_score": 0.9687198400497437
   },
   "device_metrics": {
     "battery_start": 100,

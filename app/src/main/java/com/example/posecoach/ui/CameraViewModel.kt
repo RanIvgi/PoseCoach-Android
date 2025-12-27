@@ -186,14 +186,19 @@ class CameraViewModel : ViewModel() {
                     if (_sessionState.value == SessionState.ACTIVE) {
                         _poseResult.value = result
                         result?.let {
-                            // Log frame metrics
+                            // Log frame metrics with real confidence and visibility values
                             performanceLogger?.logFrameMetrics(
                                 inferenceMs = result.inferenceTimeMs,
                                 bitmapConversionMs = 0f,
                                 rotationMs = 0f,
                                 totalMs = result.inferenceTimeMs,
-                                poseDetected = result.landmarks.isNotEmpty()
+                                poseDetected = result.landmarks.isNotEmpty(),
+                                avgLandmarkConfidence = result.avgLandmarkConfidence,
+                                avgVisibilityScore = result.avgVisibilityScore
                             )
+                            
+                            // Also log FPS from the pose engine
+                            performanceLogger?.logFps(_fps.value)
                             
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
                                 val feedbackMsg = if (SKIP_POSE_EVALUATION) {

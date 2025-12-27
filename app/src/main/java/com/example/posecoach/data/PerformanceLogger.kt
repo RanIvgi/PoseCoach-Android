@@ -107,8 +107,8 @@ class PerformanceLogger(private val context: Context) {
         rotationMs: Float,
         totalMs: Float,
         poseDetected: Boolean,
-        landmarkConfidence: Float = 0f,
-        visibilityScore: Float = 0f
+        avgLandmarkConfidence: Float = 0f,
+        avgVisibilityScore: Float = 0f
     ) {
         if (!_isLogging.value) return
         
@@ -121,8 +121,8 @@ class PerformanceLogger(private val context: Context) {
         
         if (poseDetected) {
             framesWithPose++
-            if (landmarkConfidence > 0) landmarkConfidences.add(landmarkConfidence)
-            if (visibilityScore > 0) visibilityScores.add(visibilityScore)
+            if (avgLandmarkConfidence > 0) landmarkConfidences.add(avgLandmarkConfidence)
+            if (avgVisibilityScore > 0) visibilityScores.add(avgVisibilityScore)
         } else {
             framesWithoutPose++
         }
