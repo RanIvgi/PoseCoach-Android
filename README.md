@@ -958,12 +958,14 @@ Or download the APK from releases and install directly on your Android device.
 #### Step 2: Welcome Screen - Choose Your Mode
 <img src="instruction_images/choose_picture_way.png" alt="Start Screen" width="200"/>
 
-- **Tap "Let's Begin - Live Video Analysis"** to start real-time camera tracking
-- Or **tap "Upload Video for Analysis"** to analyze a pre-recorded video (if available)
+- **Tap "Let's Begin - Live Video Analysis"** to start real-time camera tracking → Continue to Step 3A
+- **Tap "Analyze Video"** to analyze a pre-recorded video → Continue to Step 3B
 
 ---
 
-#### Step 3: Select Your Exercise
+## Path A: Live Video Analysis
+
+#### Step 3A: Select Your Exercise
 <img src="instruction_images/choose_exercise.png" alt="Home Screen" width="200"/>
 
 - **Tap on any exercise card** to select:
@@ -975,7 +977,7 @@ Or download the APK from releases and install directly on your Android device.
 ---
 ---
 
-#### Step 3a: Interactive Exercise Explanation (Optional)
+#### Step 3a-A: Interactive Exercise Explanation (Optional)
 <img src="instruction_images/exercise_explation.png" alt="Exercise Explanation" width="200"/>
 
 <img src="instruction_images/ok_exercise_explanation.png" alt="OK Button" width="200"/>
@@ -985,12 +987,14 @@ Or download the APK from releases and install directly on your Android device.
 
 ---
 
-#### Step 4: Exercise Configuration
+#### Step 4A: Exercise Configuration
 <img src="instruction_images/reps.png" alt="Exercise Selection" width="200"/>
 
 **Choose your exercise mode:**
 
+
 **Option 1: Free Mode with Timer**
+
 <img src="instruction_images/free.png" alt="Free Mode" width="200"/>
 
 - Set timer to unlimited mode
@@ -1001,8 +1005,9 @@ Or download the APK from releases and install directly on your Android device.
 - Use the **scrollable option** to select the number of reps you want to complete
 - The app will track your progress toward your target
 
-**Camera Setup:**
-<img src="instruction_images/understand_instructions.png" alt="Camera Setup" width="200"/>
+**Camera Setup Instructions:**
+
+<img src="instruction_images/understand_instructions.png" alt="Camera Instructions" width="200"/>
 
 1. Position your phone 2-3 meters away on a stable surface
 2. Make sure your full body is visible in the camera
@@ -1013,26 +1018,83 @@ Or download the APK from releases and install directly on your Android device.
 - **Camera Switch button** 🔄 - Tap to switch between front and back camera
 - **GPU/CPU Toggle button** 🧠 - Tap to switch processor mode (use if performance is laggy)
 
-**To start the exercise:**
+**To proceed:**
 1. **Mark the checkbox** "I understand the instruction"
-2. **Tap "Start Session" button** to begin
+2. **Tap "Start Session" button** to continue to camera setup
 
 🏋️ **Exercise safe is exercise must have**
 
-**Navigation:**
-- **Tap back arrow** (top left) to return to exercise selection
+---
+
+#### Step 5A: Camera Setup
+
+<img src="instruction_images/set_camera.jpg" alt="Camera Setup" width="200"/>
+
+**Once on camera screen:**
+1. Ensure you're positioned correctly in the camera frame
+2. **Tap the Play button** ▶️ to start the exercise
+
+**Controls available:**
+- **Camera Switch button** 🔄 - Tap to switch between front and back camera
+- **GPU/CPU Toggle button** 🧠 - Tap to switch processor mode (use if performance is laggy)
 
 ---
 
-#### Step 5: Active Exercise Session
+#### Step 6A: Countdown Timer
+
+<img src="instruction_images/timer_to_postion.jpg" alt="Countdown Timer" width="200"/>
+
+**During the countdown (5, 4, 3, 2, 1):**
+- Get into starting position for your exercise
+- Center yourself in the camera frame
+- Prepare to begin when countdown reaches 0
+- The exercise will automatically start after countdown completes
+
+---
+
+#### Step 7A: Active Exercise Session
+
+<img src="instruction_images/push_up_in_position.jpg" alt="Push-up Exercise" width="150"/> <img src="instruction_images/squat_in_posotion.jpg" alt="Squat Exercise" width="150"/> <img src="instruction_images/plank_in_position.jpg" alt="Plank Exercise" width="150"/>
 
 **During the exercise:**
-- Watch the skeleton overlay on your body to see pose detection
-- Follow the color-coded feedback messages:
-  - 🟢 **Green**: "Great form!" or "Perfect!"
-  - 🟡 **Yellow**: "Keep your back straight" or "Lower down more"
-  - 🔴 **Red**: "Incorrect form" or "Bend your knees more"
+- A **skeleton overlay** appears on your body showing pose detection
+- Different **colored dots** represent different body parts being tracked:
+
+```
+        🟡 (Face)
+       /   \
+   🟢       🔵 (Arms)
+     |     |
+     |  |  |
+    🩷   🔴 (Legs)
+     |   |
+    🩷   🔴
+```
+
+  - **Yellow dots** 🟡: Face landmarks (nose, eyes, ears, mouth)
+  - **Green dots** 🟢: Left arm (shoulder, elbow, wrist)
+  - **Blue dots** 🔵: Right arm (shoulder, elbow, wrist)
+  - **Pink dots** 🩷: Left leg (hip, knee, ankle)
+  - **Magenta/Red dots** 🔴: Right leg (hip, knee, ankle)
+  - **Colored lines**: Connect the joints to show your body's skeleton structure
+- The skeleton follows your movements in real-time with smooth animations
+
+**Real-time feedback comments:**
+- Follow the color-coded feedback messages that appear on screen:
+  - 🟢 **Green**: "Great form!" or "Perfect!" - You're doing well
+  - 🟡 **Yellow**: "Keep your back straight" or "Lower down more" - Form needs adjustment
+  - 🔴 **Red**: "Incorrect form" or "Bend your knees more" - Significant form issue
 - Monitor your rep counter (top left) and timer (top center)
+
+**How counting works:**
+- **For Push-ups and Squats**: 
+  - If you set target reps, the counter counts up from 0 until you reach your target
+  - Rep counter shows current reps / target reps (e.g., "5 / 10")
+  - Session ends when target is reached or you tap Stop button
+- **For Plank**:
+  - If you set a timer, it counts backwards from your target time
+  - Timer shows remaining time (e.g., "00:45" for 45 seconds left)
+  - Session ends when timer reaches 0 or you tap Stop button
 
 **Controls during session:**
 - **Stop button** ⏹️ - Tap to end session and see results
@@ -1047,13 +1109,70 @@ Or download the APK from releases and install directly on your Android device.
 
 ---
 
-#### Step 6: Session Results
+#### Step 8A: Session Results
+
+<img src="instruction_images/feedback.png" alt="Exercise Feedback" width="200"/>
 
 **After completing your exercise:**
 - Review your performance stats (reps completed, session duration, feedback)
-- **Tap "Do Another Set"** to restart same exercise immediately
-- **Tap "Back to Home"** to return to exercise selection
+- Get personalized feedback with warnings and improvement comments
+- **Tap "New Exercise"** to restart same exercise immediately
+- **Tap "Home"** to return to exercise selection
 - Take a screenshot to save your results (optional)
+
+---
+
+## Path B: Analyze Video
+
+Use this feature to analyze pre-recorded workout videos and get detailed feedback on your form.
+
+#### Step 3B: Access Video Analysis
+<img src="instruction_images/analyze_video_screen.png" alt="Analyze Video Screen" width="200"/>
+
+- **Tap "Analyze Video" button**
+- This will open your device's file picker to select a video
+
+---
+
+#### Step 4B: Select Your Video
+<img src="instruction_images/photo_upload.png" alt="Video Upload" width="200"/>
+
+- Browse through your device's photos or drive
+- Choose a workout video from your gallery
+- Ensure the video shows your full body throughout the exercise
+
+---
+
+#### Step 5B: Select Exercise Type
+<img src="instruction_images/press_analyze_exercise.png" alt="Select Exercise" width="200"/>
+
+- **Choose the exercise type** that matches your video:
+  - Push-ups
+  - Squats
+  - Plank
+- **Tap "Analyze Video"** button to start processing
+
+---
+
+#### Step 6B: Processing
+<img src="instruction_images/load_analyzation.png" alt="Processing Video" width="200"/>
+
+- Wait while the app analyzes your video
+- Progress bar shows completion percentage
+- Processing time depends on video length
+
+---
+
+#### Step 7B: View Results
+<img src="instruction_images/analyze_score.png" alt="Analysis Results" width="200"/>
+
+**After analysis completes:**
+- Review your performance score and stats
+- Check form feedback with detailed tips
+- See rep count and exercise duration
+- View frame-by-frame analysis if available
+- **Tap "Analyze Another"** to upload a new video
+- **Tap "Done"** to return to main screen
 
 ---
 
