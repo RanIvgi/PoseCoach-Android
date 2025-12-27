@@ -1,0 +1,6 @@
+,fps_real,fps_real,fps_real,fps_real,fps_reported,inference_avg,inference_avg,inference_avg,inference_avg,confidence,confidence,visibility,visibility,detection_rate,frame_count,frame_count
+,mean,std,min,max,mean,mean,std,min,max,mean,std,mean,std,mean,sum,mean
+model,,,,,,,,,,,,,,,,
+FULL,10.62,0.65,9.95,11.25,30.0,17.77,1.09,16.59,18.73,1.0,0.0,0.89,0.09,100.0,648,216.0
+HEAVY,2.84,0.25,2.56,3.05,29.96,18.34,1.17,17.12,19.46,1.0,0.0,0.84,0.09,100.0,183,61.0
+LITE,14.86,3.14,11.52,17.75,29.96,17.44,0.39,17.17,17.89,1.0,0.0,0.87,0.09,100.0,949,316.33
