@@ -1,0 +1,38 @@
+{
+  "test_metadata": {
+    "test_number": 1,
+    "device_model": "Xiaomi MI 8",
+    "android_version": "10",
+    "model_type": "HEAVY",
+    "exercise_type": "squat",
+    "delegate": "CPU",
+    "timestamp": "2025-12-27T13:17:47Z",
+    "duration_seconds": 20
+  },
+  "performance_metrics": {
+    "fps_average": 29.982563018798828,
+    "fps_min": 29.585800170898438,
+    "fps_max": 30.643512725830078,
+    "fps_stddev": 0.18772660195827484,
+    "frame_count": 58,
+    "inference_time_avg_ms": 19.455928802490234,
+    "inference_time_min_ms": 1.9159369468688965,
+    "inference_time_max_ms": 42.27979278564453,
+    "bitmap_conversion_avg_ms": 0,
+    "rotation_avg_ms": 0,
+    "total_processing_avg_ms": 19.455928802490234
+  },
+  "detection_metrics": {
+    "frames_with_pose": 58,
+    "frames_without_pose": 0,
+    "detection_success_rate": 100,
+    "avg_landmark_confidence": 0.9998481273651123,
+    "avg_visibility_score": 0.926106333732605
+  },
+  "device_metrics": {
+    "battery_start": 92,
+    "battery_end": 92,
+    "battery_drain_percent": 0,
+    "temperature_celsius": 0
+  }
+}
