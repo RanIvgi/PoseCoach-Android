@@ -396,21 +396,6 @@ Use this feature to analyze pre-recorded workout videos and get detailed feedbac
 
 ---
 
-### Quick Reference - All Buttons
-
-| Button | Location | What It Does |
-|--------|----------|--------------|
-| **Exercise Card** | Home Screen | Opens configuration for that exercise |
-| **Start Exercise** | Configuration Screen | Goes to camera screen |
-| **Play ▶️** | Camera Center (Idle) | Starts 3-second countdown, then begins session |
-| **Stop ⏹️** | Bottom Right (Active) | Ends session and shows results |
-| **Reset 🔄** | Bottom Right (Active) | Resets rep counter to zero |
-| **Camera Switch 🔄** | Bottom Right (Always) | Toggles front/back camera |
-| **GPU/CPU Toggle 🧠** | Bottom Right (Always) | Switches processor mode |
-| **Do Another Set** | Results Screen | Restarts same exercise |
-| **Back to Home** | Results Screen | Returns to exercise selection |
-| **Back Arrow ←** | Configuration Screen | Returns to home screen |
-
 ### Tips for Best Results
 
 #### Camera Positioning
