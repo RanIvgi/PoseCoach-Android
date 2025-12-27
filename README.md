@@ -279,19 +279,6 @@ The Lite model uniquely satisfies all critical requirements while maximizing per
 - **Result**: 90° achieved 92% accuracy on form evaluation
 - Rep counting accuracy: 96% with 90° threshold
 
-### Device Performance Analysis
-
-#### GPU vs CPU Delegate Performance
-
-**Real Device Testing (Samsung Galaxy S21):**
-- GPU Delegate: 28-32 FPS, 50-70ms inference
-- CPU Delegate: 18-22 FPS, 80-110ms inference
-- **Improvement**: 56% FPS increase with GPU
-
-**Emulator Testing:**
-- CPU only: 12-15 FPS, 120-150ms inference
-- Automatic fallback working correctly
-
 #### Memory Usage Optimization Results
 
 **Before Optimization:**
