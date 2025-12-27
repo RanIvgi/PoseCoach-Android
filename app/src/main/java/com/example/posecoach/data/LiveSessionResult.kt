@@ -19,7 +19,9 @@ data class LiveSessionResult(
     val commonFeedbackMessages: List<FeedbackMessage> = emptyList(),
     val allFeedbackMessages: List<FeedbackMessage> = emptyList(),
     val sessionHistory: List<ExerciseSessionSummary> = emptyList(),
-    val formBreakCount: Int = 0
+    val formBreakCount: Int = 0,
+    val goodFormDurationMillis: Long = 0,
+    val targetDurationMillis: Long? = null
 ) {
     companion object {
         /**
@@ -34,16 +36,21 @@ data class LiveSessionResult(
             exerciseType: String,
             durationMillis: Long = 0,
             targetDurationMillis: Long? = null,
-            formBreakCount: Int = 0
+            formBreakCount: Int = 0,
+            goodFormDurationMillis: Long = 0
         ): Int {
             // 1. Base Score from Reps or Duration
             var score = if (exerciseType.lowercase().contains("plank")) {
                 // For plank, check if we have a target duration
                 if (targetDurationMillis != null && targetDurationMillis > 0) {
-                    (durationMillis.toDouble() / targetDurationMillis.toDouble()) * 100.0
+                    (goodFormDurationMillis.toDouble() / targetDurationMillis.toDouble()) * 100.0
                 } else {
-                    // No target set? Default to 100 if they did anything.
-                    if (durationMillis > 0) 100.0 else 0.0
+                    // No target set? Calculate based on total elapsed time
+                    if (durationMillis > 0) {
+                        (goodFormDurationMillis.toDouble() / durationMillis.toDouble()) * 100.0
+                    } else {
+                        0.0
+                    }
                 }
             } else {
                 if (targetReps > 0) {

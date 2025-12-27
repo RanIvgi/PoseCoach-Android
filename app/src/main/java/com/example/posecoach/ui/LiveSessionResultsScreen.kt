@@ -257,7 +257,15 @@ fun LiveSessionResultsScreen(
                                 if (isPlank) {
                                     // Plank specific stats
                                     val currentDuration = currentSessionForType?.durationMillis ?: sessionResult.durationMillis
-                                    StatRow("Duration", formatDuration(currentDuration))
+                                    val goodFormDuration = currentSessionForType?.goodFormDurationMillis ?: sessionResult.goodFormDurationMillis
+                                    
+                                    // Show Target Time if it was set
+                                    if (sessionResult.targetDurationMillis != null && sessionResult.targetDurationMillis > 0) {
+                                        StatRow("Target Time", formatDuration(sessionResult.targetDurationMillis))
+                                    }
+                                    
+                                    StatRow("Total Duration", formatDuration(currentDuration))
+                                    StatRow("Time Held Correctly", formatDuration(goodFormDuration))
                                     StatRow("Form Breaks", "$currentFormBreaks")
                                 } else {
                                     // Rep-based stats

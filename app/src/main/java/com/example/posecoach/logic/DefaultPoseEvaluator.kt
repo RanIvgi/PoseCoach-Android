@@ -443,6 +443,33 @@ class DefaultPoseEvaluator : PoseEvaluator {
             PoseLandmarkIndex.RIGHT_HIP,
             PoseLandmarkIndex.RIGHT_ANKLE
         )
+
+        // Check for horizontal orientation (to distinguish from standing)
+        val leftShoulder = poseResult.getLandmark(PoseLandmarkIndex.LEFT_SHOULDER)
+        val leftAnkle = poseResult.getLandmark(PoseLandmarkIndex.LEFT_ANKLE)
+        val rightShoulder = poseResult.getLandmark(PoseLandmarkIndex.RIGHT_SHOULDER)
+        val rightAnkle = poseResult.getLandmark(PoseLandmarkIndex.RIGHT_ANKLE)
+
+        val isHorizontal = when {
+            leftShoulder != null && leftAnkle != null -> {
+                val dx = kotlin.math.abs(leftShoulder.x - leftAnkle.x)
+                val dy = kotlin.math.abs(leftShoulder.y - leftAnkle.y)
+                dy < dx // Horizontal if width > height difference
+            }
+            rightShoulder != null && rightAnkle != null -> {
+                val dx = kotlin.math.abs(rightShoulder.x - rightAnkle.x)
+                val dy = kotlin.math.abs(rightShoulder.y - rightAnkle.y)
+                dy < dx
+            }
+            else -> false
+        }
+
+        if (!isHorizontal) {
+             return FeedbackMessage(
+                text = "Get into plank position (horizontal).",
+                severity = FeedbackSeverity.INFO
+            )
+        }
         
         // ============================================================================
         // STEP 2: LANDMARK VALIDATION
@@ -625,6 +652,10 @@ class DefaultPoseEvaluator : PoseEvaluator {
 
     override fun getFormBreakCount(): Int {
         return plankFormBreakCount
+    }
+
+    override fun getGoodFormDuration(): Long {
+        return plankTotalGoodFormTimeMs
     }
     
     override fun getMetrics(): Map<String, Any> {
