@@ -874,15 +874,11 @@ The research successfully demonstrates that smartphone-based real-time exercise 
 ### Performance Verification
 
 **Expected Performance Indicators:**
-- **FPS Counter**: 25-30 FPS (green indicator, top-right)
+- **FPS Counter**: 25-30 FPS
 - **GPU/CPU Status**: Automatic selection based on device
 - **Pose Detection**: Real-time skeleton overlay with smooth tracking
-- **Memory Usage**: <85MB peak consumption
 - **Startup Time**: <500ms after model warm-up (subsequent launches)
 - **Detection Latency**: <70ms from frame capture to feedback
-
-**For Research Replication:**
-Detailed performance metrics, timing breakdowns, and debugging procedures are documented in [PERFORMANCE_DEBUGGING_GUIDE.md](PERFORMANCE_DEBUGGING_GUIDE.md).
 
 #### Frame Processing Optimization
 
@@ -896,18 +892,6 @@ Detailed performance metrics, timing breakdowns, and debugging procedures are do
 
 **Best Configuration**: GPU-accelerated processing with optimized YUV conversion
 
-#### Exercise Threshold Optimization
-
-**Squat Analysis Parameters:**
-- Knee angle range testing: 60°-70°-80° minimum thresholds
-- **Result**: 70° provided best balance of accuracy vs. strictness
-- False positive rate: 3.2% at 70° threshold
-
-**Push-up Evaluation Parameters:**
-- Elbow angle testing: 60°-90°-110° for "down" position
-- **Result**: 90° achieved 92% accuracy on form evaluation
-- Rep counting accuracy: 96% with 90° threshold
-
 #### Memory Usage Optimization Results
 
 **Before Optimization:**
@@ -916,8 +900,7 @@ Detailed performance metrics, timing breakdowns, and debugging procedures are do
 
 **After Optimization:**
 - Peak memory: 85MB during processing
-- No memory leaks in 60-minute stress tests
-- **Improvement**: 41% reduction in memory usage
+- No memory leaks in other tests
 
 ## Project Architecture
 
@@ -1088,7 +1071,7 @@ app/src/main/java/com/example/posecoach/
 PoseCoach demonstrates that professional-grade exercise form analysis is achievable on consumer smartphones without specialized hardware. By leveraging Google's MediaPipe Pose Landmarker and implementing systematic optimizations, we achieved:
 
 ✅ **94.2% accuracy** in exercise evaluation across push-ups, squats, and planks  
-✅ **25-30 FPS real-time performance** on mid-range Android devices  
+✅ **20 FPS real-time performance** on mid-range Android devices  
 ✅ **41% memory reduction** through efficient processing pipelines  
 ✅ **Instant startup** with background model pre-warming  
 
@@ -1115,7 +1098,7 @@ We welcome contributions! Here's how you can help:
 - **Improve Documentation**: Help make the docs clearer
 
 **Getting Started:**
-1. Fork the repository
+1. Clone the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
@@ -1132,9 +1115,6 @@ We welcome contributions! Here's how you can help:
 - **GitHub Issues**: [Report bugs and request features](https://github.com/RanIvgi/PoseCoach-Android/issues)
 - **Discussions**: [Join the community conversation](https://github.com/RanIvgi/PoseCoach-Android/discussions)
 - **Project Repository**: [github.com/RanIvgi/PoseCoach-Android](https://github.com/RanIvgi/PoseCoach-Android)
-
-### 📄 License
-This project is open source. Check the repository for license details.
 
 ---
 
