@@ -48,6 +48,11 @@
   - [Research Contributions and Implications](#research-contributions-and-implications)
   - [Limitations and Future Research Directions](#limitations-and-future-research-directions)
   - [Statistical Significance and Validation](#statistical-significance-and-validation)
+- [Exercise Evaluation Logic](#exercise-evaluation-logic)
+  - [Squat Analysis](#1-squat-analysis)
+  - [Push-up Analysis](#2-push-up-analysis)
+  - [Plank Analysis](#3-plank-analysis)
+  - [Scoring and Feedback System](#scoring-and-feedback-system)
 
 ### 💻 Technical Documentation
 - [Technical Stack](#technical-stack)
@@ -325,7 +330,7 @@ Once you have read and understood these instructions:
   - **Reps completed** (for Push-ups/Squats) or **Duration** (for Plank)
   - **Session duration** 
   - **Percentage score** - Get a score from 0-100% showing your overall form quality for this exercise
-  - (For more details about how the scoring system works, please reference the [Performance Scoring Methodology](#performance-convergence-analysis) section)
+  - (For more details about how the scoring system works, please reference the [Scoring and Feedback System](#scoring-and-feedback-system) section)
 
 **Special for Plank:**
 - Displays **"Form Breaks"** count - shows how many times you broke from proper plank position
@@ -835,6 +840,85 @@ Our experimental results confirm the research hypothesis:
 
 The research successfully demonstrates that smartphone-based real-time exercise form analysis is not only feasible but achieves professional-grade accuracy, opening new possibilities for democratized fitness technology and remote health monitoring applications.
 
+## Exercise Evaluation Logic
+
+The system uses a sophisticated geometric analysis engine that processes 3D body landmarks in real-time. Each exercise is evaluated using finite state machines that track movement phases (descent/ascent) and apply exercise-specific biomechanical thresholds. The following sections detail the form verification logic for each supported exercise, followed by the scoring system that combines rep completion with form quality assessment.
+
+#### 1. Squat Analysis
+The squat evaluation uses a state machine to track the movement phases:
+- **State Transitions**:
+  - **Start Descent**: Triggered when knee angle drops below **150°**.
+  - **Start Ascent**: Triggered when knee angle rises above **160°**.
+- **Depth Verification**:
+  - The system continuously tracks the *minimum knee angle* achieved during the descent phase.
+  - **Valid Rep**: Minimum angle < **115°**.
+  - **Insufficient Depth**: Minimum angle ≥ **115°** (triggers "Go deeper" feedback).
+- **Form Constraints**:
+  - **Knees Over Toes**: Calculates the relative horizontal position of knees vs. toes. If `knee.x < toe.x - 0.05` (normalized coordinates), it triggers a warning.
+  - **Back Posture**: Analyzes the hip position relative to knees to detect excessive forward lean (`hip.x < knee.x - 0.05`).
+
+#### 2. Push-up Analysis
+Optimized for side-view analysis, tracking elbow flexion and body rigidity:
+- **State Transitions**:
+  - **Start Descent**: Elbow angle < **150°**.
+  - **Start Ascent**: Elbow angle > **160°**.
+- **Depth Verification**:
+  - **Valid Rep**: Minimum elbow angle < **90°** (chest close to floor).
+  - **Insufficient Depth**: Minimum elbow angle ≥ **90°**.
+- **Body Alignment (Core Stability)**:
+  - Calculates the angle formed by **Shoulder-Hip-Ankle**.
+  - **Ideal Alignment**: ~180°.
+  - **Hip Sag Error**: Deviation > **15°** (Angle < 165°). Triggers "Engage core" feedback.
+  - **Hip Pike Error**: Deviation < **-15°** (Angle > 195°). Triggers "Lower hips" feedback.
+
+#### 3. Plank Analysis
+Uses a time-based accumulation logic rather than rep counting:
+- **Position Detection**: First verifies the user is horizontal (Bounding Box Width > Height).
+- **Stability Logic**:
+  - **Grace Period**: Requires **500ms** of continuous good form to enter the `HOLDING` state.
+  - **Good Form Criteria**: Body alignment angle between **165°** and **185°**.
+- **Form Break Handling**:
+  - If the angle exits the valid range (Sag < 165° or Pike > 185°), the state shifts to `FORM_BROKEN`.
+  - The timer pauses, and a "Form Break" event is recorded.
+  - Timer resumes only after form is corrected and re-stabilized for the grace period.
+
+#### Scoring and Feedback System
+
+The scoring system employs a two-stage pipeline: **Real-time Aggregation** followed by **Post-Session Analysis**. This architecture separates immediate user guidance from final performance evaluation.
+
+**1. Base Score Calculation (The "Perfect" Score)**
+The system first calculates a raw performance score (0-100%) based on the user's goal settings:
+
+*   **Target Mode (Goal Set)**:
+    *   `Score = min(100, (Completed Reps / Target Reps) * 100)`
+    *   *Example*: 8/10 reps = 80% base score.
+*   **Free Mode (No Goal)**:
+    *   **Reps**: Defaults to **100%** if at least one rep is completed. The score is purely determined by form deductions.
+    *   **Plank**: `Score = (Time in Good Form / Total Session Duration) * 100`.
+    *   *Example*: Holding a plank for 60s but sagging for 10s results in a 83% base score.
+
+**2. Feedback Aggregation & Escalation (The Analyzer)**
+Raw feedback messages generated at 30 FPS are collected and passed to the `FeedbackAnalyzer`. This component applies **Severity Escalation Logic** to determine the weight of form errors:
+
+*   **Frequency Analysis**: The analyzer counts how many distinct times a specific error string (e.g., "Knees over toes") was triggered.
+*   **Escalation Rules**:
+    *   **Count = 1 (Occasional)**: Classified as **WARNING**. Deduction: **-5 pts**.
+    *   **Count > 1 (Recurring)**: Classified as **ERROR**. Deduction: **-10 pts**.
+    *   *Rationale*: A single slip-up is a minor correction; repeated errors indicate a fundamental form breakdown.
+
+**3. Final Score Computation**
+The final score is derived by applying deductions to the Base Score. The `LiveSessionResult` engine ensures fairness through **Unique Issue Filtering**:
+
+*   **Deduction Logic**: `Final Score = Base Score + Σ(Explicit Deductions)`
+*   **Unique Constraint**: Deductions are applied per *issue type*, not per instance.
+    *   *Scenario*: A user receives "Go deeper" feedback 5 times.
+    *   *Analyzer*: Aggregates this into ONE message: "Multiple occurrences: Inconsistent depth (-10 pts)".
+    *   *Scoring*: Subtracts 10 points ONCE. It does *not* subtract 50 points (5 * 10).
+*   **Plank Specifics**: Form breaks are penalized linearly (`Count * -5 pts`) because each break disrupts the isometric hold.
+
+**4. Feedback Debouncing**
+To prevent flickering feedback (e.g., a warning appearing for 1 frame due to camera noise), the system implements a **200ms debounce filter**. A form error must persist for at least 200ms to be displayed to the user and recorded for scoring.
+
 ## Implementation Details
 
 ### Performance Optimizations
@@ -901,54 +985,6 @@ The research successfully demonstrates that smartphone-based real-time exercise 
 **After Optimization:**
 - Peak memory: 85MB during processing
 - No memory leaks in other tests
-
-## Project Architecture
-
-### System Components
-
-Below is a high-level file tree of the main app modules for quick navigation:
-
-```
-app/src/main/java/com/example/posecoach/
-├── MainActivity.kt
-├── ModelWarmer.kt
-│
-├── data/
-│   ├── PoseLandmark.kt
-│   ├── PoseLandmarkIndex.kt
-│   ├── PoseResult.kt
-│   ├── FeedbackMessage.kt
-│   ├── CameraState.kt
-│   ├── ExerciseSessionSummary.kt
-│   └── VideoAnalysisResult.kt
-│
-├── ui/
-│   ├── PoseCoachApp.kt
-│   ├── StartScreen.kt
-│   ├── CameraScreen.kt
-│   ├── CameraViewModel.kt
-│   ├── VideoAnalysisViewModel.kt
-│   ├── PoseOverlay.kt
-│   ├── TutorialDialog.kt
-│   ├── ExerciseSelectionScreen.kt
-│   ├── VideoUploadScreen.kt
-│   ├── VideoPlayer.kt
-│   ├── VideoResultsScreen.kt
-│   ├── LiveSessionResultsScreen.kt
-│   ├── LoadingScreen.kt
-│   └── theme/
-│
-├── pose/
-│   └── PoseEngine.kt
-│
-├── logic/
-│   ├── PoseEvaluator.kt
-│   ├── DefaultPoseEvaluator.kt
-│   └── FeedbackAnalyzer.kt
-│
-└── video/
-  └── VideoProcessor.kt
-```
 
 ## Project Architecture
 
