@@ -29,7 +29,6 @@ import com.example.posecoach.data.CameraState
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import java.util.concurrent.Executors
 import androidx.core.content.ContextCompat
 import kotlin.math.min
 
