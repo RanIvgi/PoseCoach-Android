@@ -3,6 +3,7 @@
 </div>
 
 # PoseCoach - Real-Time Exercise Form Analysis Using Computer Vision
+Ran Ivgi, Noy Segal, Noam Tamari
 
 ## Table of Contents
 
